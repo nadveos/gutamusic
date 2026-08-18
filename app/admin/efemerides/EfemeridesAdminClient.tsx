@@ -28,6 +28,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
 
   const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
   const [loadingAI, setLoadingAI] = useState(false);
+  const [aiDebugInfo, setAiDebugInfo] = useState<any>(null);
 
   const categories = [
     { id: 'lanzamientos', label: 'Lanzamientos Históricos' },
@@ -50,6 +51,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
   const handleGenerateAI = async () => {
     setLoadingAI(true);
     setAiSuggestions([]);
+    setAiDebugInfo(null);
 
     try {
       const res = await fetch('/api/ai/generate', {
@@ -65,8 +67,16 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
         }),
       });
       const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert(`Aviso de IA: ${data.error || 'Error desconocido al consultar Gemini'}`);
+        return;
+      }
+
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
         setAiSuggestions(data.data);
+        if (data.tokenUsage) {
+          setAiDebugInfo(data.tokenUsage);
+        }
 
         // Autofill with first suggestion
         const first = data.data[0];
@@ -81,8 +91,9 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           impactBadge: first.impactBadge,
         }));
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert(`Error de conexión: ${e?.message}`);
     } finally {
       setLoadingAI(false);
     }
@@ -223,6 +234,14 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
               />
             </div>
           </div>
+
+          {/* AI Debug / Token Usage Info */}
+          {aiDebugInfo && (
+            <div className="flex items-center justify-between text-[10px] px-3 py-1.5 rounded-lg bg-[#18191e] border border-[#2d2f38] text-[#93a887]">
+              <span>✅ Respuesta en vivo de Gemini 1.5 Flash</span>
+              <span>Tokens: {aiDebugInfo.totalTokenCount || aiDebugInfo.promptTokenCount}</span>
+            </div>
+          )}
 
           {/* AI Suggestions Pill Options */}
           {aiSuggestions.length > 1 && (
