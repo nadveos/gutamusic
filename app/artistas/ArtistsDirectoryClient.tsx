@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Artist, GenreType } from '../../lib/types';
 import { ArtistCard } from '../../components/ArtistCard';
-import { Search, Filter, Mic2, MapPin, Sparkles } from 'lucide-react';
+import { Search, Mic2, MapPin } from 'lucide-react';
 
 interface ArtistsDirectoryClientProps {
   initialArtists: Artist[];
@@ -27,16 +27,13 @@ export const ArtistsDirectoryClient: React.FC<ArtistsDirectoryClientProps> = ({
 
   const filteredArtists = useMemo(() => {
     return initialArtists.filter((artist) => {
-      // Filter by genre
       const matchesGenre =
         selectedGenre === 'Todos' ||
         artist.genres.some((g) => g.toLowerCase() === selectedGenre.toLowerCase());
 
-      // Filter by province
       const matchesProvince =
         selectedProvince === 'Todas' || artist.province === selectedProvince;
 
-      // Filter by text query
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery =
         !q ||
@@ -51,43 +48,43 @@ export const ArtistsDirectoryClient: React.FC<ArtistsDirectoryClientProps> = ({
   }, [initialArtists, selectedGenre, selectedProvince, searchQuery]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header Banner */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400">
-          <Mic2 className="w-4 h-4" />
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
+          <Mic2 className="w-3.5 h-3.5" />
           <span>Directorio Federal de Música</span>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-black text-white">
+        <h1 className="text-3xl sm:text-4xl font-black text-[#f3f1ec]">
           Artistas & Bandas Emergentes
         </h1>
-        <p className="text-gray-400 text-sm sm:text-base max-w-2xl">
+        <p className="text-[#aba79e] text-xs sm:text-sm max-w-2xl">
           Explorá solistas, agrupaciones y proyectos independientes de todos los géneros y rincones de Argentina y Latinoamérica.
         </p>
       </div>
 
       {/* Filter and Search Controls */}
-      <div className="glass-card p-4 sm:p-6 rounded-2xl border border-white/10 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+      <div className="natural-card p-4 sm:p-5 rounded-2xl space-y-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
           {/* Search Input */}
           <div className="sm:col-span-6 relative">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[#8c887f] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Buscar por nombre, ciudad o palabra clave..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 text-sm focus:outline-none focus:border-amber-400/60 transition-colors"
+              className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] placeholder-[#78746c] text-xs focus:outline-none focus:border-[#d97d64] transition-colors"
             />
           </div>
 
           {/* Province Filter */}
           <div className="sm:col-span-6 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            <MapPin className="w-3.5 h-3.5 text-[#d97d64] flex-shrink-0" />
             <select
               value={selectedProvince}
               onChange={(e) => setSelectedProvince(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl bg-[#11141f] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400/60"
+              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
             >
               <option value="Todas">Todas las Provincias / Regiones</option>
               {provinces.filter((p) => p !== 'Todas').map((prov) => (
@@ -100,18 +97,18 @@ export const ArtistsDirectoryClient: React.FC<ArtistsDirectoryClientProps> = ({
         </div>
 
         {/* Genre Badges Pills */}
-        <div className="pt-2 border-t border-white/5 flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-semibold text-gray-400 mr-1">Géneros:</span>
+        <div className="pt-2 border-t border-[#2a2c35] flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-semibold text-[#8c887f] mr-1">Géneros:</span>
           {['Todos', ...genres].map((genre) => {
             const isSelected = selectedGenre === genre;
             return (
               <button
                 key={genre}
                 onClick={() => setSelectedGenre(genre)}
-                className={`text-xs px-3 py-1 rounded-lg font-medium transition-all ${
+                className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-colors ${
                   isSelected
-                    ? 'bg-amber-500 text-black font-bold shadow-md shadow-amber-500/20'
-                    : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white border border-white/5'
+                    ? 'bg-[#d97d64] text-[#151618] font-bold'
+                    : 'bg-[#24252c] text-[#aba79e] hover:bg-[#2c2e37] hover:text-[#f3f1ec] border border-[#31333d]'
                 }`}
               >
                 {genre}
@@ -122,9 +119,9 @@ export const ArtistsDirectoryClient: React.FC<ArtistsDirectoryClientProps> = ({
       </div>
 
       {/* Results Count */}
-      <div className="flex items-center justify-between text-xs text-gray-400 px-1">
+      <div className="flex items-center justify-between text-xs text-[#8c887f] px-1">
         <span>
-          Mostrando <strong className="text-white">{filteredArtists.length}</strong> de {initialArtists.length} artistas
+          Mostrando <strong className="text-[#f3f1ec]">{filteredArtists.length}</strong> de {initialArtists.length} artistas
         </span>
         {(searchQuery || selectedGenre !== 'Todos' || selectedProvince !== 'Todas') && (
           <button
@@ -133,7 +130,7 @@ export const ArtistsDirectoryClient: React.FC<ArtistsDirectoryClientProps> = ({
               setSelectedGenre('Todos');
               setSelectedProvince('Todas');
             }}
-            className="text-amber-400 hover:underline"
+            className="text-[#e6cca0] hover:underline"
           >
             Limpiar filtros
           </button>
@@ -142,16 +139,16 @@ export const ArtistsDirectoryClient: React.FC<ArtistsDirectoryClientProps> = ({
 
       {/* Artists Grid */}
       {filteredArtists.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {filteredArtists.map((artist) => (
             <ArtistCard key={artist.id} artist={artist} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 glass-card rounded-3xl border border-white/10 space-y-3">
-          <Mic2 className="w-12 h-12 text-gray-400 mx-auto" />
-          <h3 className="text-lg font-bold text-white">No se encontraron artistas</h3>
-          <p className="text-xs text-gray-400 max-w-sm mx-auto">
+        <div className="text-center py-12 natural-card rounded-2xl space-y-2">
+          <Mic2 className="w-8 h-8 text-[#78746c] mx-auto" />
+          <h3 className="text-base font-bold text-[#f3f1ec]">No se encontraron artistas</h3>
+          <p className="text-xs text-[#8c887f] max-w-xs mx-auto">
             Probá ajustando los términos de búsqueda o seleccionando otro género.
           </p>
         </div>

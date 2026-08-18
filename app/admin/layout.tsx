@@ -15,12 +15,12 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#07080d] flex">
+    <div className="min-h-screen bg-[#151618] flex">
       {/* Sidebar navigation */}
       <AdminSidebar />
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 sm:p-10 max-w-7xl overflow-y-auto">
+      <main className="flex-1 p-6 sm:p-8 max-w-7xl overflow-y-auto">
         {children}
       </main>
     </div>

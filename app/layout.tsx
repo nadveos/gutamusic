@@ -5,7 +5,7 @@ import { Footer } from '../components/Footer';
 
 export const metadata: Metadata = {
   title: 'GUTA MÚSICA | Plataforma de Difusión de Artistas Emergentes & Cultura Popular',
-  description: 'Descubrí la nueva generación de artistas independientes, bandas emergentes, folklore, rock, tango y música urbana de Argentina y Latinoamérica. Entrevistas, sesiones en vivo, efemérides musicales y agenda cultural.',
+  description: 'Descubrí la nueva generación de artistas independientes, bandas emergentes, folklore, rock, tango y música urbana de Argentina y Latinoamérica.',
   keywords: [
     'Artistas emergentes Argentina',
     'Música independiente',
@@ -43,23 +43,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Schema.org Structured Data
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'MusicOrganization',
     name: 'GUTA MÚSICA',
     url: 'https://guta.com.ar',
-    logo: 'https://guta.com.ar/logo.png',
     description: 'Medio de comunicación musical y plataforma de difusión de artistas emergentes.',
     founder: {
       '@type': 'Person',
       name: 'Guta Flores',
     },
-    sameAs: [
-      'https://youtube.com',
-      'https://instagram.com',
-      'https://facebook.com'
-    ]
   };
 
   return (
@@ -70,7 +63,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-screen bg-[#090a0f] text-gray-100 antialiased selection:bg-amber-500 selection:text-black">
+      <body className="min-h-screen bg-[#151618] text-[#f3f1ec] antialiased selection:bg-[#d97d64] selection:text-[#151618]">
         <Navbar />
         <main className="min-h-[calc(100vh-140px)] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {children}

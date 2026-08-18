@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Artist } from '../../../lib/types';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
-import { Mic2, Plus, Edit, Trash2, Eye, MapPin, Sparkles } from 'lucide-react';
+import { Edit, Trash2, Eye, MapPin } from 'lucide-react';
 
 interface AdminArtistasClientProps {
   initialArtists: Artist[];
@@ -23,7 +23,7 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <AdminHeader
         title="Gestión de Artistas & Bandas"
         subtitle="Alta, baja y modificación de perfiles de artistas emergentes"
@@ -32,80 +32,80 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
       />
 
       {/* Artists Table */}
-      <div className="glass-card rounded-3xl border border-white/10 overflow-hidden">
+      <div className="natural-card rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-gray-300">
-            <thead className="bg-white/5 border-b border-white/10 text-gray-400 uppercase text-[10px] font-bold">
+          <table className="w-full text-left text-xs text-[#aba79e]">
+            <thead className="bg-[#24252c] border-b border-[#2a2c35] text-[#8c887f] uppercase text-[10px] font-semibold">
               <tr>
-                <th className="py-3.5 px-5">Artista</th>
-                <th className="py-3.5 px-4">Géneros</th>
-                <th className="py-3.5 px-4">Ubicación</th>
-                <th className="py-3.5 px-4">Discografía</th>
-                <th className="py-3.5 px-4">Destacado</th>
-                <th className="py-3.5 px-5 text-right">Acciones</th>
+                <th className="py-3 px-4">Artista</th>
+                <th className="py-3 px-3">Géneros</th>
+                <th className="py-3 px-3">Ubicación</th>
+                <th className="py-3 px-3">Discografía</th>
+                <th className="py-3 px-3">Destacado</th>
+                <th className="py-3 px-4 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-[#24252c]">
               {artists.map((artist) => (
-                <tr key={artist.id} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="py-4 px-5 flex items-center gap-3">
-                    <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-white/10 flex-shrink-0">
+                <tr key={artist.id} className="hover:bg-[#24252c]/50 transition-colors">
+                  <td className="py-3 px-4 flex items-center gap-2.5">
+                    <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-[#31333d] flex-shrink-0">
                       <Image src={artist.photoUrl} alt={artist.stageName} fill className="object-cover" />
                     </div>
                     <div>
-                      <strong className="text-white text-sm block">{artist.stageName}</strong>
-                      <span className="text-[11px] text-gray-400 font-mono">/artistas/{artist.slug}</span>
+                      <strong className="text-[#f3f1ec] text-xs block">{artist.stageName}</strong>
+                      <span className="text-[10px] text-[#78746c] font-mono">/artistas/{artist.slug}</span>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-3 px-3">
                     <div className="flex flex-wrap gap-1">
                       {artist.genres.map((g) => (
-                        <span key={g} className="px-2 py-0.5 rounded bg-white/5 text-amber-400 font-medium">
+                        <span key={g} className="px-2 py-0.5 rounded bg-[#24252c] text-[#e6cca0] font-medium text-[11px]">
                           {g}
                         </span>
                       ))}
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <span className="flex items-center gap-1 text-gray-300">
-                      <MapPin className="w-3.5 h-3.5 text-rose-400" />
+                  <td className="py-3 px-3">
+                    <span className="flex items-center gap-1 text-[#aba79e]">
+                      <MapPin className="w-3 h-3 text-[#d97d64]" />
                       {artist.city}, {artist.province}
                     </span>
                   </td>
-                  <td className="py-4 px-4">
-                    <span className="text-gray-300">{artist.discography.length} lanzamientos</span>
+                  <td className="py-3 px-3">
+                    <span className="text-[#aba79e]">{artist.discography.length} lanzamientos</span>
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-3 px-3">
                     {artist.featured ? (
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                        ⭐ Destacado
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-sand-soft">
+                        Destacado
                       </span>
                     ) : (
-                      <span className="text-gray-400">Estándar</span>
+                      <span className="text-[#78746c]">Estándar</span>
                     )}
                   </td>
-                  <td className="py-4 px-5 text-right space-x-2">
+                  <td className="py-3 px-4 text-right space-x-1.5">
                     <Link
                       href={`/artistas/${artist.slug}`}
                       target="_blank"
-                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white inline-block transition-colors"
+                      className="p-1.5 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#aba79e] hover:text-[#f3f1ec] inline-block transition-colors"
                       title="Ver perfil público"
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-3.5 h-3.5" />
                     </Link>
                     <Link
                       href={`/admin/artistas/nuevo?edit=${artist.id}`}
-                      className="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 inline-block transition-colors"
+                      className="p-1.5 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#e6cca0] inline-block transition-colors"
                       title="Editar perfil"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-3.5 h-3.5" />
                     </Link>
                     <button
-                      className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 inline-block transition-colors"
+                      className="p-1.5 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#c0909b] inline-block transition-colors"
                       title="Eliminar artista"
                       onClick={() => handleDelete(artist.id, artist.stageName)}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </td>
                 </tr>

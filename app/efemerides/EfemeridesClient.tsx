@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { EphemerisItem, EphemerisCategory } from '../../lib/types';
-import { Calendar, BookOpen, Disc3, Award, Flame, Sparkles, Filter, Search, Clock } from 'lucide-react';
+import { Calendar, BookOpen, Search } from 'lucide-react';
 
 interface EfemeridesClientProps {
   initialItems: EphemerisItem[];
@@ -43,13 +43,9 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
 
   const filteredItems = useMemo(() => {
     return initialItems.filter((item) => {
-      // Date filter (if searching by date when no text search)
       const matchesDate = !searchQuery ? (item.day === selectedDay && item.month === selectedMonth) : true;
-
-      // Category filter
       const matchesCat = selectedCategory === 'todas' || item.category === selectedCategory;
 
-      // Text query
       const q = searchQuery.toLowerCase().trim();
       const matchesText =
         !q ||
@@ -63,31 +59,31 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
   }, [initialItems, selectedDay, selectedMonth, selectedCategory, searchQuery]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400">
-          <BookOpen className="w-4 h-4" />
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
+          <BookOpen className="w-3.5 h-3.5" />
           <span>Archivo Histórico del Patrimonio Musical</span>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-black text-white">
+        <h1 className="text-3xl sm:text-4xl font-black text-[#f3f1ec]">
           Efemérides Musicales
         </h1>
-        <p className="text-gray-400 text-sm sm:text-base max-w-2xl">
+        <p className="text-[#aba79e] text-xs sm:text-sm max-w-2xl">
           Lanzamientos fundacionales, registros en SADAIC, hitos en Billboard, festivales de Cosquín, Jesús María y tributos de la música argentina y latinoamericana.
         </p>
       </div>
 
       {/* Date & Filter Selector Bar */}
-      <div className="glass-card p-6 rounded-3xl border border-white/10 space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+      <div className="natural-card p-5 rounded-2xl space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
           {/* Day & Month Selectors */}
           <div className="sm:col-span-3">
-            <label className="text-xs text-gray-400 block mb-1.5 font-medium">Día</label>
+            <label className="text-[11px] text-[#8c887f] block mb-1 font-medium">Día</label>
             <select
               value={selectedDay}
               onChange={(e) => setSelectedDay(Number(e.target.value))}
-              className="w-full px-3 py-2.5 rounded-xl bg-[#11141f] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400/60"
+              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
             >
               {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
                 <option key={d} value={d}>
@@ -98,11 +94,11 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
           </div>
 
           <div className="sm:col-span-4">
-            <label className="text-xs text-gray-400 block mb-1.5 font-medium">Mes</label>
+            <label className="text-[11px] text-[#8c887f] block mb-1 font-medium">Mes</label>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="w-full px-3 py-2.5 rounded-xl bg-[#11141f] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400/60"
+              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
             >
               {months.map((m) => (
                 <option key={m.num} value={m.num}>
@@ -114,33 +110,33 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
 
           {/* Search Query */}
           <div className="sm:col-span-5">
-            <label className="text-xs text-gray-400 block mb-1.5 font-medium">Buscar en todo el archivo</label>
+            <label className="text-[11px] text-[#8c887f] block mb-1 font-medium">Buscar en todo el archivo</label>
             <div className="relative">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-[#8c887f] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Ej: Charly García, SADAIC, 1985..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 text-sm focus:outline-none focus:border-amber-400/60"
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] placeholder-[#78746c] text-xs focus:outline-none focus:border-[#d97d64]"
               />
             </div>
           </div>
         </div>
 
         {/* Categories Pills */}
-        <div className="pt-2 border-t border-white/5 flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-gray-400 font-semibold mr-1">Filtrar categoría:</span>
+        <div className="pt-2 border-t border-[#2a2c35] flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] text-[#8c887f] font-semibold mr-1">Filtrar categoría:</span>
           {categories.map((cat) => {
             const isSelected = selectedCategory === cat.id;
             return (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`text-xs px-3 py-1 rounded-lg font-medium transition-all ${
+                className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-colors ${
                   isSelected
-                    ? 'bg-amber-500 text-black font-bold shadow-md shadow-amber-500/20'
-                    : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white border border-white/5'
+                    ? 'bg-[#d97d64] text-[#151618] font-bold'
+                    : 'bg-[#24252c] text-[#aba79e] hover:bg-[#2c2e37] hover:text-[#f3f1ec] border border-[#31333d]'
                 }`}
               >
                 {cat.label}
@@ -151,66 +147,66 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
       </div>
 
       {/* Date Header Indicator */}
-      <div className="flex items-center justify-between px-2 text-sm text-gray-400">
-        <span className="font-bold text-white flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-amber-400" />
+      <div className="flex items-center justify-between px-1 text-xs text-[#8c887f]">
+        <span className="font-semibold text-[#f3f1ec] flex items-center gap-1.5">
+          <Calendar className="w-3.5 h-3.5 text-[#e6cca0]" />
           {searchQuery ? `Resultados de búsqueda: "${searchQuery}"` : `Efemérides del ${selectedDay} de ${months[selectedMonth - 1].name}`}
         </span>
-        <span>{filteredItems.length} hitos históricos encontrados</span>
+        <span>{filteredItems.length} registros</span>
       </div>
 
       {/* Timeline Cards */}
       {filteredItems.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3.5">
           {filteredItems.map((item) => (
             <article
               key={item.id}
-              className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10 hover:border-amber-400/30 transition-all flex flex-col sm:flex-row gap-6 items-start justify-between group"
+              className="natural-card p-5 rounded-2xl flex flex-col sm:flex-row gap-5 items-start justify-between"
             >
-              <div className="space-y-3 flex-1">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="text-xs font-black px-3 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              <div className="space-y-2 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded bg-sand-soft">
                     Año {item.year}
                   </span>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-white/5 text-gray-300">
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#24252c] text-[#aba79e]">
                     {item.categoryLabel}
                   </span>
                   {item.impactBadge && (
-                    <span className="text-xs font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded">
+                    <span className="text-[11px] font-medium text-[#d97d64] bg-terracotta-soft px-2 py-0.5 rounded">
                       {item.impactBadge}
                     </span>
                   )}
                 </div>
 
-                <h3 className="text-xl sm:text-2xl font-black text-white group-hover:text-amber-300 transition-colors leading-tight">
+                <h3 className="text-lg sm:text-xl font-bold text-[#f3f1ec] leading-snug">
                   {item.title}
                 </h3>
 
-                <p className="text-sm text-gray-300 leading-relaxed max-w-3xl font-light">
+                <p className="text-xs sm:text-sm text-[#aba79e] leading-relaxed max-w-3xl">
                   {item.description}
                 </p>
 
                 {item.source && (
-                  <p className="text-xs text-gray-400 pt-1">
-                    Fuente de verificación: <strong className="text-gray-300">{item.source}</strong>
+                  <p className="text-[11px] text-[#78746c] pt-0.5">
+                    Fuente de verificación: <strong className="text-[#aba79e]">{item.source}</strong>
                   </p>
                 )}
               </div>
 
               {item.imageUrl && (
-                <div className="relative w-full sm:w-44 aspect-video sm:aspect-square rounded-2xl overflow-hidden border border-white/10 flex-shrink-0">
-                  <Image src={item.imageUrl} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform" />
+                <div className="relative w-full sm:w-36 aspect-video sm:aspect-square rounded-xl overflow-hidden border border-[#2d2f38] flex-shrink-0">
+                  <Image src={item.imageUrl} alt={item.title} fill className="object-cover" />
                 </div>
               )}
             </article>
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 glass-card rounded-3xl border border-white/10 space-y-3">
-          <BookOpen className="w-12 h-12 text-gray-400 mx-auto" />
-          <h3 className="text-lg font-bold text-white">No se registraron efemérides para esta fecha</h3>
-          <p className="text-xs text-gray-400 max-w-sm mx-auto">
-            Probá seleccionando el 18 o 19 de Agosto, o buscando un artista como "Charly", "Soda" o "Mercedes Sosa".
+        <div className="text-center py-12 natural-card rounded-2xl space-y-2">
+          <BookOpen className="w-8 h-8 text-[#78746c] mx-auto" />
+          <h3 className="text-base font-bold text-[#f3f1ec]">No se registraron efemérides para esta fecha</h3>
+          <p className="text-xs text-[#8c887f] max-w-xs mx-auto">
+            Probá seleccionando el 18 de Agosto o buscando por nombre de artista.
           </p>
         </div>
       )}

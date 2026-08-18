@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { Artist, VideoItem, VideoPlatform, VideoType } from '../../../lib/types';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
-import { Video, Sparkles, Check, Play, ExternalLink, Trash2, ArrowRight } from 'lucide-react';
+import { Play, ExternalLink } from 'lucide-react';
 
 interface VideoUploadClientProps {
   initialVideos: VideoItem[];
@@ -26,7 +26,6 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
   const [videosList, setVideosList] = useState<VideoItem[]>(initialVideos);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Auto-detect metadata on URL change
   const handleUrlChange = (url: string) => {
     setVideoUrl(url);
 
@@ -86,40 +85,40 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
   };
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <AdminHeader
         title="Gestión & Carga de Videos"
         subtitle="Ingresá videos de YouTube, TikTok y Facebook con autodetección de metadatos"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* URL Parser Form */}
-        <form onSubmit={handleSaveVideo} className="lg:col-span-7 glass-card p-6 sm:p-8 rounded-3xl border border-white/10 space-y-5">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
-            <Sparkles className="w-4 h-4" /> Asistente de Carga por URL
+        <form onSubmit={handleSaveVideo} className="lg:col-span-7 natural-card p-5 sm:p-6 rounded-2xl space-y-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#93a887]">
+            Asistente de Carga por URL
           </h2>
 
           <div>
-            <label className="text-xs text-gray-300 font-semibold block mb-1.5">
+            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
               URL del Video (YouTube, TikTok, Facebook) *
             </label>
             <input
               type="url"
               required
-              placeholder="https://www.youtube.com/watch?v=... o TikTok / Facebook"
+              placeholder="https://www.youtube.com/watch?v=..."
               value={videoUrl}
               onChange={(e) => handleUrlChange(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-cyan-400 font-mono"
+              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64] font-mono"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="text-xs text-gray-300 font-semibold block mb-1.5">Plataforma Detectada</label>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Plataforma Detectada</label>
               <select
                 value={detectedPlatform}
                 onChange={(e) => setDetectedPlatform(e.target.value as VideoPlatform)}
-                className="w-full px-3 py-2.5 rounded-xl bg-[#11141f] border border-white/10 text-white text-sm focus:outline-none focus:border-cyan-400"
+                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
               >
                 <option value="youtube">YouTube (Embed Oficial)</option>
                 <option value="tiktok">TikTok Video</option>
@@ -128,11 +127,11 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
             </div>
 
             <div>
-              <label className="text-xs text-gray-300 font-semibold block mb-1.5">Tipo de Contenido</label>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Tipo de Contenido</label>
               <select
                 value={videoType}
                 onChange={(e) => setVideoType(e.target.value as VideoType)}
-                className="w-full px-3 py-2.5 rounded-xl bg-[#11141f] border border-white/10 text-white text-sm focus:outline-none focus:border-cyan-400"
+                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
               >
                 <option value="session">Sesión en Vivo GUTA</option>
                 <option value="interview">Entrevista</option>
@@ -144,11 +143,11 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
           </div>
 
           <div>
-            <label className="text-xs text-gray-300 font-semibold block mb-1.5">Vincular a Artista *</label>
+            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Vincular a Artista *</label>
             <select
               value={selectedArtistId}
               onChange={(e) => setSelectedArtistId(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl bg-[#11141f] border border-white/10 text-white text-sm focus:outline-none focus:border-cyan-400"
+              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
             >
               {artists.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -159,62 +158,62 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
           </div>
 
           <div>
-            <label className="text-xs text-gray-300 font-semibold block mb-1.5">Título del Video</label>
+            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Título del Video</label>
             <input
               type="text"
               required
               placeholder="Ej: Serenata Gaucha - Zamba del Laurel (Sesión en Vivo)"
               value={videoTitle}
               onChange={(e) => setVideoTitle(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-cyan-400"
+              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
             />
           </div>
 
           <div>
-            <label className="text-xs text-gray-300 font-semibold block mb-1.5">Canal / Autor</label>
+            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Canal / Autor</label>
             <input
               type="text"
               placeholder="Ej: GUTA Sesiones o @canal_oficial"
               value={channelOrAuthor}
               onChange={(e) => setChannelOrAuthor(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-cyan-400"
+              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
             />
           </div>
 
           <button
             type="submit"
             disabled={isProcessing}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-bold text-sm shadow-lg shadow-cyan-500/20 transition-all"
+            className="w-full py-2.5 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors"
           >
             {isProcessing ? 'Procesando...' : 'Guardar Video en la Videoteca'}
           </button>
         </form>
 
         {/* Live Preview Card */}
-        <div className="lg:col-span-5 space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
-            Vista Previa en Tiempo Real
+        <div className="lg:col-span-5 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8c887f]">
+            Vista Previa
           </h3>
 
-          <div className="glass-card rounded-2xl overflow-hidden border border-white/10 p-4 space-y-3">
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-white/10">
+          <div className="natural-card rounded-2xl p-4 space-y-2.5">
+            <div className="relative aspect-video rounded-lg overflow-hidden bg-black border border-[#2d2f38]">
               <Image src={thumbnailPreview} alt="Preview" fill className="object-cover" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-cyan-500 text-black flex items-center justify-center shadow-lg">
-                  <Play className="w-5 h-5 fill-black ml-0.5" />
+                <div className="w-10 h-10 rounded-full bg-[#d97d64] text-[#151618] flex items-center justify-center">
+                  <Play className="w-4 h-4 fill-[#151618] ml-0.5" />
                 </div>
               </div>
-              <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded bg-black/80 text-cyan-300 uppercase">
+              <span className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded bg-[#1e1f24]/90 text-[#f3f1ec] uppercase">
                 {detectedPlatform}
               </span>
             </div>
 
             <div>
-              <span className="text-[11px] font-semibold text-amber-400 block">{channelOrAuthor || 'Autor / Canal'}</span>
-              <h4 className="text-sm font-bold text-white leading-snug">
+              <span className="text-[10px] font-semibold text-[#e6cca0] block">{channelOrAuthor || 'Autor / Canal'}</span>
+              <h4 className="text-xs sm:text-sm font-bold text-[#f3f1ec] leading-snug">
                 {videoTitle || 'Título del video aparecerá aquí'}
               </h4>
-              <span className="text-[10px] text-gray-400 block pt-1 uppercase font-bold">
+              <span className="text-[10px] text-[#8c887f] block pt-0.5 uppercase font-medium">
                 Categoría: {videoType}
               </span>
             </div>
@@ -223,20 +222,20 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
       </div>
 
       {/* Videos List */}
-      <section className="glass-card p-6 rounded-3xl border border-white/10 space-y-4">
-        <h2 className="text-lg font-bold text-white">Videos Cargados en la Plataforma</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="natural-card p-5 rounded-2xl space-y-3">
+        <h2 className="text-base font-bold text-[#f3f1ec]">Videos Cargados en la Plataforma</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {videosList.map((vid) => (
-            <div key={vid.id} className="p-3 rounded-2xl bg-white/5 border border-white/5 space-y-2 flex flex-col justify-between">
-              <div className="relative aspect-video rounded-xl overflow-hidden bg-black">
+            <div key={vid.id} className="p-3 rounded-xl bg-[#24252c] border border-[#31333d] space-y-2 flex flex-col justify-between">
+              <div className="relative aspect-video rounded-lg overflow-hidden bg-black">
                 <Image src={vid.thumbnailUrl} alt={vid.title} fill className="object-cover" />
-                <span className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/80 text-cyan-300 uppercase">
+                <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[#1e1f24]/90 text-[#e6cca0] uppercase">
                   {vid.platform}
                 </span>
               </div>
               <div>
-                <span className="text-[10px] text-amber-400 font-semibold block">{vid.artistName}</span>
-                <h4 className="text-xs font-bold text-white line-clamp-2">{vid.title}</h4>
+                <span className="text-[10px] text-[#e6cca0] font-medium block">{vid.artistName}</span>
+                <h4 className="text-xs font-bold text-[#f3f1ec] line-clamp-2">{vid.title}</h4>
               </div>
             </div>
           ))}

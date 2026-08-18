@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MusicDataService } from '../../../lib/api';
-import { Radio, User, Calendar, Play, ArrowLeft, CheckCircle2, MapPin, Sparkles, Share2 } from 'lucide-react';
+import { Radio, User, Calendar, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 export async function generateMetadata({
   params,
@@ -44,46 +44,46 @@ export default async function InterviewDetailPage({
   const artist = await MusicDataService.getArtistBySlug(interview.artistSlug);
 
   return (
-    <article className="max-w-4xl mx-auto space-y-10">
+    <article className="max-w-4xl mx-auto space-y-8">
       {/* Back button */}
       <Link
         href="/entrevistas"
-        className="inline-flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-amber-400 transition-colors"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8c887f] hover:text-[#e6cca0] transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ArrowLeft className="w-3.5 h-3.5" />
         <span>Volver a todas las entrevistas</span>
       </Link>
 
       {/* Header */}
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-bold px-3 py-1 rounded-full bg-rose-600/20 text-rose-400 border border-rose-600/30">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded bg-terracotta-soft">
             {interview.category}
           </span>
-          <span className="text-xs text-gray-400 flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="text-xs text-[#aba79e] flex items-center gap-1">
+            <Calendar className="w-3.5 h-3.5 text-[#93a887]" />
             {interview.date}
           </span>
-          <span className="text-xs text-gray-400 flex items-center gap-1">
-            <User className="w-3.5 h-3.5 text-amber-400" />
-            Conducción: <strong className="text-gray-200">{interview.host}</strong>
+          <span className="text-xs text-[#aba79e] flex items-center gap-1">
+            <User className="w-3.5 h-3.5 text-[#e6cca0]" />
+            Conducción: <strong className="text-[#f3f1ec]">{interview.host}</strong>
           </span>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+        <h1 className="text-3xl sm:text-4xl font-black text-[#f3f1ec] leading-tight">
           {interview.title}
         </h1>
 
         {interview.subtitle && (
-          <p className="text-lg text-gray-300 font-light leading-relaxed">
+          <p className="text-base text-[#c5c0b6] leading-relaxed">
             {interview.subtitle}
           </p>
         )}
       </div>
 
       {/* Video Player */}
-      <div className="glass-card p-3 sm:p-4 rounded-3xl border border-white/10 shadow-2xl space-y-3">
-        <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-white/10">
+      <div className="natural-card p-3 sm:p-4 rounded-2xl space-y-2.5">
+        <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-[#2d2f38]">
           <iframe
             src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=0"
             title={interview.title}
@@ -96,20 +96,20 @@ export default async function InterviewDetailPage({
 
       {/* Artist Link Bar */}
       {artist && (
-        <div className="p-4 rounded-2xl glass-panel border border-white/10 flex items-center justify-between gap-4">
+        <div className="p-4 rounded-xl natural-panel flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-amber-400/40">
+            <div className="relative w-11 h-11 rounded-lg overflow-hidden border border-[#31333d]">
               <Image src={artist.photoUrl} alt={artist.stageName} fill className="object-cover" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-white">{artist.stageName}</h4>
-              <p className="text-xs text-gray-400">{artist.city}, {artist.province}</p>
+              <h4 className="text-sm font-bold text-[#f3f1ec]">{artist.stageName}</h4>
+              <p className="text-xs text-[#8c887f]">{artist.city}, {artist.province}</p>
             </div>
           </div>
 
           <Link
             href={`/artistas/${artist.slug}`}
-            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs shadow-md transition-all"
+            className="px-3.5 py-1.5 rounded-lg bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors"
           >
             Ver Perfil Completo
           </Link>
@@ -117,14 +117,14 @@ export default async function InterviewDetailPage({
       )}
 
       {/* Key Highlights */}
-      <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5" /> Puntos Clave de la Charla
+      <div className="natural-card p-5 rounded-2xl space-y-2.5">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
+          Puntos Clave de la Charla
         </h3>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-300">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#aba79e]">
           {interview.keyHighlights.map((hl, idx) => (
-            <li key={idx} className="flex items-start gap-2 bg-white/[0.02] p-2.5 rounded-lg border border-white/5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+            <li key={idx} className="flex items-start gap-2 bg-[#24252c] p-2 rounded-lg border border-[#31333d]">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#93a887] flex-shrink-0 mt-0.5" />
               <span>{hl}</span>
             </li>
           ))}
@@ -132,8 +132,8 @@ export default async function InterviewDetailPage({
       </div>
 
       {/* Editorial Article Body */}
-      <div className="glass-card p-6 sm:p-10 rounded-3xl border border-white/10 space-y-6 text-gray-300 leading-relaxed text-sm sm:text-base whitespace-pre-line font-light">
-        <h2 className="text-2xl font-bold text-white">Crónica & Reseña Periodística</h2>
+      <div className="natural-card p-6 sm:p-8 rounded-2xl space-y-4 text-[#aba79e] leading-relaxed text-xs sm:text-sm whitespace-pre-line">
+        <h2 className="text-xl font-bold text-[#f3f1ec]">Crónica & Reseña Periodística</h2>
         {interview.editorialText}
       </div>
     </article>

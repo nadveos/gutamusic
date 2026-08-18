@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { EphemerisCategory, EphemerisItem } from '../../../lib/types';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
-import { BookOpen, Plus, Save, Sparkles, Check, Trash2, Calendar } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface EfemeridesAdminClientProps {
   initialItems: EphemerisItem[];
@@ -82,34 +82,34 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
   };
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <AdminHeader
         title="Gestión de Efemérides Musicales"
         subtitle="Carga y edición de hitos históricos: SADAIC, Billboard, Cosquín, nacimientos y homenajes"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Form */}
-        <form onSubmit={handleSubmit} className="lg:col-span-6 glass-card p-6 sm:p-8 rounded-3xl border border-white/10 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Nueva Efeméride Histórica
+        <form onSubmit={handleSubmit} className="lg:col-span-6 natural-card p-5 sm:p-6 rounded-2xl space-y-3.5">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
+            <Plus className="w-3.5 h-3.5" /> Nueva Efeméride Histórica
           </h2>
 
           <div>
-            <label className="text-xs text-gray-300 font-semibold block mb-1.5">Título del Hito Histórico *</label>
+            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Título del Hito Histórico *</label>
             <input
               type="text"
               required
               placeholder="Ej: Ingreso al ranking Billboard Latino..."
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-400"
+              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2.5">
             <div>
-              <label className="text-xs text-gray-300 font-semibold block mb-1.5">Día *</label>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Día *</label>
               <input
                 type="number"
                 min={1}
@@ -117,11 +117,11 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
                 required
                 value={formData.day}
                 onChange={(e) => setFormData({ ...formData, day: Number(e.target.value) })}
-                className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-400"
+                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-300 font-semibold block mb-1.5">Mes *</label>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Mes *</label>
               <input
                 type="number"
                 min={1}
@@ -129,28 +129,28 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
                 required
                 value={formData.month}
                 onChange={(e) => setFormData({ ...formData, month: Number(e.target.value) })}
-                className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-400"
+                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-300 font-semibold block mb-1.5">Año Histórico *</label>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Año Histórico *</label>
               <input
                 type="number"
                 required
                 placeholder="1985"
                 value={formData.year}
                 onChange={(e) => setFormData({ ...formData, year: Number(e.target.value) })}
-                className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-400"
+                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-gray-300 font-semibold block mb-1.5">Categoría / Tipo de Registro *</label>
+            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Categoría / Tipo de Registro *</label>
             <select
               value={formData.category}
               onChange={(e) => handleCategoryChange(e.target.value as EphemerisCategory)}
-              className="w-full px-3 py-2.5 rounded-xl bg-[#11141f] border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-400"
+              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
             >
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -161,78 +161,78 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           </div>
 
           <div>
-            <label className="text-xs text-gray-300 font-semibold block mb-1.5">Descripción Completa del Hecho *</label>
+            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Descripción Completa del Hecho *</label>
             <textarea
               rows={3}
               required
               placeholder="Detalle histórico de lo ocurrido en esta fecha..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-400"
+              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
-              <label className="text-xs text-gray-300 font-semibold block mb-1.5">Fuente de Verificación</label>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Fuente de Verificación</label>
               <input
                 type="text"
                 placeholder="Ej: Archivo SADAIC"
                 value={formData.source}
                 onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-400"
+                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-300 font-semibold block mb-1.5">Badge de Impacto</label>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Badge de Impacto</label>
               <input
                 type="text"
                 placeholder="Ej: Top 10 Continental"
                 value={formData.impactBadge}
                 onChange={(e) => setFormData({ ...formData, impactBadge: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-400"
+                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-black font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all"
+            className="w-full py-2.5 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors"
           >
             Guardar Efeméride
           </button>
         </form>
 
         {/* Existing List */}
-        <div className="lg:col-span-6 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-gray-400">
+        <div className="lg:col-span-6 space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#8c887f]">
             Efemérides Registradas ({itemsList.length})
           </h2>
 
-          <div className="space-y-3 max-h-[580px] overflow-y-auto pr-1">
+          <div className="space-y-2.5 max-h-[580px] overflow-y-auto pr-1">
             {itemsList.map((item) => (
               <div
                 key={item.id}
-                className="p-4 rounded-2xl glass-card border border-white/5 hover:border-emerald-400/30 transition-all space-y-2"
+                className="p-3.5 rounded-xl natural-card space-y-1.5"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded bg-sand-soft text-xs font-bold">
                       {item.day}/{item.month} ({item.year})
                     </span>
-                    <span className="text-[10px] text-gray-400 uppercase font-semibold">
+                    <span className="text-[10px] text-[#8c887f] uppercase font-semibold">
                       {item.categoryLabel}
                     </span>
                   </div>
                   {item.impactBadge && (
-                    <span className="text-[10px] text-amber-400 font-bold">
+                    <span className="text-[10px] text-[#d97d64] font-medium">
                       {item.impactBadge}
                     </span>
                   )}
                 </div>
 
-                <h4 className="text-sm font-bold text-white">{item.title}</h4>
-                <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{item.description}</p>
+                <h4 className="text-xs sm:text-sm font-bold text-[#f3f1ec]">{item.title}</h4>
+                <p className="text-xs text-[#aba79e] line-clamp-2 leading-relaxed">{item.description}</p>
               </div>
             ))}
           </div>
