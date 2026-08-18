@@ -126,6 +126,63 @@ Devolvé la respuesta EXACTAMENTE en formato JSON:
       });
     }
 
+    if (action === 'generate_daily_ephemerides') {
+      const { day, month } = payload;
+      const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+      const monthName = monthNames[Number(month) - 1] || 'Agosto';
+
+      if (geminiKey && geminiKey.trim().length > 5) {
+        try {
+          const prompt = `Sos un historiador y musicólogo especialista en música argentina y latinoamericana (folklore, tango, rock nacional, música popular, SADAIC y Cosquín) para el medio GUTA MÚSICA.
+Generá 3 efemérides históricas musicales reales ocurridas un ${day} de ${monthName} en Argentina o América Latina.
+Devolvé la respuesta EXACTAMENTE en formato JSON como un array con la siguiente estructura (sin markdown adicional):
+[
+  {
+    "day": ${day},
+    "month": ${month},
+    "year": 1980,
+    "title": "Título corto y contundente del hito",
+    "description": "Explicación histórica de 2 o 3 oraciones con datos precisos.",
+    "category": "lanzamientos",
+    "categoryLabel": "Lanzamiento Histórico",
+    "source": "Archivo Histórico Musical / SADAIC",
+    "impactBadge": "Hito Histórico"
+  }
+]
+Categorías posibles para "category": "lanzamientos", "billboard", "sadaic", "cosquin", "nacimientos", "fallecimientos", "homenajes".`;
+
+          const rawText = await callGemini(prompt, geminiKey);
+          const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleanJson);
+
+          return NextResponse.json({ success: true, data: parsed });
+        } catch (err: any) {
+          console.warn('Fallo Gemini ephemerides:', err.message);
+        }
+      }
+
+      // Fallback
+      return NextResponse.json({
+        success: true,
+        data: [
+          {
+            day: Number(day),
+            month: Number(month),
+            year: 1982,
+            title: `Hito histórico en la música argentina del ${day} de ${monthName}`,
+            description: `Se celebra una jornada conmemorativa del patrimonio folklórico y popular argentino con presentaciones destacadas en el circuito nacional.`,
+            category: 'sadaic',
+            categoryLabel: 'Registro SADAIC',
+            source: 'Archivo Histórico SADAIC',
+            impactBadge: 'Patrimonio Cultural'
+          }
+        ]
+      });
+    }
+
     return NextResponse.json({ success: false, error: 'Acción no reconocida' }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

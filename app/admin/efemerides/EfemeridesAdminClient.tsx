@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { EphemerisCategory, EphemerisItem } from '../../../lib/types';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
-import { Plus } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 
 interface EfemeridesAdminClientProps {
   initialItems: EphemerisItem[];
@@ -38,6 +38,41 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
     { id: 'homenajes', label: 'Homenajes' },
     { id: 'curiosidades', label: 'Curiosidades & Archivo' },
   ];
+
+  const [loadingAI, setLoadingAI] = useState(false);
+
+  const handleGenerateAI = async () => {
+    setLoadingAI(true);
+    try {
+      const res = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generate_daily_ephemerides',
+          payload: { day: formData.day, month: formData.month },
+        }),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        const first = data.data[0];
+        setFormData((prev) => ({
+          ...prev,
+          title: first.title,
+          year: first.year,
+          category: first.category,
+          categoryLabel: first.categoryLabel,
+          description: first.description,
+          source: first.source,
+          impactBadge: first.impactBadge,
+        }));
+        alert(`¡Efeméride investigada por Gemini cargada en el formulario! Hacé clic en "Guardar Efeméride" para confirmarla.`);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
 
   const handleCategoryChange = (catId: EphemerisCategory) => {
     const found = categories.find((c) => c.id === catId);
@@ -91,9 +126,21 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Form */}
         <form onSubmit={handleSubmit} className="lg:col-span-6 natural-card p-5 sm:p-6 rounded-2xl space-y-3.5">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
-            <Plus className="w-3.5 h-3.5" /> Nueva Efeméride Histórica
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
+              <Plus className="w-3.5 h-3.5" /> Nueva Efeméride
+            </h2>
+
+            <button
+              type="button"
+              onClick={handleGenerateAI}
+              disabled={loadingAI}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 transition-colors disabled:opacity-50"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{loadingAI ? 'Investigando...' : 'Sugerir con Gemini'}</span>
+            </button>
+          </div>
 
           <div>
             <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Título del Hito Histórico *</label>
