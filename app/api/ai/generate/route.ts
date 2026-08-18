@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 async function callGeminiWithLog(prompt: string, apiKey: string) {
-  // Use gemini-1.5-flash or gemini-2.5-flash
-  const model = 'gemini-1.5-flash';
+  // Use current Google Gemini flagship fast model
+  const model = 'gemini-3.6-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   console.log('\n======================================================');

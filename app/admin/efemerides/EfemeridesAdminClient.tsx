@@ -238,7 +238,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           {/* AI Debug / Token Usage Info */}
           {aiDebugInfo && (
             <div className="flex items-center justify-between text-[10px] px-3 py-1.5 rounded-lg bg-[#18191e] border border-[#2d2f38] text-[#93a887]">
-              <span>✅ Respuesta en vivo de Gemini 1.5 Flash</span>
+              <span>✅ Respuesta en vivo de Gemini 3.6 Flash</span>
               <span>Tokens: {aiDebugInfo.totalTokenCount || aiDebugInfo.promptTokenCount}</span>
             </div>
           )}
