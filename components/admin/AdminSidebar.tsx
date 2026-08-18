@@ -13,7 +13,8 @@ import {
   Users,
   LogOut,
   ExternalLink,
-  Music2
+  Music2,
+  Sparkles
 } from 'lucide-react';
 
 export const AdminSidebar: React.FC = () => {
@@ -21,6 +22,7 @@ export const AdminSidebar: React.FC = () => {
 
   const menuItems = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/ia', label: 'IA Editorial & SEO', icon: Sparkles },
     { href: '/admin/artistas', label: 'Gestión de Artistas', icon: Mic2 },
     { href: '/admin/videos', label: 'Cargar Videos', icon: Video },
     { href: '/admin/efemerides', label: 'Efemérides', icon: BookOpen },

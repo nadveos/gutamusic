@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { GenreType } from '../../../../lib/types';
 import { MusicDataService } from '../../../../lib/api';
-import { ArrowLeft, Save, Image as ImageIcon, Link as LinkIcon, Music, Check } from 'lucide-react';
+import { ArrowLeft, Save, Image as ImageIcon, Link as LinkIcon, Music, Check, Sparkles } from 'lucide-react';
 
 export const ArtistFormClient: React.FC = () => {
   const router = useRouter();
@@ -62,7 +62,7 @@ export const ArtistFormClient: React.FC = () => {
         <span>Volver a la lista de artistas</span>
       </Link>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-[#f3f1ec]">
             Alta / Edición de Artista
@@ -70,13 +70,55 @@ export const ArtistFormClient: React.FC = () => {
           <p className="text-xs text-[#8c887f]">Completá la información del perfil del artista o banda</p>
         </div>
 
-        <button
-          type="submit"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors"
-        >
-          {isSaved ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-          <span>{isSaved ? 'Guardando...' : 'Guardar Artista'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!formData.stageName) {
+                alert('Por favor ingresá primero el nombre del artista para que la IA pueda redactar la biografía.');
+                return;
+              }
+              try {
+                const res = await fetch('/api/ai/generate', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'artist_review',
+                    payload: {
+                      stageName: formData.stageName,
+                      genres: formData.genres,
+                      city: formData.city,
+                      province: formData.province,
+                    },
+                  }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                  setFormData((prev) => ({
+                    ...prev,
+                    shortBio: data.data.shortBio,
+                    bio: data.data.fullBio,
+                    quotes: data.data.quotes,
+                  }));
+                }
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 transition-colors"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Autocompletar Bio con IA</span>
+          </button>
+
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors"
+          >
+            {isSaved ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+            <span>{isSaved ? 'Guardando...' : 'Guardar Artista'}</span>
+          </button>
+        </div>
       </div>
 
       {/* 1. Datos Generales */}
