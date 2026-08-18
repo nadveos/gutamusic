@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { EphemerisCategory, EphemerisItem } from '../../../lib/types';
+import { pb } from '../../../lib/pocketbase';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
-import { Plus, Sparkles, Check, ArrowRight, BookOpen, Trash2 } from 'lucide-react';
+import { Plus, Sparkles, Check, ArrowRight, Save, Trash2, Layers, Loader2 } from 'lucide-react';
 
 interface EfemeridesAdminClientProps {
   initialItems: EphemerisItem[];
@@ -29,6 +30,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
   const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiDebugInfo, setAiDebugInfo] = useState<any>(null);
+  const [savingBulk, setSavingBulk] = useState(false);
 
   const categories = [
     { id: 'lanzamientos', label: 'Lanzamientos Históricos' },
@@ -78,7 +80,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           setAiDebugInfo(data.tokenUsage);
         }
 
-        // Autofill with first suggestion
+        // Autofill form with first suggestion
         const first = data.data[0];
         setFormData((prev) => ({
           ...prev,
@@ -112,6 +114,66 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
     }));
   };
 
+  // Save a single suggestion from the card directly
+  const handleSaveSingleSuggestion = async (item: any) => {
+    const newItem: EphemerisItem = {
+      id: `eph-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      day: item.day || formData.day,
+      month: item.month || formData.month,
+      year: item.year,
+      title: item.title,
+      description: item.description,
+      category: item.category || 'lanzamientos',
+      categoryLabel: item.categoryLabel || 'Lanzamientos Históricos',
+      source: item.source || 'Archivo Histórico',
+      impactBadge: item.impactBadge || 'Hito Histórico',
+      imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
+    };
+
+    try {
+      await pb.collection('ephemerides').create(newItem);
+    } catch (e) {}
+
+    setItemsList((prev) => [newItem, ...prev]);
+    // Remove from suggestions
+    setAiSuggestions((prev) => prev.filter((s) => s.title !== item.title));
+  };
+
+  // Save all suggestions in 1-click bulk
+  const handleSaveAllSuggestions = async () => {
+    if (aiSuggestions.length === 0) return;
+    setSavingBulk(true);
+
+    const newItemsToAdd: EphemerisItem[] = [];
+
+    for (const sug of aiSuggestions) {
+      const newItem: EphemerisItem = {
+        id: `eph-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        day: sug.day || formData.day,
+        month: sug.month || formData.month,
+        year: sug.year,
+        title: sug.title,
+        description: sug.description,
+        category: sug.category || 'lanzamientos',
+        categoryLabel: sug.categoryLabel || 'Lanzamientos Históricos',
+        source: sug.source || 'Archivo Histórico',
+        impactBadge: sug.impactBadge || 'Hito Histórico',
+        imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
+      };
+
+      try {
+        await pb.collection('ephemerides').create(newItem);
+      } catch (e) {}
+
+      newItemsToAdd.push(newItem);
+    }
+
+    setItemsList((prev) => [...newItemsToAdd, ...prev]);
+    setAiSuggestions([]);
+    setSavingBulk(false);
+    alert(`¡Se guardaron los ${newItemsToAdd.length} hitos en PocketBase exitosamente!`);
+  };
+
   const handleCategoryChange = (catId: EphemerisCategory) => {
     const found = categories.find((c) => c.id === catId);
     setFormData({
@@ -121,7 +183,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const newItem: EphemerisItem = {
@@ -138,8 +200,11 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
       imageUrl: formData.imageUrl,
     };
 
+    try {
+      await pb.collection('ephemerides').create(newItem);
+    } catch (e) {}
+
     setItemsList([newItem, ...itemsList]);
-    setAiSuggestions([]);
     setFormData({
       title: '',
       day: formData.day,
@@ -158,6 +223,9 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
   const handleDelete = (id: string) => {
     if (confirm('¿Eliminar esta efeméride?')) {
       setItemsList(itemsList.filter((i) => i.id !== id));
+      try {
+        pb.collection('ephemerides').delete(id);
+      } catch (e) {}
     }
   };
 
@@ -174,7 +242,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#2d2f38]">
             <div>
               <h2 className="text-xs font-bold uppercase tracking-wider text-[#e6cca0]">
-                Efeméride para el {formData.day} de {monthNames[formData.month - 1]}
+                Efemérides del {formData.day} de {monthNames[formData.month - 1]}
               </h2>
               <p className="text-[11px] text-[#8c887f]">Consulta a lo largo de toda la historia musical</p>
             </div>
@@ -185,7 +253,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
               disabled={loadingAI}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 transition-colors disabled:opacity-50"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              {loadingAI ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               <span>{loadingAI ? 'Investigando...' : 'Consultar a Gemini'}</span>
             </button>
           </div>
@@ -238,30 +306,71 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           {/* AI Debug / Token Usage Info */}
           {aiDebugInfo && (
             <div className="flex items-center justify-between text-[10px] px-3 py-1.5 rounded-lg bg-[#18191e] border border-[#2d2f38] text-[#93a887]">
-              <span>✅ Respuesta en vivo de Gemini 3.6 Flash</span>
+              <span>✅ Respuesta en vivo de Gemini 3.5 Flash Lite</span>
               <span>Tokens: {aiDebugInfo.totalTokenCount || aiDebugInfo.promptTokenCount}</span>
             </div>
           )}
 
-          {/* AI Suggestions Pill Options */}
-          {aiSuggestions.length > 1 && (
-            <div className="p-3 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-2">
-              <span className="text-[11px] font-bold text-[#93a887] block">
-                Otros hitos encontrados para el {formData.day} de {monthNames[formData.month - 1]}:
-              </span>
-              <div className="space-y-1.5">
-                {aiSuggestions.map((sug, idx) => (
+          {/* AI Suggestions Box with Bulk Save & Quick Add */}
+          {aiSuggestions.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-[#e6cca0] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Gemini encontró {aiSuggestions.length} hitos para el {formData.day} de {monthNames[formData.month - 1]}:
+                </span>
+
+                {aiSuggestions.length > 1 && (
                   <button
-                    key={idx}
                     type="button"
-                    onClick={() => handleSelectAiOption(sug)}
-                    className="w-full text-left text-xs p-2 rounded-lg bg-[#24252c] hover:bg-[#2c2e37] border border-[#31333d] flex items-center justify-between text-[#aba79e] hover:text-[#f3f1ec] transition-colors"
+                    onClick={handleSaveAllSuggestions}
+                    disabled={savingBulk}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] transition-colors"
                   >
-                    <span className="truncate">
-                      <strong>({sug.year})</strong> {sug.title}
-                    </span>
-                    <ArrowRight className="w-3 h-3 flex-shrink-0 text-[#e6cca0]" />
+                    <Layers className="w-3 h-3" />
+                    <span>{savingBulk ? 'Guardando...' : `Guardar los ${aiSuggestions.length} juntos`}</span>
                   </button>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {aiSuggestions.map((sug, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 rounded-lg bg-[#24252c] border border-[#31333d] space-y-2 text-xs"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-0.5 flex-1">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sand-soft mr-1.5">
+                          Año {sug.year}
+                        </span>
+                        <strong className="text-[#f3f1ec] block mt-1">{sug.title}</strong>
+                        <p className="text-[11px] text-[#aba79e] leading-relaxed line-clamp-2">
+                          {sug.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-1.5 border-t border-[#2d2f38] flex items-center justify-between text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAiOption(sug)}
+                        className="text-[#e6cca0] hover:underline flex items-center gap-1 font-medium"
+                      >
+                        <span>Cargar al formulario para editar</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSaveSingleSuggestion(sug)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#1e2420] text-[#93a887] border border-[#2f3f33] hover:bg-[#28332b] font-bold transition-colors"
+                      >
+                        <Save className="w-3 h-3" />
+                        <span>Guardar este</span>
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
