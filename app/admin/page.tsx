@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MusicDataService } from '../../lib/api';
 import { AdminHeader } from '../../components/admin/AdminHeader';
+import { SeedPocketBaseButton } from '../../components/admin/SeedPocketBaseButton';
 import {
   Mic2,
   Video,
@@ -85,41 +86,45 @@ export default async function AdminDashboardPage() {
         })}
       </div>
 
-      {/* Quick Action Shortcuts */}
-      <section className="natural-card p-5 rounded-2xl space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
-          Acciones Rápidas
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Link
-            href="/admin/artistas/nuevo"
-            className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
-          >
-            <div className="p-1.5 rounded bg-terracotta-soft">
-              <Plus className="w-3.5 h-3.5" />
-            </div>
-            <span>Dar de alta nuevo artista</span>
-          </Link>
+      {/* Quick Action Shortcuts & PocketBase Seed */}
+      <section className="space-y-4">
+        <SeedPocketBaseButton />
 
-          <Link
-            href="/admin/videos"
-            className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
-          >
-            <div className="p-1.5 rounded bg-sage-soft">
-              <Video className="w-3.5 h-3.5" />
-            </div>
-            <span>Cargar video por URL</span>
-          </Link>
+        <div className="natural-card p-5 rounded-2xl space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
+            Acciones Rápidas
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Link
+              href="/admin/artistas/nuevo"
+              className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
+            >
+              <div className="p-1.5 rounded bg-terracotta-soft">
+                <Plus className="w-3.5 h-3.5" />
+              </div>
+              <span>Dar de alta nuevo artista</span>
+            </Link>
 
-          <Link
-            href="/admin/efemerides"
-            className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
-          >
-            <div className="p-1.5 rounded bg-sand-soft">
-              <BookOpen className="w-3.5 h-3.5" />
-            </div>
-            <span>Añadir efeméride histórica</span>
-          </Link>
+            <Link
+              href="/admin/videos"
+              className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
+            >
+              <div className="p-1.5 rounded bg-sage-soft">
+                <Video className="w-3.5 h-3.5" />
+              </div>
+              <span>Cargar video por URL</span>
+            </Link>
+
+            <Link
+              href="/admin/efemerides"
+              className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
+            >
+              <div className="p-1.5 rounded bg-sand-soft">
+                <BookOpen className="w-3.5 h-3.5" />
+              </div>
+              <span>Añadir efeméride histórica</span>
+            </Link>
+          </div>
         </div>
       </section>
 
