@@ -1,0 +1,588 @@
+import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent } from './types';
+
+export const MOCK_ARTISTS: Artist[] = [
+  {
+    id: 'art-1',
+    slug: 'serenata-gaucha',
+    stageName: 'Serenata Gaucha',
+    realName: 'Ensamble Criollo Contemporáneo',
+    genres: ['Folklore', 'Fusión Latinoamericana'],
+    city: 'Cosquín',
+    province: 'Córdoba',
+    country: 'Argentina',
+    shortBio: 'Fusión de zambas ancestrales, bombo legüero procesado y guitarras con delay espacial. Ganadores del Pre-Cosquín 2025.',
+    bio: 'Serenata Gaucha nace en el corazón de las sierras de Córdoba como un proyecto de relectura del cancionero popular del norte argentino. Integrada por cuatro jóvenes músicos formados en la música clásica y la tradición criolla, la banda experimenta con texturas electrónicas sutiles, afinaciones abiertas de guitarra y polirritmias del bombo legüero, creando un puente sonoro entre el monte profundo y la vanguardia actual.',
+    photoUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop',
+    bannerUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=1600&auto=format&fit=crop',
+    featured: true,
+    featuredOfWeek: true,
+    quotes: '"No venimos a romper la tradición, venimos a regarla con agua nueva."',
+    createdDate: '2026-08-10',
+    socials: {
+      spotify: 'https://spotify.com',
+      youtube: 'https://youtube.com',
+      instagram: 'https://instagram.com',
+      tiktok: 'https://tiktok.com',
+    },
+    videos: [
+      {
+        id: 'vid-1',
+        title: 'Serenata Gaucha - Zamba del Laurel (Sesión en Vivo en las Altas Cumbres)',
+        platform: 'youtube',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop',
+        channelOrAuthor: 'GUTA Sesiones',
+        type: 'session',
+        duration: '04:32',
+        publishedAt: '2026-08-15',
+        views: '14.2K',
+        featured: true,
+        artistName: 'Serenata Gaucha',
+        artistId: 'art-1',
+      },
+      {
+        id: 'vid-2',
+        title: 'Ensayo acústico antes de subir al escenario de Cosquín #Folklore2026',
+        platform: 'tiktok',
+        url: 'https://www.tiktok.com/@guta_musica/video/123456789',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=800&auto=format&fit=crop',
+        channelOrAuthor: '@serenatagaucha_oficial',
+        type: 'acoustic',
+        duration: '01:15',
+        publishedAt: '2026-08-12',
+        views: '45.8K',
+        artistName: 'Serenata Gaucha',
+        artistId: 'art-1',
+      }
+    ],
+    discography: [
+      {
+        id: 'disc-1',
+        title: 'El Viento de la Quebrada',
+        type: 'album',
+        year: 2025,
+        coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop',
+        spotifyUrl: 'https://spotify.com',
+        tracksCount: 9,
+        releaseDate: '2025-11-20',
+      },
+      {
+        id: 'disc-2',
+        title: 'Coplas de Sal',
+        type: 'single',
+        year: 2026,
+        coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=600&auto=format&fit=crop',
+        spotifyUrl: 'https://spotify.com',
+        tracksCount: 1,
+        releaseDate: '2026-06-14',
+      }
+    ],
+    agenda: [
+      {
+        id: 'ev-1',
+        title: 'Presentación Oficial de "El Viento de la Quebrada"',
+        venue: 'Centro Cultural San Martín',
+        city: 'Buenos Aires',
+        province: 'CABA',
+        country: 'Argentina',
+        date: '2026-09-12 21:00',
+        ticketUrl: 'https://passline.com',
+        ticketPrice: '$12.000 ARS',
+        isFree: false,
+        type: 'recital',
+      },
+      {
+        id: 'ev-2',
+        title: 'Peña de la Independencia',
+        venue: 'Plaza Próspero Molina',
+        city: 'Cosquín',
+        province: 'Córdoba',
+        country: 'Argentina',
+        date: '2026-10-04 20:00',
+        isFree: true,
+        type: 'pena',
+      }
+    ],
+    press: [
+      {
+        id: 'pr-1',
+        title: 'La renovación del folklore tiene nombre: Serenata Gaucha deslumbra en Cuyo',
+        medium: 'Revista El Musiquero',
+        date: '2026-07-28',
+        excerpt: 'Con una sobriedad deslumbrante y arreglos de cuerdas que hielan la piel, el cuarteto cordobés se posiciona como una de las propuestas más sólidas del año.'
+      }
+    ],
+    gallery: [
+      'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=800&auto=format&fit=crop'
+    ]
+  },
+  {
+    id: 'art-2',
+    slug: 'valeria-soler-tango',
+    stageName: 'Valeria Soler & La Orquesta Rota',
+    genres: ['Tango', 'Música Popular'],
+    city: 'San Telmo',
+    province: 'Buenos Aires',
+    country: 'Argentina',
+    shortBio: 'Tango visceral, poesía de conventillo actual y un fuelle furioso que dialoga con guitarras eléctricas saturadas.',
+    bio: 'Valeria Soler es cantante, letrista y compositora porteña. Con su ensamble La Orquesta Rota rescata la herencia del tango arrabalero de los años 40 para inyectarle la urgencia del asfalto del siglo XXI: problemáticas de género, la noche de la gran ciudad y el desarraigo moderno con una potencia escénica demoledora.',
+    photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1200&auto=format&fit=crop',
+    bannerUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=1600&auto=format&fit=crop',
+    featured: true,
+    quotes: '"El tango nunca fue un museo, siempre fue un grito en la esquina."',
+    createdDate: '2026-08-05',
+    socials: {
+      spotify: 'https://spotify.com',
+      youtube: 'https://youtube.com',
+      instagram: 'https://instagram.com',
+    },
+    videos: [
+      {
+        id: 'vid-3',
+        title: 'Valeria Soler - Milonga del Desvelo (En Vivo en el Torquato Tasso)',
+        platform: 'youtube',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=800&auto=format&fit=crop',
+        channelOrAuthor: 'GUTA Entrevistas & Live',
+        type: 'live',
+        duration: '03:50',
+        publishedAt: '2026-08-01',
+        views: '8.9K',
+        featured: false,
+        artistName: 'Valeria Soler',
+        artistId: 'art-2',
+      }
+    ],
+    discography: [
+      {
+        id: 'disc-3',
+        title: 'Asfalto y Sangre',
+        type: 'ep',
+        year: 2026,
+        coverUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=600&auto=format&fit=crop',
+        tracksCount: 5,
+      }
+    ],
+    agenda: [
+      {
+        id: 'ev-3',
+        title: 'Noche de Tangos Rebeldes',
+        venue: 'Club Atlético Fernández Fierro (CAFF)',
+        city: 'Buenos Aires',
+        province: 'CABA',
+        country: 'Argentina',
+        date: '2026-09-26 22:00',
+        ticketPrice: '$10.000 ARS',
+        isFree: false,
+        type: 'recital',
+      }
+    ],
+    press: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=800&auto=format&fit=crop'
+    ]
+  },
+  {
+    id: 'art-3',
+    slug: 'kallpa-urbano',
+    stageName: 'Kallpa 380',
+    realName: 'Facundo Huanca',
+    genres: ['Hip Hop', 'Música Urbana', 'Fusión Latinoamericana'],
+    city: 'San Salvador de Jujuy',
+    province: 'Jujuy',
+    country: 'Argentina',
+    shortBio: 'Trap de altura, rimas en quechua y charango lo-fi desde el norte andino argentino.',
+    bio: 'Kallpa 380 es el alter ego de Facundo Huanca, productor y MC nacido en Purmamarca y radicado en San Salvador. Su sonido combina 808s demoledores con samples analógicos de sikus, quenas y quijadas, retratando la resistencia juvenil en la puna argentina con flow contundente.',
+    photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1200&auto=format&fit=crop',
+    bannerUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1600&auto=format&fit=crop',
+    featured: true,
+    createdDate: '2026-08-14',
+    socials: {
+      spotify: 'https://spotify.com',
+      youtube: 'https://youtube.com',
+      instagram: 'https://instagram.com',
+      tiktok: 'https://tiktok.com',
+    },
+    videos: [
+      {
+        id: 'vid-4',
+        title: 'Kallpa 380 - Cerro de Colores (Video Oficial)',
+        platform: 'youtube',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        embedUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=800&auto=format&fit=crop',
+        channelOrAuthor: 'Kallpa 380 Vevo',
+        type: 'clip',
+        duration: '02:48',
+        publishedAt: '2026-08-11',
+        views: '32.1K',
+        featured: true,
+        artistName: 'Kallpa 380',
+        artistId: 'art-3',
+      }
+    ],
+    discography: [
+      {
+        id: 'disc-4',
+        title: 'Pachamama Bassline',
+        type: 'album',
+        year: 2026,
+        coverUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=600&auto=format&fit=crop',
+        tracksCount: 11,
+      }
+    ],
+    agenda: [],
+    press: [],
+    gallery: []
+  },
+  {
+    id: 'art-4',
+    slug: 'los-antiguos-del-rio',
+    stageName: 'Los Antiguos del Río',
+    genres: ['Rock', 'Indie'],
+    city: 'Rosario',
+    province: 'Santa Fe',
+    country: 'Argentina',
+    shortBio: 'Rock ribereño con guitarras psicodélicas, poesía fluvial y espíritu de garage rosarino.',
+    bio: 'Banda formada a orillas del río Paraná en 2023. Su estética navega entre el rock progresivo rioplatense, el jangle pop de guitarras de doce cuerdas y la cadencia melancólica del litoral.',
+    photoUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=1200&auto=format&fit=crop',
+    bannerUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1600&auto=format&fit=crop',
+    featured: false,
+    createdDate: '2026-07-30',
+    socials: {
+      spotify: 'https://spotify.com',
+      instagram: 'https://instagram.com',
+    },
+    videos: [],
+    discography: [
+      {
+        id: 'disc-5',
+        title: 'Marea Baja',
+        type: 'ep',
+        year: 2025,
+        coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=600&auto=format&fit=crop',
+        tracksCount: 4,
+      }
+    ],
+    agenda: [
+      {
+        id: 'ev-4',
+        title: 'Festival del Río & Poesía',
+        venue: 'Anfiteatro Municipal Humberto de Nito',
+        city: 'Rosario',
+        province: 'Santa Fe',
+        country: 'Argentina',
+        date: '2026-10-18 19:30',
+        isFree: true,
+        type: 'festival',
+      }
+    ],
+    press: [],
+    gallery: []
+  },
+  {
+    id: 'art-5',
+    slug: 'clarita-gomez-canto-popular',
+    stageName: 'Clarita Gómez',
+    genres: ['Folklore', 'Música Popular'],
+    city: 'Salta Capital',
+    province: 'Salta',
+    country: 'Argentina',
+    shortBio: 'Voz prodigiosa de la baguala calchaquí con arreglos corales de cámara.',
+    bio: 'Heredera del canto ancestral de los Valles Calchaquíes, Clarita Gómez combina el golpe de caja con una técnica vocal pulida en conservatorios, logrando un impacto emotivo que conmueve a jóvenes y veteranos por igual.',
+    photoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1200&auto=format&fit=crop',
+    bannerUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1600&auto=format&fit=crop',
+    featured: true,
+    createdDate: '2026-08-16',
+    socials: {
+      spotify: 'https://spotify.com',
+      youtube: 'https://youtube.com',
+      instagram: 'https://instagram.com',
+    },
+    videos: [
+      {
+        id: 'vid-5',
+        title: 'Clarita Gómez canta en vivo "Vidala del Silencio" frente a la Quebrada',
+        platform: 'facebook',
+        url: 'https://www.facebook.com/watch/?v=12345678',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=800&auto=format&fit=crop',
+        channelOrAuthor: 'Cultura Salta En Vivo',
+        type: 'acoustic',
+        duration: '05:10',
+        publishedAt: '2026-08-14',
+        views: '19.4K',
+        artistName: 'Clarita Gómez',
+        artistId: 'art-5',
+      }
+    ],
+    discography: [],
+    agenda: [],
+    press: [],
+    gallery: []
+  }
+];
+
+export const MOCK_INTERVIEWS: Interview[] = [
+  {
+    id: 'int-1',
+    slug: 'serenata-gaucha-en-vivo-guta-estudio',
+    title: 'Serenata Gaucha: "El folklore no es nostalgia, es territorio y presente"',
+    subtitle: 'El cuarteto cordobés nos visitó en los estudios GUTA y presentó su nuevo álbum',
+    artistId: 'art-1',
+    artistName: 'Serenata Gaucha',
+    artistSlug: 'serenata-gaucha',
+    artistPhoto: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop',
+    host: 'Guta Flores',
+    date: '18 de Agosto de 2026',
+    summary: 'Serenata Gaucha nos visitó el 18 de agosto de 2026 y presentó su nuevo material discográfico. Una charla a fondo sobre el proceso de grabación en las sierras, la defensa de la música independiente y cómo llevar el bombo legüero al circuito internacional.',
+    editorialText: `
+En una tarde cargada de mística y guitarras afinadas en Do menor, recibimos en el living de GUTA a los integrantes de Serenata Gaucha. Recién llegados de una gira consagratoria por el norte cordobés, la banda desgranó cómo compusieron "El Viento de la Quebrada" entre fogones y sintetizadores portátiles.
+
+"Sentíamos que las radios tradicionales nos pedían encajar en una fórmula que no era la nuestra. Por eso decidimos producirlo nosotros mismos, microfoneando el suelo de tierra y mezclando las voces con la crudeza del vivo", relata su guitarrista y fundador.
+
+Durante la sesión exclusiva, regalaron una versión electrizante de la "Zamba del Laurel" que dejó a todo el equipo en silencio. El camino del artista emergente en el interior del país es arduo, pero proyectos con esta convicción demuestran que la identidad federal está más viva que nunca.
+    `,
+    keyHighlights: [
+      'Cómo grabaron su disco de forma autogestionada en las Altas Cumbres',
+      'La utilización del delay analógico en la guitarra criolla',
+      'El rol de las nuevas plataformas digitales en la difusión federal',
+      'Anuncio de su primera fecha en CABA en el CC San Martín'
+    ],
+    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    videoPlatform: 'youtube',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop',
+    featured: true,
+    category: 'Acústico GUTA'
+  },
+  {
+    id: 'int-2',
+    slug: 'valeria-soler-tango-de-las-calles',
+    title: 'Valeria Soler: La voz que incomoda y renueva las milongas porteñas',
+    subtitle: 'Mano a mano sobre la poesía urbana, el bandoneón y la autogestión en San Telmo',
+    artistId: 'art-2',
+    artistName: 'Valeria Soler',
+    artistSlug: 'valeria-soler-tango',
+    artistPhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop',
+    host: 'Guta Flores',
+    date: '12 de Agosto de 2026',
+    summary: 'Valeria Soler reflexiona sobre el estado del tango contemporáneo, las dificultades de las orquestas independientes y la urgencia de narrar los barrios modernos.',
+    editorialText: `
+Valeria llegó con su mate y las partituras marcadas con lápiz rojo. No cree en las etiquetas ni en el purismo estéril: su música late con la furia del colectivo de medianoche y el llanto del fuelle desatado.
+
+"El tango nació en las esquinas de los que no tenían voz. Si hoy el tango le teme a la juventud o a los nuevos ritmos, entonces traiciona su propio origen", disparó sin titubeos.
+    `,
+    keyHighlights: [
+      'El origen obrero y marginal del tango',
+      'Su colaboración con productores de la música urbana',
+      'La preparación para el concierto en el CAFF'
+    ],
+    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    videoPlatform: 'youtube',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1200&auto=format&fit=crop',
+    featured: false,
+    category: 'Estudio'
+  }
+];
+
+export const MOCK_EPHEMERIDES: EphemerisItem[] = [
+  {
+    id: 'eph-1',
+    day: 18,
+    month: 8,
+    year: 1978,
+    title: 'Debut y lanzamiento del primer álbum de Serú Girán',
+    description: 'Charly García, David Lebón, Pedro Aznar y Oscar Moro presentan al mundo su primer material discográfico grabado en Búzios y San Pablo, marcando un hito fundacional del rock nacional argentino.',
+    category: 'lanzamientos',
+    categoryLabel: 'Lanzamiento Histórico',
+    source: 'Archivo Histórico del Rock Argentino / SADAIC',
+    artistRelated: 'Serú Girán',
+    impactBadge: 'Disco Clásico',
+    imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop'
+  },
+  {
+    id: 'eph-2',
+    day: 18,
+    month: 8,
+    year: 1985,
+    title: 'Soda Stereo ingresa por primera vez a los rankings internacionales de Billboard Latino',
+    description: 'Con el éxito de "Cuando pase el temblor" y "Nada Personal", la banda de Gustavo Cerati comienza la conquista de América Latina posicionando al rock argentino en las listas continentales.',
+    category: 'billboard',
+    categoryLabel: 'Billboard & Récords',
+    source: 'Billboard Latin Archive',
+    artistRelated: 'Soda Stereo',
+    impactBadge: 'Top 10 Continental',
+    imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop'
+  },
+  {
+    id: 'eph-3',
+    day: 18,
+    month: 8,
+    year: 1992,
+    title: 'Registro en SADAIC del Himno "La Memoria" de León Gieco',
+    description: 'Queda asentado en el registro oficial de la Sociedad Argentina de Autores y Compositores una de las obras cumbres de la música testimonial y popular latinoamericana.',
+    category: 'sadaic',
+    categoryLabel: 'Registro SADAIC',
+    source: 'Boletín Oficial SADAIC',
+    artistRelated: 'León Gieco',
+    impactBadge: 'Patrimonio Cultural',
+    imageUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=800&auto=format&fit=crop'
+  },
+  {
+    id: 'eph-4',
+    day: 18,
+    month: 8,
+    year: 2005,
+    title: 'Homenaje Consagratorio a Atahualpa Yupanqui',
+    description: 'En una emotiva velada en la Plaza Próspero Molina de Cosquín, más de 20 artistas de folklore y música popular interpretaron la obra cumbre de Don Ata a beneficio de escuelas rurales.',
+    category: 'cosquin',
+    categoryLabel: 'Cosquín & Festivales',
+    source: 'Comisión Municipal de Folklore de Cosquín',
+    artistRelated: 'Atahualpa Yupanqui',
+    impactBadge: 'Homenaje Histórico',
+    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop'
+  },
+  {
+    id: 'eph-5',
+    day: 18,
+    month: 8,
+    year: 1945,
+    title: 'Nacimiento de Daniel Toro',
+    description: 'Nace en Salta el legendario cantor y compositor Daniel Toro, autor de himnos inolvidables como "Zamba para olvidarte" y "Para ir a buscarte".',
+    category: 'nacimientos',
+    categoryLabel: 'Nacimiento',
+    source: 'Cancionero Popular Argentino',
+    artistRelated: 'Daniel Toro',
+    imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop'
+  },
+  {
+    id: 'eph-6',
+    day: 19,
+    month: 8,
+    year: 1945,
+    title: 'Nacimiento de Sandro (Roberto Sánchez)',
+    description: 'Nace en Valentín Alsina el "Gitano", pionero del rock en castellano con Los de Fuego y máximo ídolo de la balada romántica latinoamericana.',
+    category: 'nacimientos',
+    categoryLabel: 'Nacimiento',
+    source: 'Archivo Fonográfico Nacional',
+    artistRelated: 'Sandro',
+    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=800&auto=format&fit=crop'
+  }
+];
+
+export const MOCK_VIDEOS: VideoItem[] = [
+  {
+    id: 'vid-1',
+    title: 'Serenata Gaucha - Zamba del Laurel (Sesión en Vivo en las Altas Cumbres)',
+    platform: 'youtube',
+    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    embedUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop',
+    channelOrAuthor: 'GUTA Sesiones',
+    type: 'session',
+    duration: '04:32',
+    publishedAt: '2026-08-15',
+    views: '14.2K',
+    featured: true,
+    artistName: 'Serenata Gaucha',
+    artistId: 'art-1',
+  },
+  {
+    id: 'vid-4',
+    title: 'Kallpa 380 - Cerro de Colores (Video Oficial)',
+    platform: 'youtube',
+    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    embedUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=800&auto=format&fit=crop',
+    channelOrAuthor: 'Kallpa 380 Vevo',
+    type: 'clip',
+    duration: '02:48',
+    publishedAt: '2026-08-11',
+    views: '32.1K',
+    featured: true,
+    artistName: 'Kallpa 380',
+    artistId: 'art-3',
+  },
+  {
+    id: 'vid-2',
+    title: 'Ensayo acústico antes de subir al escenario de Cosquín #Folklore2026',
+    platform: 'tiktok',
+    url: 'https://www.tiktok.com/@guta_musica/video/123456789',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=800&auto=format&fit=crop',
+    channelOrAuthor: '@serenatagaucha_oficial',
+    type: 'acoustic',
+    duration: '01:15',
+    publishedAt: '2026-08-12',
+    views: '45.8K',
+    artistName: 'Serenata Gaucha',
+    artistId: 'art-1',
+  },
+  {
+    id: 'vid-5',
+    title: 'Clarita Gómez canta en vivo "Vidala del Silencio" frente a la Quebrada',
+    platform: 'facebook',
+    url: 'https://www.facebook.com/watch/?v=12345678',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=800&auto=format&fit=crop',
+    channelOrAuthor: 'Cultura Salta En Vivo',
+    type: 'acoustic',
+    duration: '05:10',
+    publishedAt: '2026-08-14',
+    views: '19.4K',
+    artistName: 'Clarita Gómez',
+    artistId: 'art-5',
+  }
+];
+
+export const MOCK_AGENDA: AgendaEvent[] = [
+  {
+    id: 'ev-1',
+    title: 'Presentación Oficial de "El Viento de la Quebrada"',
+    venue: 'Centro Cultural San Martín - Sala AB',
+    city: 'Buenos Aires',
+    province: 'CABA',
+    country: 'Argentina',
+    date: '2026-09-12 21:00',
+    ticketUrl: 'https://passline.com',
+    ticketPrice: '$12.000 ARS',
+    isFree: false,
+    type: 'recital',
+  },
+  {
+    id: 'ev-3',
+    title: 'Noche de Tangos Rebeldes & Milonga del Desvelo',
+    venue: 'Club Atlético Fernández Fierro (CAFF)',
+    city: 'Buenos Aires',
+    province: 'CABA',
+    country: 'Argentina',
+    date: '2026-09-26 22:00',
+    ticketPrice: '$10.000 ARS',
+    isFree: false,
+    type: 'recital',
+  },
+  {
+    id: 'ev-2',
+    title: 'Gran Peña de la Primavera e Independencia',
+    venue: 'Plaza Próspero Molina',
+    city: 'Cosquín',
+    province: 'Córdoba',
+    country: 'Argentina',
+    date: '2026-10-04 20:00',
+    isFree: true,
+    type: 'pena',
+  },
+  {
+    id: 'ev-4',
+    title: 'Festival del Río & Poesía Joven Litoral',
+    venue: 'Anfiteatro Municipal Humberto de Nito',
+    city: 'Rosario',
+    province: 'Santa Fe',
+    country: 'Argentina',
+    date: '2026-10-18 19:30',
+    isFree: true,
+    type: 'festival',
+  }
+];
