@@ -1,13 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+function extractJson(text: string) {
+  if (!text) return null;
+  // Strip markdown code fences if present
+  let clean = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+  try {
+    return JSON.parse(clean);
+  } catch (e) {
+    // Attempt to extract from first [ to last ]
+    const arrayMatch = clean.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+      try {
+        return JSON.parse(arrayMatch[0]);
+      } catch (err) {}
+    }
+
+    // Attempt to extract from first { to last }
+    const objMatch = clean.match(/\{[\s\S]*\}/);
+    if (objMatch) {
+      try {
+        return JSON.parse(objMatch[0]);
+      } catch (err) {}
+    }
+  }
+
+  return null;
+}
+
 async function callGeminiWithLog(prompt: string, apiKey: string) {
-  // Use current Google Gemini flagship fast model
-  const model = 'gemini-3.6-flash';
+  // Flagship ultra-fast model with JSON mode
+  const model = 'gemini-3.5-flash-lite';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   console.log('\n======================================================');
   console.log('🤖 [GEMINI REQUEST]');
-  console.log(`📡 URL Model: ${model}`);
+  console.log(`📡 Model: ${model}`);
   console.log(`🔑 Key Prefix: ${apiKey.substring(0, 8)}... (Length: ${apiKey.length})`);
   console.log('📝 PROMPT ENVIADO:');
   console.log(prompt);
@@ -20,8 +48,9 @@ async function callGeminiWithLog(prompt: string, apiKey: string) {
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 1024,
+        temperature: 0.3,
+        maxOutputTokens: 2048,
+        responseMimeType: 'application/json',
       },
     }),
   });
@@ -43,18 +72,15 @@ async function callGeminiWithLog(prompt: string, apiKey: string) {
   try {
     resultJson = JSON.parse(rawTextResponse);
   } catch (e) {
-    console.error('Error parseando JSON de Gemini:', e);
+    console.error('Error parseando respuesta completa de Gemini:', e);
   }
 
-  // Log Token Count
   const usage = resultJson?.usageMetadata;
   if (usage) {
     console.log('📊 CONTEO DE TOKENS (Gemini usageMetadata):');
     console.log(`   - Prompt Tokens:     ${usage.promptTokenCount}`);
     console.log(`   - Candidates Tokens: ${usage.candidatesTokenCount}`);
     console.log(`   - Total Tokens:      ${usage.totalTokenCount}`);
-  } else {
-    console.log('📊 Token usage metadata no provisto por el endpoint.');
   }
 
   const generatedContent = resultJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -62,8 +88,13 @@ async function callGeminiWithLog(prompt: string, apiKey: string) {
   console.log(generatedContent);
   console.log('======================================================\n');
 
+  const parsedData = extractJson(generatedContent);
+  if (!parsedData) {
+    throw new Error(`No se pudo parsear el JSON devuelto por Gemini. Texto: ${generatedContent.substring(0, 200)}`);
+  }
+
   return {
-    text: generatedContent,
+    data: parsedData,
     usage: usage || { totalTokenCount: 'N/A' },
   };
 }
@@ -78,7 +109,10 @@ export async function POST(req: NextRequest) {
     console.log(`\n🚀 [API /api/ai/generate] Acción: "${action}" | GEMINI_API_KEY presente: ${Boolean(geminiKey && geminiKey.length > 5)}`);
 
     if (!geminiKey || geminiKey.length < 5) {
-      console.warn('⚠️ ATENCIÓN: GEMINI_API_KEY no está configurada o está vacía en .env.local.');
+      return NextResponse.json({
+        success: false,
+        error: 'No se encontró la GEMINI_API_KEY en .env.local. Agregá tu clave y reiniciá el servidor.',
+      }, { status: 400 });
     }
 
     if (action === 'generate_daily_ephemerides') {
@@ -89,20 +123,18 @@ export async function POST(req: NextRequest) {
       ];
       const monthName = monthNames[Number(month) - 1] || 'Agosto';
 
-      if (geminiKey && geminiKey.length > 5) {
-        try {
-          const prompt = `Sos un historiador y musicólogo experto en música argentina y latinoamericana (folklore, tango, rock nacional, música popular, SADAIC, Cosquín, Jesús María y premios).
-Investigá y generá 3 efemérides históricas y culturales reales ocurridas un ${day} de ${monthName} (a lo largo de toda la historia: 1950 a 2025).
-${category && category !== 'todas' ? `Priorizá si es posible la categoría o temática: "${category}".` : ''}
+      const prompt = `Sos un historiador y musicólogo experto en música argentina y latinoamericana (folklore, tango, rock nacional, música popular, SADAIC, Cosquín, Jesús María, Billboard).
+Investigá y devolvé exactamente 3 efemérides históricas y culturales reales ocurridas un ${day} de ${monthName} (a lo largo de toda la historia: 1940 a 2025).
+${category && category !== 'todas' ? `Priorizá la categoría o temática: "${category}".` : ''}
 
-Devolvé la respuesta ÚNICAMENTE en formato JSON plano (un array de objetos), sin texto introductorio ni formato markdown:
+El formato de respuesta debe ser un array JSON de objetos con la siguiente estructura:
 [
   {
     "day": ${day},
     "month": ${month},
     "year": 1985,
-    "title": "Título preciso y contundente del hito",
-    "description": "Descripción histórica periodística de 2 a 3 oraciones con nombres propios y contexto.",
+    "title": "Título preciso del hito musical",
+    "description": "Descripción histórica precisa de 2 a 3 oraciones con nombres propios.",
     "category": "lanzamientos",
     "categoryLabel": "Lanzamientos Históricos",
     "source": "Nombre del archivo / SADAIC / Festival",
@@ -110,30 +142,20 @@ Devolvé la respuesta ÚNICAMENTE en formato JSON plano (un array de objetos), s
   }
 ]`;
 
-          const { text, usage } = await callGeminiWithLog(prompt, geminiKey);
-          const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(cleanJson);
-
-          return NextResponse.json({
-            success: true,
-            source: 'gemini-live',
-            tokenUsage: usage,
-            data: parsed,
-          });
-        } catch (geminiError: any) {
-          console.error('❌ Falló la consulta a Gemini en efemérides:', geminiError.message);
-          return NextResponse.json({
-            success: false,
-            source: 'error',
-            error: `Error de Gemini API: ${geminiError.message}`,
-          }, { status: 500 });
-        }
-      } else {
+      try {
+        const { data, usage } = await callGeminiWithLog(prompt, geminiKey);
+        return NextResponse.json({
+          success: true,
+          source: 'gemini-live',
+          tokenUsage: usage,
+          data: Array.isArray(data) ? data : [data],
+        });
+      } catch (err: any) {
+        console.error('❌ Error en efemérides Gemini:', err.message);
         return NextResponse.json({
           success: false,
-          source: 'no-api-key',
-          error: 'No se encontró la GEMINI_API_KEY en .env.local. Por favor agregá tu clave en .env.local y reiniciá el servidor.',
-        }, { status: 400 });
+          error: err.message,
+        }, { status: 500 });
       }
     }
 
@@ -142,11 +164,9 @@ Devolvé la respuesta ÚNICAMENTE en formato JSON plano (un array de objetos), s
       const genresStr = Array.isArray(genres) ? genres.join(', ') : genres || 'Música Independiente';
       const locStr = city ? `${city}, ${province || 'Argentina'}` : 'Argentina';
 
-      if (geminiKey && geminiKey.length > 5) {
-        try {
-          const prompt = `Sos un periodista musical argentino para el medio GUTA MÚSICA (conducción: Guta Flores).
+      const prompt = `Sos un periodista musical argentino para el medio GUTA MÚSICA (conducción: Guta Flores).
 Redactá una biografía y reseña periodística para el artista emergente "${stageName}" (${locStr}), género "${genresStr}".
-Devolvé la respuesta ÚNICAMENTE como JSON con la estructura:
+Devolvé la respuesta en formato JSON con la siguiente estructura:
 {
   "shortBio": "Párrafo conciso de 2 oraciones para tarjetas de portada.",
   "fullBio": "Tres párrafos sobre su identidad sonora, arreglos, raíces territoriales y propuesta en vivo.",
@@ -156,27 +176,51 @@ Devolvé la respuesta ÚNICAMENTE como JSON con la estructura:
   "keywords": "Palabras clave separadas por comas"
 }`;
 
-          const { text, usage } = await callGeminiWithLog(prompt, geminiKey);
-          const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(cleanJson);
-
-          return NextResponse.json({
-            success: true,
-            source: 'gemini-live',
-            tokenUsage: usage,
-            data: parsed,
-          });
-        } catch (err: any) {
-          console.error('❌ Error en artist_review con Gemini:', err.message);
-          return NextResponse.json({
-            success: false,
-            error: err.message,
-          }, { status: 500 });
-        }
+      try {
+        const { data, usage } = await callGeminiWithLog(prompt, geminiKey);
+        return NextResponse.json({
+          success: true,
+          source: 'gemini-live',
+          tokenUsage: usage,
+          data,
+        });
+      } catch (err: any) {
+        console.error('❌ Error en artist_review Gemini:', err.message);
+        return NextResponse.json({
+          success: false,
+          error: err.message,
+        }, { status: 500 });
       }
     }
 
-    return NextResponse.json({ success: false, error: 'Acción no configurada o falta API Key' }, { status: 400 });
+    if (action === 'interview_chronicle') {
+      const { artistName, host } = payload;
+
+      const prompt = `Sos un redactor periodístico de música para GUTA MÚSICA. Redactá la crónica de una entrevista realizada por el conductor ${host || 'Guta Flores'} al artista "${artistName}".
+Devolvé la respuesta en formato JSON:
+{
+  "summary": "Resumen conciso del encuentro",
+  "editorialText": "Crónica periodística de 3 párrafos destacando el tono intimista, anécdotas y reflexiones sobre la autogestión",
+  "keyHighlights": ["Punto clave 1", "Punto clave 2", "Punto clave 3", "Punto clave 4"]
+}`;
+
+      try {
+        const { data, usage } = await callGeminiWithLog(prompt, geminiKey);
+        return NextResponse.json({
+          success: true,
+          source: 'gemini-live',
+          tokenUsage: usage,
+          data,
+        });
+      } catch (err: any) {
+        return NextResponse.json({
+          success: false,
+          error: err.message,
+        }, { status: 500 });
+      }
+    }
+
+    return NextResponse.json({ success: false, error: 'Acción no reconocida' }, { status: 400 });
   } catch (error: any) {
     console.error('❌ Error general en /api/ai/generate:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
