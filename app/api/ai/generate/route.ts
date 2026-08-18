@@ -48,7 +48,7 @@ async function callGeminiWithLog(prompt: string, apiKey: string) {
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.3,
+        temperature: 0.0,
         maxOutputTokens: 2048,
         responseMimeType: 'application/json',
       },
@@ -123,21 +123,32 @@ export async function POST(req: NextRequest) {
       ];
       const monthName = monthNames[Number(month) - 1] || 'Agosto';
 
-      const prompt = `Sos un historiador y musicólogo experto en música argentina y latinoamericana (folklore, tango, rock nacional, música popular, SADAIC, Cosquín, Jesús María, Billboard).
-Investigá y devolvé exactamente 3 efemérides históricas y culturales reales ocurridas un ${day} de ${monthName} (a lo largo de toda la historia: 1940 a 2025).
-${category && category !== 'todas' ? `Priorizá la categoría o temática: "${category}".` : ''}
+      const prompt = `Sos un historiador y musicólogo argentino con rigor documental absoluto para el medio GUTA MÚSICA.
+
+OBJETIVO: Investigar y devolver 3 efemérides musicales reales que ocurrieron EXACTAMENTE un ${day} de ${monthName} en la historia argentina y latinoamericana (1900 a 2025).
+
+REGLAS DE PRECISIÓN Y VERACIDAD (CRÍTICO):
+1. La fecha de calendario debe ser RIGUROSAMENTE el ${day} de ${monthName}. NO inventes ni supongas que un disco se lanzó un ${day} de ${monthName} si su fecha real de publicación fue en otro mes (por ejemplo, Signos fue en Noviembre y Oktubre en Octubre).
+2. Si no existe un lanzamiento discográfico verificado para el ${day} de ${monthName}, priorizá hechos con fecha de calendario indiscutible:
+   - Nacimientos de músicos / cantantes / compositores populares.
+   - Fallecimientos conmemorativos.
+   - Recitales o festivales documentados ocurridos un ${day} de ${monthName}.
+   - Registros de obras en SADAIC o declaraciones de patrimonio.
+3. El año histórico devuelto ("year") debe ser el año real en que ocurrió el suceso.
+
+${category && category !== 'todas' ? `Categoría preferida: "${category}" (siempre y cuando sea históricamente verídico para el ${day} de ${monthName}).` : ''}
 
 El formato de respuesta debe ser un array JSON de objetos con la siguiente estructura:
 [
   {
     "day": ${day},
     "month": ${month},
-    "year": 1985,
-    "title": "Título preciso del hito musical",
-    "description": "Descripción histórica precisa de 2 a 3 oraciones con nombres propios.",
-    "category": "lanzamientos",
-    "categoryLabel": "Lanzamientos Históricos",
-    "source": "Nombre del archivo / SADAIC / Festival",
+    "year": 1977,
+    "title": "Título preciso del hecho histórico",
+    "description": "Descripción histórica fidedigna de 2 o 3 oraciones con nombres propios y contexto.",
+    "category": "nacimientos",
+    "categoryLabel": "Nacimiento",
+    "source": "Archivo biográfico / Registro civil / SADAIC",
     "impactBadge": "Hito Histórico"
   }
 ]`;
