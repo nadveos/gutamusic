@@ -3,8 +3,14 @@ import './globals.css';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
+
 export const metadata: Metadata = {
-  title: 'GUTA MÚSICA | Plataforma de Difusión de Artistas Emergentes & Cultura Popular',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'GUTA MÚSICA | Plataforma de Difusión de Artistas Emergentes & Cultura Popular',
+    template: '%s | GUTA MÚSICA',
+  },
   description: 'Descubrí la nueva generación de artistas independientes, bandas emergentes, folklore, rock, tango y música urbana de Argentina y Latinoamérica.',
   keywords: [
     'Artistas emergentes Argentina',
@@ -19,10 +25,13 @@ export const metadata: Metadata = {
     'Entrevistas de música'
   ],
   authors: [{ name: 'Guta Flores' }],
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: 'GUTA MÚSICA | Plataforma de Artistas Emergentes',
     description: 'Medio musical federal: entrevistas exclusivas, videoteca multiformato, efemérides históricas y agenda cultural.',
-    url: 'https://guta.com.ar',
+    url: SITE_URL,
     siteName: 'GUTA MÚSICA',
     locale: 'es_AR',
     type: 'website',
@@ -47,7 +56,7 @@ export default function RootLayout({
     '@context': 'https://schema.org',
     '@type': 'MusicOrganization',
     name: 'GUTA MÚSICA',
-    url: 'https://guta.com.ar',
+    url: SITE_URL,
     description: 'Medio de comunicación musical y plataforma de difusión de artistas emergentes.',
     founder: {
       '@type': 'Person',
@@ -56,7 +65,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="es" className="dark">
+    <html lang="es" className="dark scroll-smooth">
       <head>
         <script
           type="application/ld+json"
@@ -65,7 +74,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[#151618] text-[#f3f1ec] antialiased selection:bg-[#d97d64] selection:text-[#151618]">
         <Navbar />
-        <main className="min-h-[calc(100vh-140px)] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main id="main-content" tabIndex={-1} className="min-h-[calc(100vh-140px)] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 outline-none">
           {children}
         </main>
         <Footer />
