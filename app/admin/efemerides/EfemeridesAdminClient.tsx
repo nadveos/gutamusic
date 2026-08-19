@@ -33,6 +33,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiDebugInfo, setAiDebugInfo] = useState<any>(null);
   const [savingBulk, setSavingBulk] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const confirmDelete = async () => {
     if (deleteTarget) {
@@ -83,7 +84,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        alert(`Aviso de IA: ${data.error || 'Error desconocido al consultar Gemini'}`);
+        setNotification({ type: 'error', text: `Aviso de IA: ${data.error || 'Error desconocido al consultar Gemini'}` });
         return;
       }
 
@@ -105,10 +106,11 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           source: first.source,
           impactBadge: first.impactBadge,
         }));
+        setNotification({ type: 'success', text: '¡Sugerencias de efemérides generadas por IA!' });
       }
     } catch (e: any) {
       console.error(e);
-      alert(`Error de conexión: ${e?.message}`);
+      setNotification({ type: 'error', text: `Error de conexión: ${e?.message}` });
     } finally {
       setLoadingAI(false);
     }
@@ -145,6 +147,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
 
     try {
       await pb.collection('ephemerides').create(newItem);
+      setNotification({ type: 'success', text: `¡Efeméride "${newItem.title}" guardada en PocketBase!` });
     } catch (e) {}
 
     setItemsList((prev) => [newItem, ...prev]);
@@ -184,7 +187,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
     setItemsList((prev) => [...newItemsToAdd, ...prev]);
     setAiSuggestions([]);
     setSavingBulk(false);
-    alert(`¡Se guardaron los ${newItemsToAdd.length} hitos en PocketBase exitosamente!`);
+    setNotification({ type: 'success', text: `¡Se guardaron los ${newItemsToAdd.length} hitos en PocketBase exitosamente!` });
   };
 
   const handleCategoryChange = (catId: EphemerisCategory) => {
@@ -215,6 +218,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
 
     try {
       await pb.collection('ephemerides').create(newItem);
+      setNotification({ type: 'success', text: `¡Efeméride "${newItem.title}" agregada al calendario histórico!` });
     } catch (e) {}
 
     setItemsList([newItem, ...itemsList]);
@@ -230,16 +234,6 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
       impactBadge: '',
       imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
     });
-    alert(`¡Efeméride "${newItem.title}" agregada al calendario histórico!`);
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm('¿Eliminar esta efeméride?')) {
-      setItemsList(itemsList.filter((i) => i.id !== id));
-      try {
-        pb.collection('ephemerides').delete(id);
-      } catch (e) {}
-    }
   };
 
   return (
@@ -248,6 +242,26 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
         title="Gestión de Efemérides Musicales"
         subtitle="Carga y consulta de hitos históricos: SADAIC, Billboard, Cosquín, lanzamientos y natalicios"
       />
+
+      {/* Notification Banner */}
+      {notification && (
+        <div
+          className={`p-3.5 rounded-xl text-xs flex items-center justify-between gap-2 border animate-in fade-in duration-150 ${
+            notification.type === 'success'
+              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+              : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+          }`}
+        >
+          <span>{notification.text}</span>
+          <button
+            type="button"
+            onClick={() => setNotification(null)}
+            className="text-[11px] opacity-70 hover:opacity-100 underline"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Formulario */}

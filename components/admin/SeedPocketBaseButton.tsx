@@ -3,18 +3,17 @@
 import React, { useState } from 'react';
 import { pb, loginAsSuperUser } from '../../lib/pocketbase';
 import { MOCK_ARTISTS, MOCK_VIDEOS, MOCK_EPHEMERIDES, MOCK_INTERVIEWS, MOCK_AGENDA } from '../../lib/mockData';
+import { ConfirmModal } from './ConfirmModal';
 import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 
 export const SeedPocketBaseButton: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState<boolean | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-  const handleSeed = async () => {
-    if (!confirm('¿Deseás poblar PocketBase con todos los artistas, videos, efemérides y agenda iniciales?')) {
-      return;
-    }
-
+  const executeSeed = async () => {
+    setIsConfirmOpen(false);
     setLoading(true);
     setStatus('Autenticando con PocketBase...');
     setIsSuccess(null);
@@ -102,7 +101,7 @@ export const SeedPocketBaseButton: React.FC = () => {
         </div>
 
         <button
-          onClick={handleSeed}
+          onClick={() => setIsConfirmOpen(true)}
           disabled={loading}
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#e6cca0] hover:text-[#f3f1ec] text-xs font-semibold border border-[#393c4a] transition-colors self-start sm:self-auto disabled:opacity-50"
         >
@@ -131,6 +130,16 @@ export const SeedPocketBaseButton: React.FC = () => {
           <span>{status}</span>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        title="Sincronización de Base de Datos"
+        message="¿Deseás poblar PocketBase con el catálogo inicial de artistas, videos, efemérides y fechas de cartelera?"
+        confirmText="Iniciar Sincronización"
+        isDanger={false}
+        onConfirm={executeSeed}
+        onCancel={() => setIsConfirmOpen(false)}
+      />
     </div>
   );
 };

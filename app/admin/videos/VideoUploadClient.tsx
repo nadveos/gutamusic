@@ -25,6 +25,7 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
   const [embedUrl, setEmbedUrl] = useState('');
   const [videosList, setVideosList] = useState<VideoItem[]>(initialVideos);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const handleUrlChange = (url: string) => {
     setVideoUrl(url);
@@ -54,9 +55,10 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
     }
   };
 
-  const handleSaveVideo = (e: React.FormEvent) => {
+  const handleSaveVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
+    setNotification(null);
 
     const targetArtist = artists.find((a) => a.id === selectedArtistId);
 
@@ -75,13 +77,16 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
       artistName: targetArtist?.stageName || 'Artista',
     };
 
-    setTimeout(() => {
+    try {
       setVideosList([newVideo, ...videosList]);
       setIsProcessing(false);
       setVideoUrl('');
       setVideoTitle('');
-      alert(`¡Video "${newVideo.title}" agregado exitosamente a la videoteca!`);
-    }, 600);
+      setNotification({ type: 'success', text: `¡Video "${newVideo.title}" agregado exitosamente a la videoteca!` });
+    } catch (err: any) {
+      setIsProcessing(false);
+      setNotification({ type: 'error', text: `Error al guardar video: ${err?.message}` });
+    }
   };
 
   return (
@@ -90,6 +95,26 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
         title="Gestión & Carga de Videos"
         subtitle="Ingresá videos de YouTube, TikTok y Facebook con autodetección de metadatos"
       />
+
+      {/* Notification Banner */}
+      {notification && (
+        <div
+          className={`p-3.5 rounded-xl text-xs flex items-center justify-between gap-2 border animate-in fade-in duration-150 ${
+            notification.type === 'success'
+              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+              : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+          }`}
+        >
+          <span>{notification.text}</span>
+          <button
+            type="button"
+            onClick={() => setNotification(null)}
+            className="text-[11px] opacity-70 hover:opacity-100 underline"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* URL Parser Form */}
