@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { AgendaEvent } from '../../../lib/types';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
+import { ConfirmModal } from '../../../components/admin/ConfirmModal';
 import { Calendar, MapPin, Trash2 } from 'lucide-react';
 
 interface AdminAgendaClientProps {
@@ -13,10 +14,12 @@ export const AdminAgendaClient: React.FC<AdminAgendaClientProps> = ({
   initialEvents,
 }) => {
   const [events, setEvents] = useState<AgendaEvent[]>(initialEvents);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
-  const handleDelete = (id: string, title: string) => {
-    if (confirm(`¿Deseás eliminar la fecha "${title}"?`)) {
-      setEvents(events.filter((e) => e.id !== id));
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      setEvents(events.filter((e) => e.id !== deleteTarget.id));
+      setDeleteTarget(null);
     }
   };
 
@@ -57,7 +60,7 @@ export const AdminAgendaClient: React.FC<AdminAgendaClientProps> = ({
                 {ev.isFree ? 'Entrada Libre' : ev.ticketPrice}
               </span>
               <button
-                onClick={() => handleDelete(ev.id, ev.title)}
+                onClick={() => setDeleteTarget({ id: ev.id, title: ev.title })}
                 className="p-1.5 rounded-lg bg-[#24252c] text-[#c0909b] hover:bg-[#2e303b] transition-colors"
                 title="Eliminar evento"
               >
@@ -67,6 +70,15 @@ export const AdminAgendaClient: React.FC<AdminAgendaClientProps> = ({
           </div>
         ))}
       </div>
+
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        title="Eliminar Fecha de la Agenda"
+        message={`¿Deseás eliminar la fecha "${deleteTarget?.title}" de la cartelera cultural?`}
+        confirmText="Eliminar Fecha"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };

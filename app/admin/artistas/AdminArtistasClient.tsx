@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Artist } from '../../../lib/types';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
+import { ConfirmModal } from '../../../components/admin/ConfirmModal';
 import { Edit, Trash2, Eye, MapPin } from 'lucide-react';
 
 interface AdminArtistasClientProps {
@@ -15,10 +16,12 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
   initialArtists,
 }) => {
   const [artists, setArtists] = useState<Artist[]>(initialArtists);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
-  const handleDelete = (id: string, name: string) => {
-    if (confirm(`¿Estás seguro de que deseás eliminar a "${name}"?`)) {
-      setArtists(artists.filter((a) => a.id !== id));
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      setArtists(artists.filter((a) => a.id !== deleteTarget.id));
+      setDeleteTarget(null);
     }
   };
 
@@ -103,7 +106,7 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
                     <button
                       className="p-1.5 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#c0909b] inline-block transition-colors"
                       title="Eliminar artista"
-                      onClick={() => handleDelete(artist.id, artist.stageName)}
+                      onClick={() => setDeleteTarget({ id: artist.id, name: artist.stageName })}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -114,6 +117,15 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
           </table>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        title="Eliminar Perfil de Artista"
+        message={`¿Estás seguro de que deseás eliminar a "${deleteTarget?.name}"? Esta acción removerá el perfil y su discografía.`}
+        confirmText="Eliminar Artista"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };

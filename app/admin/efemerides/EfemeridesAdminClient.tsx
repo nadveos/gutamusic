@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { EphemerisCategory, EphemerisItem } from '../../../lib/types';
 import { pb } from '../../../lib/pocketbase';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
+import { ConfirmModal } from '../../../components/admin/ConfirmModal';
 import { Plus, Sparkles, Check, ArrowRight, Save, Trash2, Layers, Loader2 } from 'lucide-react';
 
 interface EfemeridesAdminClientProps {
@@ -14,6 +15,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
   initialItems,
 }) => {
   const [itemsList, setItemsList] = useState<EphemerisItem[]>(initialItems);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     day: 18,
@@ -31,6 +33,17 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiDebugInfo, setAiDebugInfo] = useState<any>(null);
   const [savingBulk, setSavingBulk] = useState(false);
+
+  const confirmDelete = async () => {
+    if (deleteTarget) {
+      const id = deleteTarget.id;
+      setItemsList(itemsList.filter((i) => i.id !== id));
+      try {
+        await pb.collection('ephemerides').delete(id);
+      } catch (e) {}
+      setDeleteTarget(null);
+    }
+  };
 
   const categories = [
     { id: 'lanzamientos', label: 'Lanzamientos Históricos' },
@@ -471,7 +484,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
                     </span>
                   </div>
                   <button
-                    onClick={() => handleDelete(item.id)}
+                    onClick={() => setDeleteTarget({ id: item.id, title: item.title })}
                     className="text-[#78746c] hover:text-[#c0909b] p-1 transition-colors"
                     title="Eliminar"
                   >
@@ -489,6 +502,15 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        title="Eliminar Efeméride"
+        message={`¿Deseás eliminar la efeméride "${deleteTarget?.title}" del calendario histórico?`}
+        confirmText="Eliminar Efeméride"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };
