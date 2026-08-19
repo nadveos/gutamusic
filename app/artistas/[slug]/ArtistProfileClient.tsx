@@ -77,7 +77,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
 
             {/* Social Links */}
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
-              {artist.socials.spotify && (
+              {artist.socials?.spotify && artist.socials.spotify.trim() && !['https://spotify.com', 'https://spotify.com/'].includes(artist.socials.spotify.trim()) && (
                 <a
                   href={artist.socials.spotify}
                   target="_blank"
@@ -88,7 +88,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                   <ExternalLink className="w-3 h-3" />
                 </a>
               )}
-              {artist.socials.youtube && (
+              {artist.socials?.youtube && artist.socials.youtube.trim() && !['https://youtube.com', 'https://youtube.com/'].includes(artist.socials.youtube.trim()) && (
                 <a
                   href={artist.socials.youtube}
                   target="_blank"
@@ -99,7 +99,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                   <ExternalLink className="w-3 h-3" />
                 </a>
               )}
-              {artist.socials.instagram && (
+              {artist.socials?.instagram && artist.socials.instagram.trim() && !['https://instagram.com', 'https://instagram.com/'].includes(artist.socials.instagram.trim()) && (
                 <a
                   href={artist.socials.instagram}
                   target="_blank"
@@ -107,6 +107,17 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                   className="px-2.5 py-1 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#e6cca0] border border-[#31333d] text-xs font-medium flex items-center gap-1 transition-colors"
                 >
                   <span>Instagram</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+              {artist.socials?.tiktok && artist.socials.tiktok.trim() && !['https://tiktok.com', 'https://tiktok.com/'].includes(artist.socials.tiktok.trim()) && (
+                <a
+                  href={artist.socials.tiktok}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#8fa1b3] border border-[#31333d] text-xs font-medium flex items-center gap-1 transition-colors"
+                >
+                  <span>TikTok</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               )}

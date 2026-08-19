@@ -9,7 +9,7 @@ export class MusicDataService {
   // ARTISTS
   static async getArtists(filters?: { genre?: string; query?: string; featured?: boolean }): Promise<Artist[]> {
     try {
-      // Load from PocketBase collection 'artists'
+      // Load directly from PocketBase collection 'artists'
       const records = await pb.collection('artists').getFullList<any>({
         requestKey: null,
       });
@@ -19,13 +19,13 @@ export class MusicDataService {
           id: r.id,
           slug: r.slug,
           stageName: r.stageName,
-          realName: r.realName,
-          genres: Array.isArray(r.genres) ? r.genres : [r.genres],
-          city: r.city,
-          province: r.province,
+          realName: r.realName || '',
+          genres: Array.isArray(r.genres) ? r.genres : (r.genres ? [r.genres] : []),
+          city: r.city || '',
+          province: r.province || '',
           country: r.country || 'Argentina',
-          bio: r.bio,
-          shortBio: r.shortBio,
+          bio: r.bio || '',
+          shortBio: r.shortBio || '',
           photoUrl: r.photoUrl || (r.photo ? pb.files.getUrl(r, r.photo) : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop'),
           bannerUrl: r.bannerUrl || '',
           featured: Boolean(r.featured),
@@ -53,55 +53,46 @@ export class MusicDataService {
           artists = artists.filter(a =>
             a.stageName.toLowerCase().includes(q) ||
             a.city.toLowerCase().includes(q) ||
-            a.province.toLowerCase().includes(q)
+            a.province.toLowerCase().includes(q) ||
+            a.shortBio.toLowerCase().includes(q) ||
+            a.genres.some(g => g.toLowerCase().includes(q))
           );
         }
         return artists;
       }
     } catch (err) {
-      // Fallback to Mock Data
+      console.error('Error fetching artists from PocketBase:', err);
     }
 
-    // Default Mock Fallback
-    let artists = [...MOCK_ARTISTS];
-    if (filters?.featured !== undefined) {
-      artists = artists.filter(a => a.featured === filters.featured);
-    }
-    if (filters?.genre) {
-      artists = artists.filter(a =>
-        a.genres.some(g => g.toLowerCase() === filters.genre?.toLowerCase())
-      );
-    }
-    if (filters?.query) {
-      const q = filters.query.toLowerCase();
-      artists = artists.filter(a =>
-        a.stageName.toLowerCase().includes(q) ||
-        a.city.toLowerCase().includes(q) ||
-        a.province.toLowerCase().includes(q) ||
-        a.shortBio.toLowerCase().includes(q) ||
-        a.genres.some(g => g.toLowerCase().includes(q))
-      );
-    }
-    return artists;
+    return [];
   }
 
   static async getArtistBySlug(slug: string): Promise<Artist | null> {
     try {
-      const record = await pb.collection('artists').getFirstListItem(`slug="${slug}"`, {
-        requestKey: null,
-      });
+      let record: any = null;
+      try {
+        record = await pb.collection('artists').getFirstListItem(`slug="${slug}"`, {
+          requestKey: null,
+        });
+      } catch {
+        // Fallback search by ID if slug is ID
+        try {
+          record = await pb.collection('artists').getOne(slug, { requestKey: null });
+        } catch {}
+      }
+
       if (record) {
         return {
           id: record.id,
           slug: record.slug,
           stageName: record.stageName,
-          realName: record.realName,
-          genres: Array.isArray(record.genres) ? record.genres : [record.genres],
-          city: record.city,
-          province: record.province,
+          realName: record.realName || '',
+          genres: Array.isArray(record.genres) ? record.genres : (record.genres ? [record.genres] : []),
+          city: record.city || '',
+          province: record.province || '',
           country: record.country || 'Argentina',
-          bio: record.bio,
-          shortBio: record.shortBio,
+          bio: record.bio || '',
+          shortBio: record.shortBio || '',
           photoUrl: record.photoUrl || (record.photo ? pb.files.getUrl(record, record.photo) : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop'),
           bannerUrl: record.bannerUrl || '',
           featured: Boolean(record.featured),
@@ -116,22 +107,37 @@ export class MusicDataService {
           createdDate: record.createdDate || record.created?.split(' ')[0] || '2026-08-18',
         };
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error fetching artist by slug:', e);
+    }
 
-    const artist = MOCK_ARTISTS.find(a => a.slug === slug);
-    return artist || null;
+    return null;
   }
 
   static async getFeaturedArtistOfWeek(): Promise<Artist | null> {
     try {
-      const record = await pb.collection('artists').getFirstListItem('featuredOfWeek=true', {
-        requestKey: null,
-      });
-      if (record) return this.getArtistBySlug(record.slug);
-    } catch (e) {}
+      let record: any = null;
+      try {
+        record = await pb.collection('artists').getFirstListItem('featuredOfWeek=true', {
+          requestKey: null,
+        });
+      } catch {
+        try {
+          record = await pb.collection('artists').getFirstListItem('featured=true', {
+            requestKey: null,
+          });
+        } catch {
+          const list = await pb.collection('artists').getList(1, 1, { requestKey: null });
+          if (list.items.length > 0) record = list.items[0];
+        }
+      }
 
-    const artist = MOCK_ARTISTS.find(a => a.featuredOfWeek) || MOCK_ARTISTS[0];
-    return artist || null;
+      if (record) return this.getArtistBySlug(record.slug);
+    } catch (e) {
+      console.error('Error fetching featured artist of week:', e);
+    }
+
+    return null;
   }
 
   // VIDEOS
