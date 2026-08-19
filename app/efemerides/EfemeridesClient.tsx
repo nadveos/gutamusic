@@ -10,8 +10,9 @@ interface EfemeridesClientProps {
 }
 
 export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems }) => {
-  const [selectedDay, setSelectedDay] = useState<number>(18);
-  const [selectedMonth, setSelectedMonth] = useState<number>(8);
+  const now = new Date();
+  const [selectedDay, setSelectedDay] = useState<number>(now.getDate());
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -206,7 +207,7 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
           <BookOpen className="w-8 h-8 text-[#78746c] mx-auto" />
           <h3 className="text-base font-bold text-[#f3f1ec]">No se registraron efemérides para esta fecha</h3>
           <p className="text-xs text-[#8c887f] max-w-xs mx-auto">
-            Probá seleccionando el 18 de Agosto o buscando por nombre de artista.
+            Probá seleccionando otra fecha en el calendario o buscando por nombre de artista.
           </p>
         </div>
       )}

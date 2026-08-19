@@ -9,7 +9,11 @@ interface EphemeridesWidgetProps {
   month?: number;
 }
 
-export const EphemeridesWidget: React.FC<EphemeridesWidgetProps> = ({ items, day = 18, month = 8 }) => {
+export const EphemeridesWidget: React.FC<EphemeridesWidgetProps> = ({
+  items,
+  day = new Date().getDate(),
+  month = new Date().getMonth() + 1,
+}) => {
   const monthNames = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'

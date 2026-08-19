@@ -465,12 +465,55 @@ export const MOCK_EPHEMERIDES: EphemerisItem[] = [
     month: 8,
     year: 1945,
     title: 'Nacimiento de Sandro (Roberto Sánchez)',
-    description: 'Nace en Valentín Alsina el "Gitano", pionero del rock en castellano con Los de Fuego y máximo ídolo de la balada romántica latinoamericana.',
+    description: 'Nace en Valentín Alsina el "Gitano", pionero indiscutido del rock en castellano junto a Los de Fuego y máximo ídolo de la balada y la cultura popular latinoamericana.',
+    category: 'nacimientos',
+    categoryLabel: 'Nacimiento Histórico',
+    source: 'Archivo Fonográfico Nacional / SADAIC',
+    artistRelated: 'Sandro',
+    impactBadge: 'Ícono Popular',
+    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=800&auto=format&fit=crop'
+  },
+  {
+    id: 'eph-7',
+    day: 19,
+    month: 8,
+    year: 1951,
+    title: 'Nacimiento de Gustavo Santaolalla',
+    description: 'Nace en El Palomar el legendario músico, compositor y productor ganador de dos premios Óscar, fundador de Arco Iris y pionero de la fusión del rock con la música andina.',
     category: 'nacimientos',
     categoryLabel: 'Nacimiento',
-    source: 'Archivo Fonográfico Nacional',
-    artistRelated: 'Sandro',
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=800&auto=format&fit=crop'
+    source: 'Registro SADAIC / Academia Latina',
+    artistRelated: 'Gustavo Santaolalla',
+    impactBadge: 'Productor Legendario',
+    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop'
+  },
+  {
+    id: 'eph-8',
+    day: 19,
+    month: 8,
+    year: 1989,
+    title: 'Mercedes Sosa & Milton Nascimento en el Luna Park',
+    description: 'La Negra Sosa y el maestro brasileño Milton Nascimento brindan una noche histórica de hermandad latinoamericana ante más de 12.000 personas en Buenos Aires.',
+    category: 'cosquin',
+    categoryLabel: 'Concierto Histórico',
+    source: 'Archivo Diarios Históricos',
+    artistRelated: 'Mercedes Sosa',
+    impactBadge: 'Cultura Latinoamericana',
+    imageUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=800&auto=format&fit=crop'
+  },
+  {
+    id: 'eph-9',
+    day: 19,
+    month: 8,
+    year: 2008,
+    title: 'Lanzamiento del álbum "Mucho" de Babasónicos',
+    description: 'La banda liderada por Adrián Dárgelos publica su noveno disco de estudio, consolidando su reinado en las radios de rock alternativo de todo el continente.',
+    category: 'lanzamientos',
+    categoryLabel: 'Lanzamiento',
+    source: 'Billboard / CAPIF',
+    artistRelated: 'Babasónicos',
+    impactBadge: 'Disco de Oro',
+    imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop'
   }
 ];
 

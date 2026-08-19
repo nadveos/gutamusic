@@ -17,6 +17,13 @@ export const Navbar: React.FC = () => {
     { href: '/agenda', label: 'Agenda Cultural', icon: Calendar },
   ];
 
+  const monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  const now = new Date();
+  const todayFormatted = `${now.getDate()} de ${monthNames[now.getMonth()]}`;
+
   return (
     <>
       {/* Skip to Main Content Link for Keyboard / Screen Reader Users */}
@@ -39,10 +46,10 @@ export const Navbar: React.FC = () => {
             </span>
           </div>
           <div className="hidden md:flex items-center gap-3 text-[11px]">
-            <span className="flex items-center gap-1.5 text-[#93a887]">
+            <Link href="/efemerides" className="flex items-center gap-1.5 text-[#93a887] hover:text-[#e6cca0] transition-colors">
               <span className="w-1.5 h-1.5 rounded-full bg-[#93a887]" aria-hidden="true"></span>
-              Efeméride del Día: 18 de Agosto
-            </span>
+              <span>Efeméride del Día: {todayFormatted}</span>
+            </Link>
           </div>
         </div>
 

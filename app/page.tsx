@@ -9,11 +9,15 @@ import { FeaturedInterviewCard } from '../components/FeaturedInterviewCard';
 import { Mic2, ArrowRight } from 'lucide-react';
 
 export default async function HomePage() {
+  const now = new Date();
+  const currentDay = now.getDate();
+  const currentMonth = now.getMonth() + 1;
+
   const featuredArtist = await MusicDataService.getFeaturedArtistOfWeek();
   const latestArtists = await MusicDataService.getArtists();
   const videos = await MusicDataService.getVideos(4);
   const featuredInterview = await MusicDataService.getFeaturedInterview();
-  const ephemerides = await MusicDataService.getTodayEphemerides();
+  const ephemerides = await MusicDataService.getTodayEphemerides(currentDay, currentMonth);
 
   return (
     <div className="space-y-10">
@@ -21,7 +25,7 @@ export default async function HomePage() {
       {featuredArtist && <HeroFeatured artist={featuredArtist} />}
 
       {/* 2. Efemérides Musicales del Día */}
-      <EphemeridesWidget items={ephemerides} day={18} month={8} />
+      <EphemeridesWidget items={ephemerides} day={currentDay} month={currentMonth} />
 
       {/* 3. Últimos Artistas Incorporados */}
       <section className="space-y-5">

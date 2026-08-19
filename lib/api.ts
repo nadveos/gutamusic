@@ -268,11 +268,14 @@ export class MusicDataService {
     return MOCK_EPHEMERIDES.filter(e => e.day === day && e.month === month);
   }
 
-  static async getTodayEphemerides(): Promise<EphemerisItem[]> {
-    const day = 18;
-    const month = 8;
-    const items = await this.getEphemeridesForDate(day, month);
-    return items.length > 0 ? items : MOCK_EPHEMERIDES.slice(0, 4);
+  static async getTodayEphemerides(day?: number, month?: number): Promise<EphemerisItem[]> {
+    const now = new Date();
+    const currentDay = day ?? now.getDate();
+    const currentMonth = month ?? (now.getMonth() + 1);
+    const items = await this.getEphemeridesForDate(currentDay, currentMonth);
+    if (items.length > 0) return items;
+    const all = await this.getAllEphemerides();
+    return all.slice(0, 4);
   }
 
   static async getAllEphemerides(): Promise<EphemerisItem[]> {
