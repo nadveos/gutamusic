@@ -7,7 +7,10 @@ export const metadata = {
 };
 
 export default async function AdminAgendaPage() {
-  const events = await MusicDataService.getUpcomingEvents();
+  const [events, artists] = await Promise.all([
+    MusicDataService.getUpcomingEvents(),
+    MusicDataService.getArtists(),
+  ]);
 
-  return <AdminAgendaClient initialEvents={events} />;
+  return <AdminAgendaClient initialEvents={events} artists={artists} />;
 }

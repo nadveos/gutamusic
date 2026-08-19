@@ -82,6 +82,34 @@ export class MusicDataService {
       }
 
       if (record) {
+        let artistAgenda: AgendaEvent[] = Array.isArray(record.agenda) ? record.agenda : [];
+        try {
+          const matchingEvents = await pb.collection('events').getFullList<any>({
+            filter: `title ~ "${record.stageName}"`,
+            requestKey: null,
+          });
+          if (matchingEvents && matchingEvents.length > 0) {
+            const existingIds = new Set(artistAgenda.map(e => e.id));
+            for (const me of matchingEvents) {
+              if (!existingIds.has(me.id)) {
+                artistAgenda.push({
+                  id: me.id,
+                  title: me.title,
+                  venue: me.venue || 'Teatro / Espacio Cultural',
+                  city: me.city || record.city || '',
+                  province: me.province || record.province || '',
+                  country: me.country || 'Argentina',
+                  date: me.date || '2026-09-01',
+                  ticketUrl: me.ticketUrl || '',
+                  ticketPrice: me.ticketPrice || '',
+                  isFree: Boolean(me.isFree),
+                  type: me.type || 'recital',
+                });
+              }
+            }
+          }
+        } catch (e) {}
+
         return {
           id: record.id,
           slug: record.slug,
@@ -100,7 +128,7 @@ export class MusicDataService {
           socials: record.socials || {},
           videos: record.videos || [],
           discography: record.discography || [],
-          agenda: record.agenda || [],
+          agenda: artistAgenda,
           press: record.press || [],
           gallery: record.gallery || [],
           quotes: record.quotes || '',
