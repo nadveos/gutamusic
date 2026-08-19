@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Artist } from '../../../lib/types';
+import { pb } from '../../../lib/pocketbase';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
 import { ConfirmModal } from '../../../components/admin/ConfirmModal';
 import { Edit, Trash2, Eye, MapPin } from 'lucide-react';
@@ -18,9 +19,15 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
   const [artists, setArtists] = useState<Artist[]>(initialArtists);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteTarget) {
-      setArtists(artists.filter((a) => a.id !== deleteTarget.id));
+      const id = deleteTarget.id;
+      setArtists((prev) => prev.filter((a) => a.id !== id));
+      try {
+        await pb.collection('artists').delete(id);
+      } catch (e) {
+        console.warn('Error al eliminar de PocketBase:', e);
+      }
       setDeleteTarget(null);
     }
   };

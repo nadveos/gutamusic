@@ -9,9 +9,8 @@ export class MusicDataService {
   // ARTISTS
   static async getArtists(filters?: { genre?: string; query?: string; featured?: boolean }): Promise<Artist[]> {
     try {
-      // Try to load from PocketBase collection 'artists'
+      // Load from PocketBase collection 'artists'
       const records = await pb.collection('artists').getFullList<any>({
-        sort: '-created',
         requestKey: null,
       });
 
@@ -171,7 +170,6 @@ export class MusicDataService {
   static async getInterviews(): Promise<Interview[]> {
     try {
       const records = await pb.collection('interviews').getFullList<any>({
-        sort: '-created',
         requestKey: null,
       });
       if (records && records.length > 0) {

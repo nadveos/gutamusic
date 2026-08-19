@@ -1,14 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { GenreType } from '../../../../lib/types';
 import { MusicDataService } from '../../../../lib/api';
-import { ArrowLeft, Save, Image as ImageIcon, Link as LinkIcon, Music, Check, Sparkles } from 'lucide-react';
+import { pb } from '../../../../lib/pocketbase';
+import { ArrowLeft, Save, Image as ImageIcon, Link as LinkIcon, Music, Check, Sparkles, AlertCircle } from 'lucide-react';
 
 export const ArtistFormClient: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
+
   const genresList = MusicDataService.getGenresList();
 
   const [formData, setFormData] = useState({
@@ -31,7 +35,56 @@ export const ArtistFormClient: React.FC = () => {
     tiktok: '',
   });
 
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Load existing artist if in edit mode
+  useEffect(() => {
+    if (!editId) return;
+
+    const loadArtist = async () => {
+      setIsLoading(true);
+      try {
+        let record = null;
+        try {
+          record = await pb.collection('artists').getOne(editId);
+        } catch {
+          // If query by slug
+          record = await pb.collection('artists').getFirstListItem(`slug="${editId}"`);
+        }
+
+        if (record) {
+          setFormData({
+            stageName: record.stageName || '',
+            realName: record.realName || '',
+            genres: Array.isArray(record.genres) ? record.genres : (record.genres ? [record.genres] : []),
+            city: record.city || '',
+            province: record.province || '',
+            country: record.country || 'Argentina',
+            shortBio: record.shortBio || '',
+            bio: record.bio || '',
+            photoUrl: record.photoUrl || (record.photo ? pb.files.getUrl(record, record.photo) : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop'),
+            bannerUrl: record.bannerUrl || '',
+            quotes: record.quotes || '',
+            featured: Boolean(record.featured),
+            featuredOfWeek: Boolean(record.featuredOfWeek),
+            spotify: record.socials?.spotify || '',
+            youtube: record.socials?.youtube || '',
+            instagram: record.socials?.instagram || '',
+            tiktok: record.socials?.tiktok || '',
+          });
+        }
+      } catch (err: any) {
+        console.warn('Error loading artist for edit:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadArtist();
+  }, [editId]);
 
   const toggleGenre = (genre: GenreType) => {
     setFormData((prev) => ({
@@ -42,13 +95,60 @@ export const ArtistFormClient: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaved(true);
-    setTimeout(() => {
-      alert(`¡Artista "${formData.stageName}" registrado exitosamente en el sistema!`);
-      router.push('/admin/artistas');
-    }, 800);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    const slug = formData.stageName
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+
+    const payload = {
+      stageName: formData.stageName,
+      slug,
+      realName: formData.realName,
+      genres: formData.genres,
+      city: formData.city,
+      province: formData.province,
+      country: formData.country,
+      shortBio: formData.shortBio,
+      bio: formData.bio,
+      photoUrl: formData.photoUrl,
+      bannerUrl: formData.bannerUrl,
+      quotes: formData.quotes,
+      featured: formData.featured,
+      featuredOfWeek: formData.featuredOfWeek,
+      socials: {
+        spotify: formData.spotify,
+        youtube: formData.youtube,
+        instagram: formData.instagram,
+        tiktok: formData.tiktok,
+      },
+    };
+
+    try {
+      if (editId) {
+        await pb.collection('artists').update(editId, payload);
+        setSuccessMessage(`¡Artista "${formData.stageName}" actualizado en PocketBase!`);
+      } else {
+        await pb.collection('artists').create(payload);
+        setSuccessMessage(`¡Artista "${formData.stageName}" creado en PocketBase!`);
+      }
+
+      setTimeout(() => {
+        router.push('/admin/artistas');
+      }, 1000);
+    } catch (err: any) {
+      console.error('Error saving artist:', err);
+      setErrorMessage(`Error al guardar en PocketBase: ${err?.message || 'Verificá tus permisos'}`);
+      setIsSaved(false);
+    }
   };
 
   return (
@@ -62,12 +162,29 @@ export const ArtistFormClient: React.FC = () => {
         <span>Volver a la lista de artistas</span>
       </Link>
 
+      {/* Alerts */}
+      {errorMessage && (
+        <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+          <Check className="w-4 h-4 flex-shrink-0" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-[#f3f1ec]">
-            Alta / Edición de Artista
+            {editId ? 'Editar Perfil de Artista' : 'Alta de Artista'}
           </h1>
-          <p className="text-xs text-[#8c887f]">Completá la información del perfil del artista o banda</p>
+          <p className="text-xs text-[#8c887f]">
+            {editId ? 'Modificá los datos y guardá los cambios en la base de datos' : 'Completá la información del perfil del artista o banda'}
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -75,7 +192,7 @@ export const ArtistFormClient: React.FC = () => {
             type="button"
             onClick={async () => {
               if (!formData.stageName) {
-                alert('Por favor ingresá primero el nombre del artista para que la IA pueda redactar la biografía.');
+                setErrorMessage('Por favor ingresá primero el nombre del artista para que la IA pueda redactar la biografía.');
                 return;
               }
               try {
@@ -113,10 +230,11 @@ export const ArtistFormClient: React.FC = () => {
 
           <button
             type="submit"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors"
+            disabled={isSaved || isLoading}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors disabled:opacity-50"
           >
             {isSaved ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-            <span>{isSaved ? 'Guardando...' : 'Guardar Artista'}</span>
+            <span>{isSaved ? 'Guardando en DB...' : (editId ? 'Actualizar Artista' : 'Guardar Artista')}</span>
           </button>
         </div>
       </div>
