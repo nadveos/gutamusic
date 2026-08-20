@@ -293,7 +293,15 @@ export const ArtistFormClient: React.FC = () => {
                     },
                   }),
                 });
-                const data = await res.json();
+                const rawText = await res.text();
+                let data: any = null;
+                try {
+                  data = JSON.parse(rawText);
+                } catch {
+                  setErrorMessage('Aviso: El servidor no devolvió una respuesta JSON válida. Verificá que GEMINI_API_KEY esté configurada en CapRover.');
+                  return;
+                }
+
                 if (data.success) {
                   setFormData((prev) => ({
                     ...prev,
@@ -303,9 +311,12 @@ export const ArtistFormClient: React.FC = () => {
                   }));
                   if (data.model) setAiModelName(data.model);
                   if (data.tokenUsage) setAiTokenUsage(data.tokenUsage);
+                } else {
+                  setErrorMessage(`Aviso de IA: ${data.error || 'Error al generar biografía'}`);
                 }
-              } catch (e) {
+              } catch (e: any) {
                 console.error(e);
+                setErrorMessage(`Error de conexión: ${e?.message}`);
               } finally {
                 setIsAiLoading(false);
               }

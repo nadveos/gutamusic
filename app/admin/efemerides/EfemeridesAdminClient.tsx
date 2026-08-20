@@ -110,7 +110,26 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           },
         }),
       });
-      const data = await res.json();
+
+      const rawText = await res.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        if (rawText.includes('<html') || res.status === 504 || res.status === 502) {
+          setNotification({
+            type: 'error',
+            text: `Aviso del Servidor (${res.status}): La consulta a Gemini tardó más de lo esperado o la clave GEMINI_API_KEY no está configurada en las Variables de Entorno de CapRover.`,
+          });
+          return;
+        }
+        setNotification({
+          type: 'error',
+          text: `Error de respuesta inesperada (${res.status}): ${rawText.substring(0, 120)}`,
+        });
+        return;
+      }
+
       if (!res.ok || !data.success) {
         setNotification({ type: 'error', text: `Aviso de IA: ${data.error || 'Error desconocido al consultar Gemini'}` });
         return;

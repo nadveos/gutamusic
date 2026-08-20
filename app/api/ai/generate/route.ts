@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
 function extractJson(text: string) {
   if (!text) return null;
   // Strip markdown code fences if present
@@ -52,6 +55,7 @@ async function callGeminiWithLog(prompt: string, apiKey: string) {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(9000), // Max 9s per model to prevent gateway timeouts
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
@@ -119,6 +123,7 @@ async function callGeminiEphemerides(prompt: string, apiKey: string) {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(10000), // Max 10s per model with Grounding
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           tools: [{ google_search: {} }],
