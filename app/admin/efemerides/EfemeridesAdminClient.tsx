@@ -5,6 +5,7 @@ import { EphemerisCategory, EphemerisItem } from '../../../lib/types';
 import { pb } from '../../../lib/pocketbase';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
 import { ConfirmModal } from '../../../components/admin/ConfirmModal';
+import { AITokenBadge } from '../../../components/admin/AITokenBadge';
 import { Plus, Sparkles, Check, ArrowRight, Save, Trash2, Layers, Loader2 } from 'lucide-react';
 
 interface EfemeridesAdminClientProps {
@@ -32,8 +33,11 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
   const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiDebugInfo, setAiDebugInfo] = useState<any>(null);
+  const [aiRegionName, setAiRegionName] = useState<string>('Argentina');
+  const [aiGroundedSources, setAiGroundedSources] = useState<number>(0);
   const [savingBulk, setSavingBulk] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string>('argentina');
 
   const confirmDelete = async () => {
     if (deleteTarget) {
@@ -57,6 +61,28 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
     { id: 'fallecimientos', label: 'Fallecimientos' },
     { id: 'homenajes', label: 'Homenajes' },
     { id: 'curiosidades', label: 'Curiosidades & Archivo' },
+    { id: 'latam_festivales', label: 'Festivales LATAM' },
+    { id: 'latam_premios', label: 'Premios LATAM' },
+    { id: 'internacional', label: 'Internacional' },
+  ];
+
+  const latamRegions = [
+    { id: 'argentina', label: '🇦🇷 Argentina', emoji: '🇦🇷' },
+    { id: 'mexico', label: '🇲🇽 México', emoji: '🇲🇽' },
+    { id: 'colombia', label: '🇨🇴 Colombia', emoji: '🇨🇴' },
+    { id: 'chile', label: '🇨🇱 Chile', emoji: '🇨🇱' },
+    { id: 'brasil', label: '🇧🇷 Brasil', emoji: '🇧🇷' },
+    { id: 'peru', label: '🇵🇪 Perú', emoji: '🇵🇪' },
+    { id: 'venezuela', label: '🇻🇪 Venezuela', emoji: '🇻🇪' },
+    { id: 'uruguay', label: '🇺🇾 Uruguay', emoji: '🇺🇾' },
+    { id: 'bolivia', label: '🇧🇴 Bolivia', emoji: '🇧🇴' },
+    { id: 'ecuador', label: '🇪🇨 Ecuador', emoji: '🇪🇨' },
+    { id: 'paraguay', label: '🇵🇾 Paraguay', emoji: '🇵🇾' },
+    { id: 'cuba', label: '🇨🇺 Cuba', emoji: '🇨🇺' },
+    { id: 'puerto_rico', label: '🇵🇷 Puerto Rico', emoji: '🇵🇷' },
+    { id: 'republica_dominicana', label: '🇩🇴 R. Dominicana', emoji: '🇩🇴' },
+    { id: 'centroamerica', label: '🌎 Centroamérica', emoji: '🌎' },
+    { id: 'latam_general', label: '🌎 LATAM General', emoji: '🌎' },
   ];
 
   const monthNames = [
@@ -79,6 +105,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
             day: formData.day,
             month: formData.month,
             category: formData.category,
+            region: selectedRegion,
           },
         }),
       });
@@ -93,6 +120,10 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
         if (data.tokenUsage) {
           setAiDebugInfo(data.tokenUsage);
         }
+        if (data.region) {
+          setAiRegionName(data.region);
+        }
+        setAiGroundedSources(data.groundedSources ?? 0);
 
         // Autofill form with first suggestion
         const first = data.data[0];
@@ -106,7 +137,17 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           source: first.source,
           impactBadge: first.impactBadge,
         }));
-        setNotification({ type: 'success', text: '¡Sugerencias de efemérides generadas por IA!' });
+        const regionLabel = latamRegions.find(r => r.id === selectedRegion)?.label || selectedRegion;
+        const droppedMsg = data.dropped > 0 ? ` (${data.dropped} resultado/s con fecha incorrecta descartados)` : '';
+        setNotification({ type: 'success', text: `¡${data.data.length} efeméride/s verificadas de ${regionLabel} para el ${formData.day}/${formData.month}!${droppedMsg}` });
+      } else if (data.success && Array.isArray(data.data) && data.data.length === 0) {
+        // Gemini returned empty — no verified events for that exact date
+        const regionLabel = latamRegions.find(r => r.id === selectedRegion)?.label || selectedRegion;
+        const droppedMsg = data.dropped > 0 ? ` Gemini propuso ${data.dropped} resultado/s pero con fechas incorrectas y fueron descartados.` : '';
+        setNotification({
+          type: 'error',
+          text: `Gemini no encontró efemérides verificadas de ${regionLabel} para el ${formData.day}/${formData.month}.${droppedMsg} Probá con otra fecha u otro país.`
+        });
       }
     } catch (e: any) {
       console.error(e);
@@ -115,6 +156,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
       setLoadingAI(false);
     }
   };
+
 
   const handleSelectAiOption = (item: any) => {
     setFormData((prev) => ({
@@ -271,7 +313,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
               <h2 className="text-xs font-bold uppercase tracking-wider text-[#e6cca0]">
                 Efemérides del {formData.day} de {monthNames[formData.month - 1]}
               </h2>
-              <p className="text-[11px] text-[#8c887f]">Consulta a lo largo de toda la historia musical</p>
+              <p className="text-[11px] text-[#8c887f]">Consulta histórica musical en toda América Latina</p>
             </div>
 
             <button
@@ -281,8 +323,34 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 transition-colors disabled:opacity-50"
             >
               {loadingAI ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              <span>{loadingAI ? 'Investigando...' : 'Consultar a Gemini'}</span>
+              <span>{loadingAI ? `Investigando en ${latamRegions.find(r => r.id === selectedRegion)?.emoji || '🌎'}...` : 'Consultar a Gemini'}</span>
             </button>
+          </div>
+
+          {/* LATAM Region Selector */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] text-[#aba79e] font-semibold block">
+              País / Región a consultar en Gemini
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {latamRegions.map((region) => (
+                <button
+                  key={region.id}
+                  type="button"
+                  onClick={() => setSelectedRegion(region.id)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                    selectedRegion === region.id
+                      ? 'bg-[#d97d64] text-[#151618] border-[#d97d64] shadow-sm shadow-[#d97d64]/20'
+                      : 'bg-[#18191e] text-[#aba79e] border-[#2e3039] hover:border-[#424554] hover:text-[#f3f1ec]'
+                  }`}
+                >
+                  {region.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-[#78746c]">
+              Gemini buscará efemérides musicales históricas del país seleccionado con fuentes y artistas específicos de cada región.
+            </p>
           </div>
 
           {/* Selector de Fecha */}
@@ -330,12 +398,15 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
             </div>
           </div>
 
-          {/* AI Debug / Token Usage Info */}
+          {/* AI Token Usage Badge */}
           {aiDebugInfo && (
-            <div className="flex items-center justify-between text-[10px] px-3 py-1.5 rounded-lg bg-[#18191e] border border-[#2d2f38] text-[#93a887]">
-              <span>✅ Respuesta en vivo de Gemini 3.5 Flash Lite</span>
-              <span>Tokens: {aiDebugInfo.totalTokenCount || aiDebugInfo.promptTokenCount}</span>
-            </div>
+            <AITokenBadge
+              usage={aiDebugInfo}
+              model="gemini-2.5-flash"
+              grounded={true}
+              groundedSources={aiGroundedSources}
+              action="Efemérides"
+            />
           )}
 
           {/* AI Suggestions Box with Bulk Save & Quick Add */}
@@ -344,7 +415,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-[#e6cca0] flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
-                  Gemini encontró {aiSuggestions.length} hitos para el {formData.day} de {monthNames[formData.month - 1]}:
+                  Gemini encontró {aiSuggestions.length} hitos de {aiRegionName} para el {formData.day} de {monthNames[formData.month - 1]}:
                 </span>
 
                 {aiSuggestions.length > 1 && (

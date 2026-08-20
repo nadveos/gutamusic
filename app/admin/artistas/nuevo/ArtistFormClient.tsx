@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { GenreType, AgendaEvent } from '../../../../lib/types';
 import { MusicDataService } from '../../../../lib/api';
 import { pb } from '../../../../lib/pocketbase';
+import { ImageUploadField } from '../../../../components/admin/ImageUploadField';
 import {
   ArrowLeft,
   Save,
@@ -21,6 +22,7 @@ import {
   MapPin,
   Ticket,
 } from 'lucide-react';
+import { AITokenBadge } from '../../../../components/admin/AITokenBadge';
 
 export const ArtistFormClient: React.FC = () => {
   const router = useRouter();
@@ -68,6 +70,8 @@ export const ArtistFormClient: React.FC = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [aiTokenUsage, setAiTokenUsage] = useState<any>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Load existing artist if in edit mode
   useEffect(() => {
@@ -272,6 +276,8 @@ export const ArtistFormClient: React.FC = () => {
                 setErrorMessage('Por favor ingresá primero el nombre del artista para que la IA pueda redactar la biografía.');
                 return;
               }
+              setIsAiLoading(true);
+              setAiTokenUsage(null);
               try {
                 const res = await fetch('/api/ai/generate', {
                   method: 'POST',
@@ -294,15 +300,21 @@ export const ArtistFormClient: React.FC = () => {
                     bio: data.data.fullBio,
                     quotes: data.data.quotes,
                   }));
+                  if (data.tokenUsage) setAiTokenUsage(data.tokenUsage);
                 }
               } catch (e) {
                 console.error(e);
+              } finally {
+                setIsAiLoading(false);
               }
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 transition-colors"
+            disabled={isAiLoading}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 transition-colors disabled:opacity-50"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Autocompletar Bio con IA</span>
+            {isAiLoading
+              ? <span className="w-3.5 h-3.5 border border-[#e6cca0] border-t-transparent rounded-full animate-spin" />
+              : <Sparkles className="w-3.5 h-3.5" />}
+            <span>{isAiLoading ? 'Generando...' : 'Autocompletar Bio con IA'}</span>
           </button>
 
           <button
@@ -315,6 +327,15 @@ export const ArtistFormClient: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* AI Token Usage — shown after a bio is generated */}
+      {aiTokenUsage && (
+        <AITokenBadge
+          usage={aiTokenUsage}
+          model="gemini-2.5-flash"
+          action="Biograf\u00eda"
+        />
+      )}
 
       {/* 1. Datos Generales */}
       <div className="natural-card p-5 sm:p-6 rounded-2xl space-y-4">
@@ -478,33 +499,36 @@ export const ArtistFormClient: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Fotos & Multimedia URLs */}
-      <div className="natural-card p-5 sm:p-6 rounded-2xl space-y-3.5">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
-          <ImageIcon className="w-3.5 h-3.5" /> 3. Imágenes del Artista
-        </h2>
+      {/* 3. Fotos & Multimedia */}
+      <div className="natural-card p-5 sm:p-6 rounded-2xl space-y-4">
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
+            <ImageIcon className="w-3.5 h-3.5" /> 3. Imágenes del Artista
+          </h2>
+          <p className="text-[11px] text-[#8c887f] mt-0.5">
+            Podés subir fotos directamente desde tu computadora/celular a PocketBase o pegar un enlace externo.
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          <div>
-            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Foto Principal (URL / Cloudinary / Facebook) *</label>
-            <input
-              type="text"
-              required
-              value={formData.photoUrl}
-              onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs font-mono focus:outline-none focus:border-[#d97d64]"
-            />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <ImageUploadField
+            label="Foto Principal / Retrato"
+            required
+            value={formData.photoUrl}
+            onChange={(url) => setFormData({ ...formData, photoUrl: url })}
+            collectionName="artists"
+            aspectRatio="square"
+            helperText="Formato cuadrado o vertical recomendado (JPG, PNG, WebP)"
+          />
 
-          <div>
-            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Banner de Perfil (URL)</label>
-            <input
-              type="text"
-              value={formData.bannerUrl}
-              onChange={(e) => setFormData({ ...formData, bannerUrl: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs font-mono focus:outline-none focus:border-[#d97d64]"
-            />
-          </div>
+          <ImageUploadField
+            label="Banner de Perfil / Portada"
+            value={formData.bannerUrl}
+            onChange={(url) => setFormData({ ...formData, bannerUrl: url })}
+            collectionName="artists"
+            aspectRatio="banner"
+            helperText="Formato horizontal panorámico para la cabecera"
+          />
         </div>
       </div>
 

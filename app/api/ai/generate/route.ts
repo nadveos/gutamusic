@@ -28,9 +28,9 @@ function extractJson(text: string) {
   return null;
 }
 
+// General-purpose Gemini call (for artist reviews, interview chronicles, etc.)
 async function callGeminiWithLog(prompt: string, apiKey: string) {
-  // Flagship ultra-fast model with JSON mode
-  const model = 'gemini-3.5-flash-lite';
+  const model = 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   console.log('\n======================================================');
@@ -48,7 +48,7 @@ async function callGeminiWithLog(prompt: string, apiKey: string) {
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.0,
+        temperature: 0.3,
         maxOutputTokens: 2048,
         responseMimeType: 'application/json',
       },
@@ -77,10 +77,8 @@ async function callGeminiWithLog(prompt: string, apiKey: string) {
 
   const usage = resultJson?.usageMetadata;
   if (usage) {
-    console.log('📊 CONTEO DE TOKENS (Gemini usageMetadata):');
-    console.log(`   - Prompt Tokens:     ${usage.promptTokenCount}`);
-    console.log(`   - Candidates Tokens: ${usage.candidatesTokenCount}`);
-    console.log(`   - Total Tokens:      ${usage.totalTokenCount}`);
+    console.log('📊 CONTEO DE TOKENS:');
+    console.log(`   - Prompt: ${usage.promptTokenCount} | Candidates: ${usage.candidatesTokenCount} | Total: ${usage.totalTokenCount}`);
   }
 
   const generatedContent = resultJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -96,6 +94,81 @@ async function callGeminiWithLog(prompt: string, apiKey: string) {
   return {
     data: parsedData,
     usage: usage || { totalTokenCount: 'N/A' },
+  };
+}
+
+// Ephemerides-specific call: uses gemini-2.5-flash + Google Search Grounding
+// Google Search Grounding allows Gemini to verify dates against real search results.
+// IMPORTANT: responseMimeType:'application/json' is incompatible with grounding tools;
+//            we rely on extractJson() to parse the JSON from the text response.
+async function callGeminiEphemerides(prompt: string, apiKey: string) {
+  const model = 'gemini-2.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  console.log('\n======================================================');
+  console.log('🔍 [GEMINI EPHEMERIDES REQUEST — with Google Search Grounding]');
+  console.log(`📡 Model: ${model} | Temp: 0.3 | Grounding: ON`);
+  console.log('📝 PROMPT:');
+  console.log(prompt);
+  console.log('======================================================\n');
+
+  const startTime = Date.now();
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      tools: [{ google_search: {} }],          // ✅ Real-time date verification via Google
+      generationConfig: {
+        temperature: 0.3,                       // ✅ Low hallucination risk
+        maxOutputTokens: 2048,
+        // NOTE: responseMimeType is intentionally omitted — incompatible with google_search tool
+      },
+    }),
+  });
+
+  const durationMs = Date.now() - startTime;
+  const rawTextResponse = await response.text();
+
+  console.log(`📥 [EPHEMERIDES RESPONSE] Status: ${response.status} (${durationMs}ms)`);
+
+  if (!response.ok) {
+    console.error('❌ Gemini Ephemerides Error:');
+    console.error(rawTextResponse);
+    // Fallback: retry without grounding if grounding causes an error
+    console.log('🔄 Retrying without grounding...');
+    return callGeminiWithLog(prompt, apiKey);
+  }
+
+  let resultJson: any = {};
+  try {
+    resultJson = JSON.parse(rawTextResponse);
+  } catch (e) {
+    console.error('Error parseando respuesta Gemini Ephemerides:', e);
+  }
+
+  const usage = resultJson?.usageMetadata;
+  const groundingMetadata = resultJson?.candidates?.[0]?.groundingMetadata;
+  const webSources = groundingMetadata?.groundingChunks?.length || 0;
+
+  console.log(`📊 Tokens: ${usage?.totalTokenCount || 'N/A'} | 🔗 Web sources used: ${webSources}`);
+
+  // Grounding responses may have content across multiple parts; join them all
+  const parts = resultJson?.candidates?.[0]?.content?.parts || [];
+  const generatedContent = parts.map((p: any) => p.text || '').join('');
+  console.log('📄 CONTENIDO GENERADO:');
+  console.log(generatedContent);
+  console.log('======================================================\n');
+
+  const parsedData = extractJson(generatedContent);
+  if (!parsedData) {
+    throw new Error(`No se pudo parsear JSON de efemérides. Texto: ${generatedContent.substring(0, 300)}`);
+  }
+
+  return {
+    data: parsedData,
+    usage: usage || { totalTokenCount: 'N/A' },
+    groundedSources: webSources,
   };
 }
 
@@ -116,51 +189,166 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'generate_daily_ephemerides') {
-      const { day, month, category } = payload;
+      const { day, month, category, region = 'argentina' } = payload;
       const monthNames = [
         'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
       ];
       const monthName = monthNames[Number(month) - 1] || 'Agosto';
 
-      const prompt = `Sos un historiador y musicólogo argentino con rigor documental absoluto para el medio GUTA MÚSICA.
+      // Build region-specific context for the prompt
+      const regionContextMap: Record<string, { name: string; institutions: string; references: string; artists: string }> = {
+        argentina: {
+          name: 'Argentina',
+          institutions: 'SADAIC, CAPIF, Premios Gardel, Festival de Cosquín, Festival de Jesús María',
+          references: 'Rock Nacional, tango, folklore, cumbia, cuarteto',
+          artists: 'Mercedes Sosa, Soda Stereo, Charly García, Atahualpa Yupanqui, Los Redondos, Piazzolla'
+        },
+        mexico: {
+          name: 'México',
+          institutions: 'SACM (Sociedad de Autores y Compositores de México), Premios Billboard México, Grammy Latino',
+          references: 'mariachi, norteño, banda, bolero, cumbia sonidera, rock en español, música popular mexicana',
+          artists: 'Juan Gabriel, Vicente Fernández, Los Ángeles Azules, Café Tacvba, Molotov, Selena, José Alfredo Jiménez, Chavela Vargas'
+        },
+        colombia: {
+          name: 'Colombia',
+          institutions: 'SAYCO (Sociedad de Autores y Compositores de Colombia), Festival Vallenato de Valledupar, Festival de Música del Pacífico Petronio Álvarez',
+          references: 'vallenato, cumbia, mapalé, porro, champeta, salsa caleña, música andina colombiana',
+          artists: 'Carlos Vives, Shakira, Joe Arroyo, Totó la Momposina, Juanes, J Balvin, Diomedes Díaz, Gustavo Cerati (gira Colombia)'
+        },
+        chile: {
+          name: 'Chile',
+          institutions: 'SCD (Sociedad Chilena del Derecho de Autor), Festival de Viña del Mar, Festival de la Canción de Viña',
+          references: 'nueva canción chilena, rock chileno, cumbia chilena, cueca, música andina, balada romántica',
+          artists: 'Violeta Parra, Víctor Jara, Los Jaivas, Chancho en Piedra, Los Prisioneros, Mon Laferte, Colo'
+        },
+        peru: {
+          name: 'Perú',
+          institutions: 'APDAYC (Asociación Peruana de Autores y Compositores), Festival de Ancash, Premios Luces',
+          references: 'cumbia andina, chicha, música criolla, marinera norteña, huayno, valses criollos',
+          artists: 'Chabuca Granda, Arturo "Zambo" Cavero, Los Shapis, Gian Marco, Pedro Suárez-Vértiz, Eva Ayllón'
+        },
+        venezuela: {
+          name: 'Venezuela',
+          institutions: 'SACVEN (Sociedad de Autores y Compositores de Venezuela), Festival Nuevas Bandas',
+          references: 'llanera, joropo, salsa, merengue venezolano, gaita zuliana, rock venezolano',
+          artists: 'Simón Díaz, Ricardo Montaner, Franco De Vita, Ilan Chester, Porfi Jiménez, Desorden Público'
+        },
+        bolivia: {
+          name: 'Bolivia',
+          institutions: 'SOBODAYCOM, Festival Internacional de Folklore de Oruro, Entrada Universitaria',
+          references: 'música andina boliviana, tinku, morenada, saya afroboliviana, huayno, cumbia villera boliviana',
+          artists: 'Gladys Moreno, Los Kjarkas, Savia Andina, Bolivia Manta, Kalamarka'
+        },
+        ecuador: {
+          name: 'Ecuador',
+          institutions: 'SAYCE (Sociedad de Autores y Compositores del Ecuador), Festival de Música de Cuenca',
+          references: 'pasillo ecuatoriano, bomba del chota, música nacional ecuatoriana, sanjuanito, albazo',
+          artists: 'Julio Jaramillo, Paulina Tamayo, Daniel Betancourth, Amorfoda (Bad Bunny con artistas ecuatorianos)'
+        },
+        uruguay: {
+          name: 'Uruguay',
+          institutions: 'AGADU (Asociación General de Autores del Uruguay), Montevideo Music Box, Carnaval de Montevideo',
+          references: 'candombe, tango uruguayo, murga, milonga, rock uruguayo, cumbia villera',
+          artists: 'Jorge Drexler, Jaime Roos, Alfredo Zitarrosa, Los Shakers, El Cuarteto de Nos, No Te Va Gustar'
+        },
+        paraguay: {
+          name: 'Paraguay',
+          institutions: 'AUTORES (Asociación Autores del Paraguay), Festival de Música Paraguaya',
+          references: 'guarania, polca paraguaya, música tradicional paraguaya, cumbia paraguaya',
+          artists: 'Agustín Barrios Mangoré, José Asunción Flores, Los Paraguayos, Berta Rojas'
+        },
+        brasil: {
+          name: 'Brasil',
+          institutions: 'ECAD (Escritório Central de Arrecadação e Distribuição), Grammy Latino, Latin Billboard',
+          references: 'samba, bossa nova, baião, forró, axé, pagode, MPB (Música Popular Brasileira), tropicália',
+          artists: 'Tom Jobim, João Gilberto, Elis Regina, Caetano Veloso, Gilberto Gil, Roberto Carlos, Chico Buarque, Maria Bethânia'
+        },
+        cuba: {
+          name: 'Cuba',
+          institutions: 'UNEAC (Unión de Escritores y Artistas de Cuba), Centro Nacional de Derechos de Autor (CENDA)',
+          references: 'son cubano, bolero, mambo, danzón, cha-cha-chá, rumba, nueva trova cubana',
+          artists: 'Compay Segundo, Celia Cruz, Benny Moré, Pablo Milanés, Silvio Rodríguez, Ibrahim Ferrer'
+        },
+        puerto_rico: {
+          name: 'Puerto Rico',
+          institutions: 'ASCAP Puerto Rico, Grammy Latino',
+          references: 'salsa puertorriqueña, reggaetón, plena, bomba, música jíbara',
+          artists: 'Marc Anthony, Ricky Martin, Bad Bunny, Daddy Yankee, Willie Colón, Héctor Lavoe, Cheo Feliciano'
+        },
+        republica_dominicana: {
+          name: 'República Dominicana',
+          institutions: 'SGACEDOM, Premio Soberano',
+          references: 'merengue, bachata, palo, salve',
+          artists: 'Juan Luis Guerra, Johnny Ventura, Celia Cruz (con RD), Romeo Santos, Aventura'
+        },
+        centroamerica: {
+          name: 'Centroamérica (Guatemala, Nicaragua, Costa Rica, El Salvador, Honduras, Panamá)',
+          institutions: 'Institutos nacionales de cultura, festivales centroamericanos',
+          references: 'música marimba, chicha centroamericana, vallenato centroamericano, rock regional, cumbia local',
+          artists: 'Rubén Blades (Panamá), Maná (México con raíces CA), Ricardo Arjona (Guatemala)'
+        },
+        latam_general: {
+          name: 'América Latina en general',
+          institutions: 'Billboard Latin, Premio Lo Nuestro, Grammy Latino, MTV Latinoamérica',
+          references: 'música popular latinoamericana, reggaetón, salsa, cumbia, rock en español, pop latino',
+          artists: 'Shakira, Marc Anthony, Ricky Martin, Luis Miguel, Gloria Estefan, Carlos Santana, Soda Stereo, Café Tacvba'
+        }
+      };
 
-OBJETIVO: Investigar y devolver 3 efemérides musicales reales que ocurrieron EXACTAMENTE un ${day} de ${monthName} en la historia argentina y latinoamericana (1900 a 2025).
+      const ctx = regionContextMap[region] || regionContextMap['argentina'];
 
-REGLAS DE PRECISIÓN Y VERACIDAD (CRÍTICO):
-1. La fecha de calendario debe ser RIGUROSAMENTE el ${day} de ${monthName}. NO inventes ni supongas que un disco se lanzó un ${day} de ${monthName} si su fecha real de publicación fue en otro mes (por ejemplo, Signos fue en Noviembre y Oktubre en Octubre).
-2. Si no existe un lanzamiento discográfico verificado para el ${day} de ${monthName}, priorizá hechos con fecha de calendario indiscutible:
-   - Nacimientos de músicos / cantantes / compositores populares.
-   - Fallecimientos conmemorativos.
-   - Recitales o festivales documentados ocurridos un ${day} de ${monthName}.
-   - Registros de obras en SADAIC o declaraciones de patrimonio.
-3. El año histórico devuelto ("year") debe ser el año real en que ocurrió el suceso.
+      const prompt = `Eres un historiador musical experto en ritmos, géneros y artistas de Latinoamérica y Brasil. Tu único objetivo es buscar y detallar efemérides musicales (nacimientos, fallecimientos, lanzamientos de álbumes históricos, conciertos icónicos o hitos culturales) que ocurrieron el ${day} de ${monthName} en cualquier año de la historia (1900–2025).
 
-${category && category !== 'todas' ? `Categoría preferida: "${category}" (siempre y cuando sea históricamente verídico para el ${day} de ${monthName}).` : ''}
+Cobertura: ${ctx.name}. Géneros de referencia: ${ctx.references}. Instituciones: ${ctx.institutions}. Artistas emblema: ${ctx.artists}.
+${category && category !== 'todas' ? `Tipo de hecho preferido: ${category}.` : ''}
 
-El formato de respuesta debe ser un array JSON de objetos con la siguiente estructura:
+Reglas de veracidad (usa la búsqueda de Google para validar antes de responder):
+1. Solo incluir hechos ocurridos EXACTAMENTE el día ${day} de ${monthName}. Si el hecho ocurrió en otro día del mes, NO lo incluyas.
+2. Para lanzamientos: la fecha debe ser la fecha real de edición física o digital verificable, no la de grabación ni la de anuncio.
+3. Si no encontrás suficientes hechos verificados para esa fecha exacta, devolvé menos elementos o un array vacío []. La precisión vale más que la cantidad.
+4. Nunca inventes ni aproximes fechas para completar 3 resultados.
+
+Devolvé ÚNICAMENTE un array JSON válido (sin texto fuera del JSON). Cada objeto debe tener exactamente estos campos:
 [
   {
     "day": ${day},
     "month": ${month},
-    "year": 1977,
-    "title": "Título preciso del hecho histórico",
-    "description": "Descripción histórica fidedigna de 2 o 3 oraciones con nombres propios y contexto.",
+    "year": 1985,
+    "title": "Título breve y preciso del hecho",
+    "description": "Dos oraciones informativas: qué ocurrió, quiénes estuvieron involucrados, y su impacto cultural en ${ctx.name} y Latinoamérica.",
     "category": "nacimientos",
     "categoryLabel": "Nacimiento",
-    "source": "Archivo biográfico / Registro civil / SADAIC",
+    "source": "Fuente consultada (registro civil, discográfica, archivo de prensa, etc.)",
     "impactBadge": "Hito Histórico"
   }
 ]`;
 
       try {
-        const { data, usage } = await callGeminiWithLog(prompt, geminiKey);
+        const result = await callGeminiEphemerides(prompt, geminiKey);
+        const rawItems = Array.isArray(result.data) ? result.data : (result.data ? [result.data] : []);
+
+        // Server-side guard: drop any item where day/month doesn't match the query.
+        const validatedItems = rawItems.filter((item: any) => {
+          const itemDay = Number(item.day);
+          const itemMonth = Number(item.month);
+          if (itemDay !== Number(day) || itemMonth !== Number(month)) {
+            console.warn(`⚠️ [ANTI-HALLUC] Dropped: day=${itemDay} month=${itemMonth} (expected ${day}/${month}): "${item.title}"`);
+            return false;
+          }
+          return true;
+        });
+
         return NextResponse.json({
           success: true,
-          source: 'gemini-live',
-          tokenUsage: usage,
-          data: Array.isArray(data) ? data : [data],
+          source: 'gemini-live-grounded',
+          tokenUsage: result.usage,
+          region: ctx.name,
+          groundedSources: (result as any).groundedSources ?? 0,
+          dropped: rawItems.length - validatedItems.length,
+          data: validatedItems,
         });
+
       } catch (err: any) {
         console.error('❌ Error en efemérides Gemini:', err.message);
         return NextResponse.json({

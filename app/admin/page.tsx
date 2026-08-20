@@ -14,6 +14,7 @@ import {
   Plus,
   Eye,
   Edit,
+  Radio,
 } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
@@ -21,6 +22,7 @@ export default async function AdminDashboardPage() {
   const videos = await MusicDataService.getVideos();
   const ephemerides = await MusicDataService.getAllEphemerides();
   const events = await MusicDataService.getUpcomingEvents();
+  const interviews = await MusicDataService.getInterviews();
 
   const stats = [
     {
@@ -29,6 +31,13 @@ export default async function AdminDashboardPage() {
       icon: Mic2,
       badgeColor: 'bg-terracotta-soft text-[#d97d64]',
       href: '/admin/artistas',
+    },
+    {
+      label: 'Entrevistas & Lives',
+      value: interviews.length,
+      icon: Radio,
+      badgeColor: 'bg-sand-soft text-[#e6cca0]',
+      href: '/admin/entrevistas',
     },
     {
       label: 'Videos en Videoteca',
@@ -41,15 +50,8 @@ export default async function AdminDashboardPage() {
       label: 'Efemérides Históricas',
       value: ephemerides.length,
       icon: BookOpen,
-      badgeColor: 'bg-sand-soft text-[#e6cca0]',
-      href: '/admin/efemerides',
-    },
-    {
-      label: 'Fechas en Cartelera',
-      value: events.length,
-      icon: Calendar,
       badgeColor: 'bg-slate-soft text-[#a7b8c8]',
-      href: '/admin/agenda',
+      href: '/admin/efemerides',
     },
   ];
 
@@ -57,7 +59,7 @@ export default async function AdminDashboardPage() {
     <div className="space-y-6">
       <AdminHeader
         title="Dashboard de Gestión Editorial"
-        subtitle="Panel central para administración de artistas emergentes, videos multiformato y efemérides"
+        subtitle="Panel central para administración de artistas emergentes, entrevistas exclusivas, videos y convocatorias"
         actionText="Nuevo Artista"
         actionHref="/admin/artistas/nuevo"
       />
@@ -94,7 +96,7 @@ export default async function AdminDashboardPage() {
           <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
             Acciones Rápidas
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Link
               href="/admin/artistas/nuevo"
               className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
@@ -102,27 +104,37 @@ export default async function AdminDashboardPage() {
               <div className="p-1.5 rounded bg-terracotta-soft">
                 <Plus className="w-3.5 h-3.5" />
               </div>
-              <span>Dar de alta nuevo artista</span>
+              <span>Nuevo Artista</span>
+            </Link>
+
+            <Link
+              href="/admin/entrevistas/nuevo"
+              className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
+            >
+              <div className="p-1.5 rounded bg-sand-soft">
+                <Radio className="w-3.5 h-3.5" />
+              </div>
+              <span>Nueva Entrevista / Live</span>
+            </Link>
+
+            <Link
+              href="/admin/postulaciones"
+              className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
+            >
+              <div className="p-1.5 rounded bg-sage-soft">
+                <Sparkles className="w-3.5 h-3.5" />
+              </div>
+              <span>Revisar Postulaciones</span>
             </Link>
 
             <Link
               href="/admin/videos"
               className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
             >
-              <div className="p-1.5 rounded bg-sage-soft">
+              <div className="p-1.5 rounded bg-slate-soft">
                 <Video className="w-3.5 h-3.5" />
               </div>
-              <span>Cargar video por URL</span>
-            </Link>
-
-            <Link
-              href="/admin/efemerides"
-              className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
-            >
-              <div className="p-1.5 rounded bg-sand-soft">
-                <BookOpen className="w-3.5 h-3.5" />
-              </div>
-              <span>Añadir efeméride histórica</span>
+              <span>Cargar Video por URL</span>
             </Link>
           </div>
         </div>

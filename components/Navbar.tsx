@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Radio, Music2, Calendar, Mic2, BookOpen, Menu, X, Search } from 'lucide-react';
+import { Radio, Music2, Calendar, Mic2, BookOpen, Menu, X, Search, Sparkles } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +15,7 @@ export const Navbar: React.FC = () => {
     { href: '/entrevistas', label: 'Entrevistas & Lives', icon: Radio },
     { href: '/efemerides', label: 'Efemérides', icon: BookOpen },
     { href: '/agenda', label: 'Agenda Cultural', icon: Calendar },
+    { href: '/contacto', label: 'Sumá tu Banda', icon: Sparkles },
   ];
 
   const monthNames = [
@@ -111,10 +112,10 @@ export const Navbar: React.FC = () => {
                 <span>Explorar Artistas</span>
               </Link>
               <Link
-                href="/artistas"
+                href="/contacto"
                 className="text-xs font-semibold px-3.5 py-2 rounded-lg bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
               >
-                + Difundir Artista
+                + Postular Mi Banda
               </Link>
             </div>
 
@@ -160,7 +161,7 @@ export const Navbar: React.FC = () => {
             })}
             <div className="pt-3 border-t border-[#2d2f38]">
               <Link
-                href="/artistas"
+                href="/contacto"
                 onClick={() => setIsOpen(false)}
                 className="w-full flex items-center justify-center text-center font-bold text-xs py-2.5 rounded-lg bg-[#d97d64] text-[#151618] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
               >

@@ -28,7 +28,22 @@ export type EphemerisCategory =
   | 'fallecimientos'
   | 'nacimientos'
   | 'homenajes'
-  | 'curiosidades';
+  | 'curiosidades'
+  // LATAM
+  | 'latam_mexico'
+  | 'latam_colombia'
+  | 'latam_chile'
+  | 'latam_peru'
+  | 'latam_venezuela'
+  | 'latam_bolivia'
+  | 'latam_ecuador'
+  | 'latam_uruguay'
+  | 'latam_paraguay'
+  | 'latam_brasil'
+  | 'latam_centroamerica'
+  | 'latam_caribe'
+  | 'latam_festivales'
+  | 'latam_premios';
 
 export type DiscographyType = 'single' | 'ep' | 'album' | 'live_album';
 

@@ -18,7 +18,7 @@ export default async function AdminEntrevistasPage() {
         title="Gestión de Entrevistas & Lives"
         subtitle="Publicación de charlas exclusivas, acústicos y crónicas periodísticas"
         actionText="Nueva Entrevista"
-        actionHref="/entrevistas"
+        actionHref="/admin/entrevistas/nuevo"
       />
 
       <div className="natural-card rounded-2xl overflow-hidden">
@@ -60,6 +60,13 @@ export default async function AdminEntrevistasPage() {
                       title="Ver en portal"
                     >
                       <Eye className="w-3.5 h-3.5" />
+                    </Link>
+                    <Link
+                      href={`/admin/entrevistas/nuevo?edit=${item.id}`}
+                      className="p-1.5 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#e6cca0] inline-block transition-colors"
+                      title="Editar entrevista"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
                     </Link>
                   </td>
                 </tr>
