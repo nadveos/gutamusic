@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Music2,
   FileSpreadsheet,
+  ShieldCheck,
   X,
 } from 'lucide-react';
 import { logoutSuperUser } from '../../lib/pocketbase';
@@ -36,6 +37,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile, onLog
     { href: '/admin/videos', label: 'Cargar Videos', icon: Video },
     { href: '/admin/efemerides', label: 'Efemérides', icon: BookOpen },
     { href: '/admin/agenda', label: 'Agenda & Eventos', icon: Calendar },
+    { href: '/admin/seguridad', label: 'Seguridad & 2FA', icon: ShieldCheck },
   ];
 
   const handleLogout = () => {
