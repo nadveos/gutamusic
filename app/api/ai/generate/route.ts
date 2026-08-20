@@ -28,148 +28,153 @@ function extractJson(text: string) {
   return null;
 }
 
-// General-purpose Gemini call (for artist reviews, interview chronicles, etc.)
+const CANDIDATE_MODELS = [
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+];
+
+// General-purpose Gemini call with automatic fallback cascade
 async function callGeminiWithLog(prompt: string, apiKey: string) {
-  const model = 'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  let lastError: Error | null = null;
 
-  console.log('\n======================================================');
-  console.log('🤖 [GEMINI REQUEST]');
-  console.log(`📡 Model: ${model}`);
-  console.log(`🔑 Key Prefix: ${apiKey.substring(0, 8)}... (Length: ${apiKey.length})`);
-  console.log('📝 PROMPT ENVIADO:');
-  console.log(prompt);
-  console.log('======================================================\n');
+  for (const model of CANDIDATE_MODELS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  const startTime = Date.now();
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 2048,
-        responseMimeType: 'application/json',
-      },
-    }),
-  });
-
-  const durationMs = Date.now() - startTime;
-  const rawTextResponse = await response.text();
-
-  console.log('\n======================================================');
-  console.log(`📥 [GEMINI RESPONSE] - Status: ${response.status} ${response.statusText} (${durationMs}ms)`);
-
-  if (!response.ok) {
-    console.error('❌ ERROR DETALLADO DE GEMINI API:');
-    console.error(rawTextResponse);
+    console.log('\n======================================================');
+    console.log(`🤖 [GEMINI REQUEST] Trying Model: ${model}`);
+    console.log(`🔑 Key Prefix: ${apiKey.substring(0, 8)}... (Length: ${apiKey.length})`);
     console.log('======================================================\n');
-    throw new Error(`Gemini API Error (${response.status}): ${rawTextResponse}`);
+
+    try {
+      const startTime = Date.now();
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 2048,
+            responseMimeType: 'application/json',
+          },
+        }),
+      });
+
+      const durationMs = Date.now() - startTime;
+      const rawTextResponse = await response.text();
+
+      console.log(`📥 [GEMINI RESPONSE] Model: ${model} - Status: ${response.status} (${durationMs}ms)`);
+
+      if (!response.ok) {
+        console.warn(`⚠️ Error en ${model} (${response.status}): ${rawTextResponse.substring(0, 150)}`);
+        lastError = new Error(`Gemini API Error (${response.status} on ${model}): ${rawTextResponse}`);
+        // If 503, 429, or 404, continue to next fallback model
+        continue;
+      }
+
+      let resultJson: any = {};
+      try {
+        resultJson = JSON.parse(rawTextResponse);
+      } catch (e) {
+        console.error('Error parseando respuesta completa de Gemini:', e);
+      }
+
+      const usage = resultJson?.usageMetadata;
+      const generatedContent = resultJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const parsedData = extractJson(generatedContent);
+
+      if (!parsedData) {
+        throw new Error(`No se pudo parsear el JSON devuelto por ${model}.`);
+      }
+
+      return {
+        data: parsedData,
+        usage: usage || { totalTokenCount: 'N/A' },
+        usedModel: model,
+      };
+    } catch (err: any) {
+      console.warn(`⚠️ Falló intento con ${model}:`, err.message);
+      lastError = err;
+    }
   }
 
-  let resultJson: any = {};
-  try {
-    resultJson = JSON.parse(rawTextResponse);
-  } catch (e) {
-    console.error('Error parseando respuesta completa de Gemini:', e);
-  }
-
-  const usage = resultJson?.usageMetadata;
-  if (usage) {
-    console.log('📊 CONTEO DE TOKENS:');
-    console.log(`   - Prompt: ${usage.promptTokenCount} | Candidates: ${usage.candidatesTokenCount} | Total: ${usage.totalTokenCount}`);
-  }
-
-  const generatedContent = resultJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  console.log('📄 CONTENIDO GENERADO:');
-  console.log(generatedContent);
-  console.log('======================================================\n');
-
-  const parsedData = extractJson(generatedContent);
-  if (!parsedData) {
-    throw new Error(`No se pudo parsear el JSON devuelto por Gemini. Texto: ${generatedContent.substring(0, 200)}`);
-  }
-
-  return {
-    data: parsedData,
-    usage: usage || { totalTokenCount: 'N/A' },
-  };
+  throw lastError || new Error('Todos los modelos de Gemini fallaron o están temporalmente inaccesibles.');
 }
 
-// Ephemerides-specific call: uses gemini-2.5-flash + Google Search Grounding
-// Google Search Grounding allows Gemini to verify dates against real search results.
-// IMPORTANT: responseMimeType:'application/json' is incompatible with grounding tools;
-//            we rely on extractJson() to parse the JSON from the text response.
+// Ephemerides-specific call: attempts Google Search Grounding with fallback cascade
 async function callGeminiEphemerides(prompt: string, apiKey: string) {
-  const model = 'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  let lastError: Error | null = null;
 
-  console.log('\n======================================================');
-  console.log('🔍 [GEMINI EPHEMERIDES REQUEST — with Google Search Grounding]');
-  console.log(`📡 Model: ${model} | Temp: 0.3 | Grounding: ON`);
-  console.log('📝 PROMPT:');
-  console.log(prompt);
-  console.log('======================================================\n');
+  for (const model of CANDIDATE_MODELS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  const startTime = Date.now();
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      tools: [{ google_search: {} }],          // ✅ Real-time date verification via Google
-      generationConfig: {
-        temperature: 0.3,                       // ✅ Low hallucination risk
-        maxOutputTokens: 2048,
-        // NOTE: responseMimeType is intentionally omitted — incompatible with google_search tool
-      },
-    }),
-  });
+    console.log('\n======================================================');
+    console.log(`🔍 [GEMINI EPHEMERIDES] Intentando Model: ${model} (con Google Search Grounding)`);
+    console.log('======================================================\n');
 
-  const durationMs = Date.now() - startTime;
-  const rawTextResponse = await response.text();
+    try {
+      const startTime = Date.now();
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          tools: [{ google_search: {} }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 2048,
+          },
+        }),
+      });
 
-  console.log(`📥 [EPHEMERIDES RESPONSE] Status: ${response.status} (${durationMs}ms)`);
+      const durationMs = Date.now() - startTime;
+      const rawTextResponse = await response.text();
 
-  if (!response.ok) {
-    console.error('❌ Gemini Ephemerides Error:');
-    console.error(rawTextResponse);
-    // Fallback: retry without grounding if grounding causes an error
-    console.log('🔄 Retrying without grounding...');
-    return callGeminiWithLog(prompt, apiKey);
+      console.log(`📥 [EPHEMERIDES RESPONSE] Model: ${model} - Status: ${response.status} (${durationMs}ms)`);
+
+      if (!response.ok) {
+        console.warn(`⚠️ ${model} falló con status ${response.status}. Probando siguiente modelo...`);
+        lastError = new Error(`Gemini API Error (${response.status} on ${model}): ${rawTextResponse}`);
+        continue;
+      }
+
+      let resultJson: any = {};
+      try {
+        resultJson = JSON.parse(rawTextResponse);
+      } catch (e) {
+        console.error('Error parseando respuesta:', e);
+      }
+
+      const usage = resultJson?.usageMetadata;
+      const groundingMetadata = resultJson?.candidates?.[0]?.groundingMetadata;
+      const webSources = groundingMetadata?.groundingChunks?.length || 0;
+
+      const parts = resultJson?.candidates?.[0]?.content?.parts || [];
+      const generatedContent = parts.map((p: any) => p.text || '').join('');
+      const parsedData = extractJson(generatedContent);
+
+      if (!parsedData) {
+        console.warn(`⚠️ ${model} respondió pero el formato JSON no fue válido. Probando siguiente...`);
+        continue;
+      }
+
+      return {
+        data: parsedData,
+        usage: usage || { totalTokenCount: 'N/A' },
+        groundedSources: webSources,
+        usedModel: model,
+      };
+    } catch (err: any) {
+      console.warn(`⚠️ Error ejecutando ${model}:`, err.message);
+      lastError = err;
+    }
   }
 
-  let resultJson: any = {};
-  try {
-    resultJson = JSON.parse(rawTextResponse);
-  } catch (e) {
-    console.error('Error parseando respuesta Gemini Ephemerides:', e);
-  }
-
-  const usage = resultJson?.usageMetadata;
-  const groundingMetadata = resultJson?.candidates?.[0]?.groundingMetadata;
-  const webSources = groundingMetadata?.groundingChunks?.length || 0;
-
-  console.log(`📊 Tokens: ${usage?.totalTokenCount || 'N/A'} | 🔗 Web sources used: ${webSources}`);
-
-  // Grounding responses may have content across multiple parts; join them all
-  const parts = resultJson?.candidates?.[0]?.content?.parts || [];
-  const generatedContent = parts.map((p: any) => p.text || '').join('');
-  console.log('📄 CONTENIDO GENERADO:');
-  console.log(generatedContent);
-  console.log('======================================================\n');
-
-  const parsedData = extractJson(generatedContent);
-  if (!parsedData) {
-    throw new Error(`No se pudo parsear JSON de efemérides. Texto: ${generatedContent.substring(0, 300)}`);
-  }
-
-  return {
-    data: parsedData,
-    usage: usage || { totalTokenCount: 'N/A' },
-    groundedSources: webSources,
-  };
+  // Fallback: si con grounding fallaron todos, intentamos sin grounding con callGeminiWithLog
+  console.log('🔄 Todos los intentos con Grounding fallaron. Reintentando sin Grounding...');
+  return callGeminiWithLog(prompt, apiKey);
 }
 
 export async function POST(req: NextRequest) {
@@ -289,10 +294,10 @@ export async function POST(req: NextRequest) {
           artists: 'Rubén Blades (Panamá), Maná (México con raíces CA), Ricardo Arjona (Guatemala)'
         },
         latam_general: {
-          name: 'América Latina en general',
-          institutions: 'Billboard Latin, Premio Lo Nuestro, Grammy Latino, MTV Latinoamérica',
-          references: 'música popular latinoamericana, reggaetón, salsa, cumbia, rock en español, pop latino',
-          artists: 'Shakira, Marc Anthony, Ricky Martin, Luis Miguel, Gloria Estefan, Carlos Santana, Soda Stereo, Café Tacvba'
+          name: 'toda América Latina y Brasil (incluyendo Argentina, México, Colombia, Brasil, Chile, Perú, Uruguay, Venezuela, Cuba, Puerto Rico y Centroamérica)',
+          institutions: 'SADAIC, SACM, SAYCO, SCD, APDAYC, ECAD, AGADU, Grammy Latino, Billboard Latin, Premios Gardel, Viña del Mar, Cosquín',
+          references: 'Rock Nacional y en español, tango, folklore, MPB, samba, bossa nova, salsa, cumbia, vallenato, mariachi, bolero, nueva canción, reggaetón',
+          artists: 'Charly García, Mercedes Sosa, Soda Stereo, Caetano Veloso, Tom Jobim, Shakira, Juan Gabriel, Los Jaivas, Chabuca Granda, Violeta Parra, Celia Cruz, Rubén Blades, Luis Miguel'
         }
       };
 
@@ -342,6 +347,7 @@ Devolvé ÚNICAMENTE un array JSON válido (sin texto fuera del JSON). Cada obje
         return NextResponse.json({
           success: true,
           source: 'gemini-live-grounded',
+          model: (result as any).usedModel || 'gemini-3.6-flash',
           tokenUsage: result.usage,
           region: ctx.name,
           groundedSources: (result as any).groundedSources ?? 0,
@@ -376,12 +382,13 @@ Devolvé la respuesta en formato JSON con la siguiente estructura:
 }`;
 
       try {
-        const { data, usage } = await callGeminiWithLog(prompt, geminiKey);
+        const result = await callGeminiWithLog(prompt, geminiKey);
         return NextResponse.json({
           success: true,
           source: 'gemini-live',
-          tokenUsage: usage,
-          data,
+          model: (result as any).usedModel || 'gemini-3.6-flash',
+          tokenUsage: result.usage,
+          data: result.data,
         });
       } catch (err: any) {
         console.error('❌ Error en artist_review Gemini:', err.message);
@@ -404,12 +411,13 @@ Devolvé la respuesta en formato JSON:
 }`;
 
       try {
-        const { data, usage } = await callGeminiWithLog(prompt, geminiKey);
+        const result = await callGeminiWithLog(prompt, geminiKey);
         return NextResponse.json({
           success: true,
           source: 'gemini-live',
-          tokenUsage: usage,
-          data,
+          model: (result as any).usedModel || 'gemini-3.6-flash',
+          tokenUsage: result.usage,
+          data: result.data,
         });
       } catch (err: any) {
         return NextResponse.json({

@@ -34,7 +34,7 @@ function estimateCost(usage: TokenUsageData): string {
 
 export const AITokenBadge: React.FC<AITokenBadgeProps> = ({
   usage,
-  model = 'gemini-2.5-flash',
+  model = 'gemini-3.6-flash',
   grounded = false,
   groundedSources = 0,
   action,

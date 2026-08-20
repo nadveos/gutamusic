@@ -71,6 +71,7 @@ export const ArtistFormClient: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [aiTokenUsage, setAiTokenUsage] = useState<any>(null);
+  const [aiModelName, setAiModelName] = useState<string>('gemini-3.6-flash');
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Load existing artist if in edit mode
@@ -300,6 +301,7 @@ export const ArtistFormClient: React.FC = () => {
                     bio: data.data.fullBio,
                     quotes: data.data.quotes,
                   }));
+                  if (data.model) setAiModelName(data.model);
                   if (data.tokenUsage) setAiTokenUsage(data.tokenUsage);
                 }
               } catch (e) {
@@ -332,7 +334,7 @@ export const ArtistFormClient: React.FC = () => {
       {aiTokenUsage && (
         <AITokenBadge
           usage={aiTokenUsage}
-          model="gemini-2.5-flash"
+          model={aiModelName}
           action="Biograf\u00eda"
         />
       )}

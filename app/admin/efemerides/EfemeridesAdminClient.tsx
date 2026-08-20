@@ -35,6 +35,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
   const [aiDebugInfo, setAiDebugInfo] = useState<any>(null);
   const [aiRegionName, setAiRegionName] = useState<string>('Argentina');
   const [aiGroundedSources, setAiGroundedSources] = useState<number>(0);
+  const [aiModelName, setAiModelName] = useState<string>('gemini-3.6-flash');
   const [savingBulk, setSavingBulk] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string>('argentina');
@@ -117,6 +118,9 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
 
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
         setAiSuggestions(data.data);
+        if (data.model) {
+          setAiModelName(data.model);
+        }
         if (data.tokenUsage) {
           setAiDebugInfo(data.tokenUsage);
         }
@@ -402,7 +406,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           {aiDebugInfo && (
             <AITokenBadge
               usage={aiDebugInfo}
-              model="gemini-2.5-flash"
+              model={aiModelName}
               grounded={true}
               groundedSources={aiGroundedSources}
               action="Efemérides"
