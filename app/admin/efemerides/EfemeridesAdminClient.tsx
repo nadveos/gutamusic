@@ -6,7 +6,7 @@ import { pb } from '../../../lib/pocketbase';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
 import { ConfirmModal } from '../../../components/admin/ConfirmModal';
 import { AITokenBadge } from '../../../components/admin/AITokenBadge';
-import { Plus, Sparkles, Check, ArrowRight, Save, Trash2, Layers, Loader2 } from 'lucide-react';
+import { Plus, Sparkles, Check, ArrowRight, Save, Trash2, Layers, Loader2, BookOpen } from 'lucide-react';
 
 interface EfemeridesAdminClientProps {
   initialItems: EphemerisItem[];
@@ -19,8 +19,8 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [formData, setFormData] = useState({
     title: '',
-    day: 18,
-    month: 8,
+    day: new Date().getDate(),
+    month: new Date().getMonth() + 1,
     year: 1985,
     category: 'lanzamientos' as EphemerisCategory,
     categoryLabel: 'Lanzamientos Históricos',
@@ -29,6 +29,21 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
     impactBadge: '',
     imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
   });
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      day: new Date().getDate(),
+      month: new Date().getMonth() + 1,
+      year: 1985,
+      category: 'lanzamientos' as EphemerisCategory,
+      categoryLabel: 'Lanzamientos Históricos',
+      description: '',
+      source: '',
+      impactBadge: '',
+      imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
+    });
+  };
 
   const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
   const [loadingAI, setLoadingAI] = useState(false);
@@ -321,124 +336,139 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           <button
             type="button"
             onClick={() => setNotification(null)}
-            className="text-[11px] opacity-70 hover:opacity-100 underline"
+            className="text-[11px] opacity-70 hover:opacity-100 underline cursor-pointer"
           >
             Cerrar
           </button>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Formulario */}
-        <form onSubmit={handleSubmit} className="lg:col-span-6 natural-card p-5 sm:p-6 rounded-2xl space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#2d2f38]">
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#e6cca0]">
-                Efemérides del {formData.day} de {monthNames[formData.month - 1]}
-              </h2>
-              <p className="text-[11px] text-[#8c887f]">Consulta histórica musical en toda América Latina</p>
+      {/* Main Studio Grid: Left = AI Explorer Studio | Right = Editorial Form */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* ========================================================================= */}
+        {/* COLUMNA 1: ASISTENTE DE INVESTIGACIÓN IA & GOOGLE SEARCH GROUNDING       */}
+        {/* ========================================================================= */}
+        <div className="lg:col-span-6 space-y-4">
+          <div className="natural-card p-5 sm:p-6 rounded-2xl border border-[#2e3039] space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#2d2f38]">
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#e6cca0] flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#d97d64]" />
+                  Asistente de Investigación IA
+                </h2>
+                <p className="text-[11px] text-[#8c887f]">
+                  Búsqueda y verificación de efemérides históricas en Google Search
+                </p>
+              </div>
             </div>
 
+            {/* 1. Selector de País / Región */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-[#aba79e] font-semibold block">
+                1. País o Región a Consultar:
+              </label>
+              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                {latamRegions.map((region) => (
+                  <button
+                    key={region.id}
+                    type="button"
+                    onClick={() => setSelectedRegion(region.id)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                      selectedRegion === region.id
+                        ? 'bg-[#d97d64] text-[#151618] border-[#d97d64] shadow-sm shadow-[#d97d64]/20'
+                        : 'bg-[#18191e] text-[#aba79e] border-[#2e3039] hover:border-[#424554] hover:text-[#f3f1ec]'
+                    }`}
+                  >
+                    {region.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Selector de Fecha y Categoría */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+              <div>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Día</label>
+                <select
+                  value={formData.day}
+                  onChange={(e) => setFormData({ ...formData, day: Number(e.target.value) })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                >
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Mes</label>
+                <select
+                  value={formData.month}
+                  onChange={(e) => setFormData({ ...formData, month: Number(e.target.value) })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                >
+                  {monthNames.map((m, idx) => (
+                    <option key={idx + 1} value={idx + 1}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Filtro de Categoría</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => handleCategoryChange(e.target.value as EphemerisCategory)}
+                  className="w-full px-2.5 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64] truncate"
+                >
+                  <option value="todas">Todas las categorías</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Action button */}
             <button
               type="button"
               onClick={handleGenerateAI}
               disabled={loadingAI}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 transition-colors disabled:opacity-50"
+              className="w-full py-2.5 rounded-xl bg-sand-soft hover:bg-[#e6cca0]/25 text-[#f3f1ec] font-bold text-xs border border-[#3c3e4b] shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
-              {loadingAI ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              <span>{loadingAI ? `Investigando en ${latamRegions.find(r => r.id === selectedRegion)?.emoji || '🌎'}...` : 'Consultar a Gemini'}</span>
+              {loadingAI ? <Loader2 className="w-4 h-4 animate-spin text-[#e6cca0]" /> : <Sparkles className="w-4 h-4 text-[#e6cca0]" />}
+              <span>
+                {loadingAI
+                  ? `Verificando fuentes de ${latamRegions.find((r) => r.id === selectedRegion)?.label || selectedRegion}...`
+                  : `Consultar Efemérides de ${latamRegions.find((r) => r.id === selectedRegion)?.label || selectedRegion} con Gemini`}
+              </span>
             </button>
-          </div>
 
-          {/* LATAM Region Selector */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] text-[#aba79e] font-semibold block">
-              País / Región a consultar en Gemini
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {latamRegions.map((region) => (
-                <button
-                  key={region.id}
-                  type="button"
-                  onClick={() => setSelectedRegion(region.id)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
-                    selectedRegion === region.id
-                      ? 'bg-[#d97d64] text-[#151618] border-[#d97d64] shadow-sm shadow-[#d97d64]/20'
-                      : 'bg-[#18191e] text-[#aba79e] border-[#2e3039] hover:border-[#424554] hover:text-[#f3f1ec]'
-                  }`}
-                >
-                  {region.label}
-                </button>
-              ))}
-            </div>
-            <p className="text-[10px] text-[#78746c]">
-              Gemini buscará efemérides musicales históricas del país seleccionado con fuentes y artistas específicos de cada región.
-            </p>
-          </div>
-
-          {/* Selector de Fecha */}
-          <div className="grid grid-cols-3 gap-2.5">
-            <div>
-              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Día *</label>
-              <select
-                value={formData.day}
-                onChange={(e) => setFormData({ ...formData, day: Number(e.target.value) })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              >
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Mes *</label>
-              <select
-                value={formData.month}
-                onChange={(e) => setFormData({ ...formData, month: Number(e.target.value) })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              >
-                {monthNames.map((m, idx) => (
-                  <option key={idx + 1} value={idx + 1}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Año del Hito *</label>
-              <input
-                type="number"
-                required
-                placeholder="Ej: 1982"
-                value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: Number(e.target.value) })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+            {/* AI Token Usage Badge */}
+            {aiDebugInfo && (
+              <AITokenBadge
+                usage={aiDebugInfo}
+                model={aiModelName}
+                grounded={true}
+                groundedSources={aiGroundedSources}
+                action="Efemérides"
               />
-            </div>
+            )}
           </div>
 
-          {/* AI Token Usage Badge */}
-          {aiDebugInfo && (
-            <AITokenBadge
-              usage={aiDebugInfo}
-              model={aiModelName}
-              grounded={true}
-              groundedSources={aiGroundedSources}
-              action="Efemérides"
-            />
-          )}
-
-          {/* AI Suggestions Box with Bulk Save & Quick Add */}
+          {/* AI SUGGESTIONS RESULTS LIST */}
           {aiSuggestions.length > 0 && (
-            <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#e6cca0] flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Gemini encontró {aiSuggestions.length} hitos de {aiRegionName} para el {formData.day} de {monthNames[formData.month - 1]}:
+            <div className="natural-card p-5 rounded-2xl border border-[#2e3039] space-y-3 animate-in fade-in duration-200">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#2d2f38]">
+                <span className="text-xs font-bold text-[#e6cca0] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#d97d64]" />
+                  Resultados Verificados ({aiSuggestions.length})
                 </span>
 
                 {aiSuggestions.length > 1 && (
@@ -446,7 +476,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
                     type="button"
                     onClick={handleSaveAllSuggestions}
                     disabled={savingBulk}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] shadow-sm transition-colors cursor-pointer"
                   >
                     <Layers className="w-3 h-3" />
                     <span>{savingBulk ? 'Guardando...' : `Guardar los ${aiSuggestions.length} juntos`}</span>
@@ -454,29 +484,37 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
                 )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {aiSuggestions.map((sug, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-lg bg-[#24252c] border border-[#31333d] space-y-2 text-xs"
+                    className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-2.5 text-xs hover:border-[#3d404d] transition-colors"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-0.5 flex-1">
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sand-soft mr-1.5">
-                          Año {sug.year}
-                        </span>
-                        <strong className="text-[#f3f1ec] block mt-1">{sug.title}</strong>
-                        <p className="text-[11px] text-[#aba79e] leading-relaxed line-clamp-2">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sand-soft text-[#e6cca0]">
+                            Año {sug.year}
+                          </span>
+                          <span className="text-[10px] text-[#8c887f] uppercase font-semibold">
+                            {sug.categoryLabel || sug.category}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-[#f3f1ec] pt-0.5">{sug.title}</h4>
+                        <p className="text-xs text-[#aba79e] leading-relaxed">
                           {sug.description}
                         </p>
+                        {sug.source && (
+                          <p className="text-[10px] text-[#78746c] italic">Fuente: {sug.source}</p>
+                        )}
                       </div>
                     </div>
 
-                    <div className="pt-1.5 border-t border-[#2d2f38] flex items-center justify-between text-[11px]">
+                    <div className="pt-2 border-t border-[#2d2f38] flex items-center justify-between text-xs gap-2">
                       <button
                         type="button"
                         onClick={() => handleSelectAiOption(sug)}
-                        className="text-[#e6cca0] hover:underline flex items-center gap-1 font-medium"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#24252c] text-[#e6cca0] hover:bg-[#2d2f38] font-semibold transition-colors cursor-pointer"
                       >
                         <span>Cargar al formulario para editar</span>
                         <ArrowRight className="w-3 h-3" />
@@ -485,10 +523,10 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSaveSingleSuggestion(sug)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#1e2420] text-[#93a887] border border-[#2f3f33] hover:bg-[#28332b] font-bold transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-[#1e2420] text-[#93a887] border border-[#2f3f33] hover:bg-[#28332b] font-bold transition-colors cursor-pointer"
                       >
                         <Save className="w-3 h-3" />
-                        <span>Guardar este</span>
+                        <span>Guardar directo</span>
                       </button>
                     </div>
                   </div>
@@ -496,118 +534,206 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
               </div>
             </div>
           )}
+        </div>
 
-          <div>
-            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Categoría / Tipo de Registro *</label>
-            <select
-              value={formData.category}
-              onChange={(e) => handleCategoryChange(e.target.value as EphemerisCategory)}
-              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-            >
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Título del Hito Histórico *</label>
-            <input
-              type="text"
-              required
-              placeholder="Ej: Soda Stereo debuta en las listas de Billboard Latino"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-            />
-          </div>
-
-          <div>
-            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Descripción Completa del Hecho *</label>
-            <textarea
-              rows={3}
-              required
-              placeholder="Detalle histórico de lo ocurrido en esta fecha..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div>
-              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Fuente de Verificación</label>
-              <input
-                type="text"
-                placeholder="Ej: Archivo SADAIC / Cosquín"
-                value={formData.source}
-                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Badge de Impacto</label>
-              <input
-                type="text"
-                placeholder="Ej: Hito Histórico"
-                value={formData.impactBadge}
-                onChange={(e) => setFormData({ ...formData, impactBadge: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-2.5 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors"
-          >
-            Guardar Efeméride en PocketBase
-          </button>
-        </form>
-
-        {/* Existing List */}
-        <div className="lg:col-span-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-[#8c887f]">
-              Archivo Histórico Cargado ({itemsList.length})
-            </h2>
-            <span className="text-[11px] text-[#aba79e]">Sincronizado con PocketBase</span>
-          </div>
-
-          <div className="space-y-2.5 max-h-[580px] overflow-y-auto pr-1">
-            {itemsList.map((item) => (
-              <div
-                key={item.id}
-                className="p-3.5 rounded-xl natural-card space-y-1.5 relative group"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded bg-sand-soft text-xs font-bold">
-                      {item.day} de {monthNames[item.month - 1]} ({item.year})
-                    </span>
-                    <span className="text-[10px] text-[#8c887f] uppercase font-semibold">
-                      {item.categoryLabel}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setDeleteTarget({ id: item.id, title: item.title })}
-                    className="text-[#78746c] hover:text-[#c0909b] p-1 transition-colors"
-                    title="Eliminar"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <h4 className="text-xs sm:text-sm font-bold text-[#f3f1ec]">{item.title}</h4>
-                <p className="text-xs text-[#aba79e] line-clamp-2 leading-relaxed">{item.description}</p>
-                {item.source && (
-                  <p className="text-[10px] text-[#78746c]">Fuente: {item.source}</p>
-                )}
+        {/* ========================================================================= */}
+        {/* COLUMNA 2: FORMULARIO EDITORIAL LIMPIO (CARGA MANUAL O EDITADA)            */}
+        {/* ========================================================================= */}
+        <div className="lg:col-span-6 space-y-4">
+          <form onSubmit={handleSubmit} className="natural-card p-5 sm:p-6 rounded-2xl border border-[#2e3039] space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#2d2f38]">
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#f3f1ec] flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-[#e6cca0]" />
+                  Formulario Editorial de Efeméride
+                </h2>
+                <p className="text-[11px] text-[#8c887f]">
+                  Completá manualmente o editá los datos autocompletados por IA
+                </p>
               </div>
-            ))}
+
+              <button
+                type="button"
+                onClick={resetForm}
+                className="text-[11px] text-[#aba79e] hover:text-[#f3f1ec] underline cursor-pointer"
+              >
+                Limpiar campos
+              </button>
+            </div>
+
+            {/* Fecha: Día, Mes, Año */}
+            <div className="grid grid-cols-3 gap-2.5">
+              <div>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Día *</label>
+                <select
+                  value={formData.day}
+                  onChange={(e) => setFormData({ ...formData, day: Number(e.target.value) })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                >
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Mes *</label>
+                <select
+                  value={formData.month}
+                  onChange={(e) => setFormData({ ...formData, month: Number(e.target.value) })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                >
+                  {monthNames.map((m, idx) => (
+                    <option key={idx + 1} value={idx + 1}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Año del Hito *</label>
+                <input
+                  type="number"
+                  required
+                  placeholder="Ej: 1982"
+                  value={formData.year || ''}
+                  onChange={(e) => setFormData({ ...formData, year: Number(e.target.value) })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                />
+              </div>
+            </div>
+
+            {/* Categoría */}
+            <div>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Categoría / Tipo de Registro *</label>
+              <select
+                value={formData.category}
+                onChange={(e) => handleCategoryChange(e.target.value as EphemerisCategory)}
+                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Título */}
+            <div>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Título del Hito Histórico *</label>
+              <input
+                type="text"
+                required
+                placeholder="Ej: Soda Stereo debuta en las listas de Billboard Latino"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-3 py-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+              />
+            </div>
+
+            {/* Descripción */}
+            <div>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Descripción Completa del Hecho *</label>
+              <textarea
+                rows={3}
+                required
+                placeholder="Detalle histórico de lo ocurrido en esta fecha..."
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+              />
+            </div>
+
+            {/* Fuente y Badge */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Fuente de Verificación</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Archivo SADAIC / Cosquín"
+                  value={formData.source}
+                  onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Badge de Impacto</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Hito Histórico"
+                  value={formData.impactBadge}
+                  onChange={(e) => setFormData({ ...formData, impactBadge: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                />
+              </div>
+            </div>
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              className="w-full py-3 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs shadow-md shadow-[#d97d64]/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+            >
+              <Save className="w-4 h-4" />
+              <span>Guardar Efeméride en PocketBase</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* SECCIÓN INFERIOR: ARCHIVO HISTÓRICO CARGADO EN POCKETBASE                 */}
+      {/* ========================================================================= */}
+      <div className="natural-card p-6 rounded-2xl border border-[#2e3039] space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#2d2f38]">
+          <div>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
+              <Layers className="w-4 h-4 text-[#d97d64]" />
+              Archivo Histórico en Base de Datos ({itemsList.length} registros)
+            </h2>
+            <p className="text-xs text-[#aba79e]">
+              Efemérides persistidas en PocketBase visibles en la web pública de GUTA MÚSICA
+            </p>
           </div>
+          <span className="text-[11px] text-[#93a887] font-mono bg-[#93a887]/10 px-2.5 py-1 rounded-full border border-[#93a887]/20">
+            ✓ Sincronizado en tiempo real
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[600px] overflow-y-auto pr-1">
+          {itemsList.map((item) => (
+            <div
+              key={item.id}
+              className="p-4 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-2 relative group hover:border-[#3d404d] transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded bg-sand-soft text-xs font-bold text-[#e6cca0]">
+                    {item.day} de {monthNames[item.month - 1]} ({item.year})
+                  </span>
+                  <span className="text-[10px] text-[#8c887f] uppercase font-semibold">
+                    {item.categoryLabel}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setDeleteTarget({ id: item.id, title: item.title })}
+                  className="text-[#78746c] hover:text-[#c0909b] p-1 transition-colors cursor-pointer"
+                  title="Eliminar"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <h4 className="text-xs sm:text-sm font-bold text-[#f3f1ec]">{item.title}</h4>
+              <p className="text-xs text-[#aba79e] line-clamp-3 leading-relaxed">{item.description}</p>
+              {item.source && (
+                <p className="text-[10px] text-[#78746c] italic">Fuente: {item.source}</p>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -622,3 +748,4 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
     </div>
   );
 };
+
