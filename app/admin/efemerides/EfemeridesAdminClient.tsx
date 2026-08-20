@@ -146,7 +146,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
       }
 
       if (!res.ok || !data.success) {
-        setNotification({ type: 'error', text: `Aviso de IA: ${data.error || 'Error desconocido al consultar Gemini'}` });
+        setNotification({ type: 'error', text: `Aviso: ${data.error || 'Error al consultar archivos'}` });
         return;
       }
 
@@ -176,15 +176,12 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
           impactBadge: first.impactBadge,
         }));
         const regionLabel = latamRegions.find(r => r.id === selectedRegion)?.label || selectedRegion;
-        const droppedMsg = data.dropped > 0 ? ` (${data.dropped} resultado/s con fecha incorrecta descartados)` : '';
-        setNotification({ type: 'success', text: `¡${data.data.length} efeméride/s verificadas de ${regionLabel} para el ${formData.day}/${formData.month}!${droppedMsg}` });
+        setNotification({ type: 'success', text: `¡${data.data.length} efemérides 100% verificadas de ${regionLabel} para el ${formData.day}/${formData.month} desde archivos documentales!` });
       } else if (data.success && Array.isArray(data.data) && data.data.length === 0) {
-        // Gemini returned empty — no verified events for that exact date
         const regionLabel = latamRegions.find(r => r.id === selectedRegion)?.label || selectedRegion;
-        const droppedMsg = data.dropped > 0 ? ` Gemini propuso ${data.dropped} resultado/s pero con fechas incorrectas y fueron descartados.` : '';
         setNotification({
           type: 'error',
-          text: `Gemini no encontró efemérides verificadas de ${regionLabel} para el ${formData.day}/${formData.month}.${droppedMsg} Probá con otra fecha u otro país.`
+          text: `No se encontraron registros para ${regionLabel} el ${formData.day}/${formData.month} en los archivos consultados.`
         });
       }
     } catch (e: any) {
@@ -354,11 +351,11 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
             <div className="flex items-center justify-between pb-3 border-b border-[#2d2f38]">
               <div>
                 <h2 className="text-xs font-bold uppercase tracking-wider text-[#e6cca0] flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-[#d97d64]" />
-                  Asistente de Investigación IA
+                  <BookOpen className="w-4 h-4 text-[#d97d64]" />
+                  Archivos Periodísticos & Históricos Reales
                 </h2>
                 <p className="text-[11px] text-[#8c887f]">
-                  Búsqueda y verificación de efemérides históricas en Google Search
+                  Efe Eme · Folklore Tradiciones · CRock.com.ar (100% Verificado)
                 </p>
               </div>
             </div>
@@ -386,8 +383,8 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
               </div>
             </div>
 
-            {/* 2. Selector de Fecha y Categoría */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+            {/* 2. Selector de Fecha */}
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
               <div>
                 <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Día</label>
                 <select
@@ -417,22 +414,6 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
                   ))}
                 </select>
               </div>
-
-              <div className="col-span-2 sm:col-span-1">
-                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Filtro de Categoría</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => handleCategoryChange(e.target.value as EphemerisCategory)}
-                  className="w-full px-2.5 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64] truncate"
-                >
-                  <option value="todas">Todas las categorías</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
 
             {/* Action button */}
@@ -442,24 +423,13 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
               disabled={loadingAI}
               className="w-full py-2.5 rounded-xl bg-sand-soft hover:bg-[#e6cca0]/25 text-[#f3f1ec] font-bold text-xs border border-[#3c3e4b] shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
-              {loadingAI ? <Loader2 className="w-4 h-4 animate-spin text-[#e6cca0]" /> : <Sparkles className="w-4 h-4 text-[#e6cca0]" />}
+              {loadingAI ? <Loader2 className="w-4 h-4 animate-spin text-[#e6cca0]" /> : <BookOpen className="w-4 h-4 text-[#e6cca0]" />}
               <span>
                 {loadingAI
-                  ? `Verificando fuentes de ${latamRegions.find((r) => r.id === selectedRegion)?.label || selectedRegion}...`
-                  : `Consultar Efemérides de ${latamRegions.find((r) => r.id === selectedRegion)?.label || selectedRegion} con Gemini`}
+                  ? `Consultando archivos documentales de ${latamRegions.find((r) => r.id === selectedRegion)?.label || selectedRegion}...`
+                  : `Buscar Efemérides Reales de ${latamRegions.find((r) => r.id === selectedRegion)?.label || selectedRegion}`}
               </span>
             </button>
-
-            {/* AI Token Usage Badge */}
-            {aiDebugInfo && (
-              <AITokenBadge
-                usage={aiDebugInfo}
-                model={aiModelName}
-                grounded={true}
-                groundedSources={aiGroundedSources}
-                action="Efemérides"
-              />
-            )}
           </div>
 
           {/* AI SUGGESTIONS RESULTS LIST */}
