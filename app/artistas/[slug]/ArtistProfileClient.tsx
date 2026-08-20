@@ -35,6 +35,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
             src={artist.bannerUrl || artist.photoUrl}
             alt={artist.stageName}
             fill
+            sizes="100vw"
             priority
             className="object-cover opacity-20"
           />
@@ -49,6 +50,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
               src={artist.photoUrl}
               alt={artist.stageName}
               fill
+              sizes="(max-width: 640px) 128px, 160px"
               className="object-cover"
             />
           </div>
@@ -173,7 +175,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {artist.gallery.map((img, idx) => (
                     <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border border-[#31333d]">
-                      <Image src={img} alt={`${artist.stageName} ${idx}`} fill className="object-cover" />
+                      <Image src={img} alt={`${artist.stageName} ${idx}`} fill sizes="(max-width: 640px) 50vw, 33vw" className="object-cover" />
                     </div>
                   ))}
                 </div>
@@ -259,7 +261,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                 onClick={() => vid.embedUrl && setActiveVideoEmbed(vid.embedUrl)}
               >
                 <div className="relative aspect-video rounded-lg overflow-hidden bg-black">
-                  <Image src={vid.thumbnailUrl} alt={vid.title} fill className="object-cover" />
+                  <Image src={vid.thumbnailUrl} alt={vid.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-9 h-9 rounded-full bg-[#d97d64] text-[#151618] flex items-center justify-center">
                       <Play className="w-4 h-4 fill-[#151618] ml-0.5" />
@@ -285,7 +287,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
             artist.discography.map((disc) => (
               <div key={disc.id} className="natural-card rounded-xl p-4 space-y-3 flex flex-col justify-between">
                 <div className="relative aspect-square rounded-lg overflow-hidden bg-[#18191d] border border-[#2d2f38]">
-                  <Image src={disc.coverUrl} alt={disc.title} fill className="object-cover" />
+                  <Image src={disc.coverUrl} alt={disc.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
                 </div>
                 <div className="space-y-0.5">
                   <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-[#24252c] text-[#e6cca0]">

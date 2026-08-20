@@ -364,7 +364,7 @@ export const ContactFormClient: React.FC = () => {
 
               {filePreview && (
                 <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#2e3039] flex-shrink-0">
-                  <Image src={filePreview} alt="Preview" fill className="object-cover" />
+                  <Image src={filePreview} alt="Preview" fill sizes="80px" className="object-cover" />
                 </div>
               )}
             </div>

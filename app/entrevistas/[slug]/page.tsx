@@ -99,7 +99,7 @@ export default async function InterviewDetailPage({
         <div className="p-4 rounded-xl natural-panel flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="relative w-11 h-11 rounded-lg overflow-hidden border border-[#31333d]">
-              <Image src={artist.photoUrl} alt={artist.stageName} fill className="object-cover" />
+              <Image src={artist.photoUrl} alt={artist.stageName} fill sizes="44px" className="object-cover" />
             </div>
             <div>
               <h4 className="text-sm font-bold text-[#f3f1ec]">{artist.stageName}</h4>

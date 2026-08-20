@@ -222,7 +222,7 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
 
           <div className="natural-card rounded-2xl p-4 space-y-2.5">
             <div className="relative aspect-video rounded-lg overflow-hidden bg-black border border-[#2d2f38]">
-              <Image src={thumbnailPreview} alt="Preview" fill className="object-cover" />
+              <Image src={thumbnailPreview} alt="Preview" fill sizes="(max-width: 1024px) 100vw, 300px" className="object-cover" />
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-10 h-10 rounded-full bg-[#d97d64] text-[#151618] flex items-center justify-center">
                   <Play className="w-4 h-4 fill-[#151618] ml-0.5" />
@@ -253,7 +253,7 @@ export const VideoUploadClient: React.FC<VideoUploadClientProps> = ({
           {videosList.map((vid) => (
             <div key={vid.id} className="p-3 rounded-xl bg-[#24252c] border border-[#31333d] space-y-2 flex flex-col justify-between">
               <div className="relative aspect-video rounded-lg overflow-hidden bg-black">
-                <Image src={vid.thumbnailUrl} alt={vid.title} fill className="object-cover" />
+                <Image src={vid.thumbnailUrl} alt={vid.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover" />
                 <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[#1e1f24]/90 text-[#e6cca0] uppercase">
                   {vid.platform}
                 </span>

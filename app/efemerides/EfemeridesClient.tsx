@@ -196,7 +196,7 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
 
               {item.imageUrl && (
                 <div className="relative w-full sm:w-36 aspect-video sm:aspect-square rounded-xl overflow-hidden border border-[#2d2f38] flex-shrink-0">
-                  <Image src={item.imageUrl} alt={item.title} fill className="object-cover" />
+                  <Image src={item.imageUrl} alt={item.title} fill sizes="(max-width: 640px) 100vw, 144px" className="object-cover" />
                 </div>
               )}
             </article>

@@ -71,6 +71,7 @@ export const VideoEmbedGrid: React.FC<VideoEmbedGridProps> = ({
                 src={video.thumbnailUrl}
                 alt={video.title}
                 fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 className="object-cover group-hover:scale-102 transition-transform duration-300 opacity-90"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#1e1f24] via-transparent to-black/20" />

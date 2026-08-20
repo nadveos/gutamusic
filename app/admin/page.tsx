@@ -173,7 +173,7 @@ export default async function AdminDashboardPage() {
                 <tr key={artist.id} className="hover:bg-[#24252c]/50 transition-colors">
                   <td className="py-3 px-3 flex items-center gap-2.5">
                     <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-[#31333d]">
-                      <Image src={artist.photoUrl} alt={artist.stageName} fill className="object-cover" />
+                      <Image src={artist.photoUrl} alt={artist.stageName} fill sizes="32px" className="object-cover" />
                     </div>
                     <div>
                       <strong className="text-[#f3f1ec] block text-xs">{artist.stageName}</strong>

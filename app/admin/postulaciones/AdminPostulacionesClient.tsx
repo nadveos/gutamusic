@@ -347,7 +347,7 @@ export const AdminPostulacionesClient: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-black border border-[#31333d] flex-shrink-0">
                         {app.photoUrl ? (
-                          <Image src={app.photoUrl} alt={app.stageName} fill className="object-cover" />
+                          <Image src={app.photoUrl} alt={app.stageName} fill sizes="48px" className="object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-[#78746c]">
                             <Music2 className="w-5 h-5" />
@@ -405,7 +405,7 @@ export const AdminPostulacionesClient: React.FC = () => {
               <div className="flex items-center gap-3.5 pb-4 border-b border-[#2d2f38]">
                 <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-black border border-[#383b47] flex-shrink-0">
                   {selectedApp.photoUrl ? (
-                    <Image src={selectedApp.photoUrl} alt={selectedApp.stageName} fill className="object-cover" />
+                    <Image src={selectedApp.photoUrl} alt={selectedApp.stageName} fill sizes="64px" className="object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[#78746c]">
                       <Music2 className="w-6 h-6" />

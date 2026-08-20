@@ -17,6 +17,7 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist }) => {
           src={artist.bannerUrl || artist.photoUrl}
           alt={artist.stageName}
           fill
+          sizes="100vw"
           priority
           className="object-cover object-center opacity-30"
         />

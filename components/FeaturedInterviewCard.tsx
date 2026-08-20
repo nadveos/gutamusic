@@ -48,6 +48,7 @@ export const FeaturedInterviewCard: React.FC<FeaturedInterviewCardProps> = ({ in
               src={interview.thumbnailUrl}
               alt={interview.title}
               fill
+              sizes="(max-width: 1024px) 100vw, 40vw"
               className="object-cover group-hover:scale-102 transition-transform duration-300"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#151618]/90 via-transparent to-transparent" />

@@ -38,7 +38,7 @@ export default async function AdminEntrevistasPage() {
                 <tr key={item.id} className="hover:bg-[#24252c]/50 transition-colors">
                   <td className="py-3 px-4 flex items-center gap-2.5">
                     <div className="relative w-10 h-7 rounded-md overflow-hidden border border-[#31333d] flex-shrink-0 bg-black">
-                      <Image src={item.thumbnailUrl} alt={item.title} fill className="object-cover" />
+                      <Image src={item.thumbnailUrl} alt={item.title} fill sizes="40px" className="object-cover" />
                     </div>
                     <div>
                       <strong className="text-[#f3f1ec] text-xs block">{item.title}</strong>

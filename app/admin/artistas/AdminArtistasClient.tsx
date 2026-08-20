@@ -147,7 +147,7 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
                     </td>
                     <td className="py-3 px-4 flex items-center gap-2.5">
                       <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-[#31333d] flex-shrink-0 bg-[#1e1f24]">
-                        <Image src={artist.photoUrl} alt={artist.stageName} fill className="object-cover" />
+                        <Image src={artist.photoUrl} alt={artist.stageName} fill sizes="36px" className="object-cover" />
                       </div>
                       <div>
                         <strong className="text-[#f3f1ec] text-xs block">{artist.stageName}</strong>
