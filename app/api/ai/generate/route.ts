@@ -123,12 +123,12 @@ async function callGeminiEphemerides(prompt: string, apiKey: string) {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(10000), // Max 10s per model with Grounding
+        signal: AbortSignal.timeout(22000), // 22s allows Google Search to query, read sources and verify
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          tools: [{ google_search: {} }],
+          tools: [{ googleSearch: {} }],     // Standard Google Search Grounding in v1beta
           generationConfig: {
-            temperature: 0.3,
+            temperature: 0.1,                // Near-zero temperature for strict factual accuracy
             maxOutputTokens: 2048,
           },
         }),
@@ -308,28 +308,45 @@ export async function POST(req: NextRequest) {
 
       const ctx = regionContextMap[region] || regionContextMap['argentina'];
 
-      const prompt = `Eres un historiador musical experto en ritmos, géneros y artistas de Latinoamérica y Brasil. Tu único objetivo es buscar y detallar efemérides musicales (nacimientos, fallecimientos, lanzamientos de álbumes históricos, conciertos icónicos o hitos culturales) que ocurrieron el ${day} de ${monthName} en cualquier año de la historia (1900–2025).
+      const prompt = `Sos un investigador histórico y musicólogo para el medio GUTA MÚSICA.
 
-Cobertura: ${ctx.name}. Géneros de referencia: ${ctx.references}. Instituciones: ${ctx.institutions}. Artistas emblema: ${ctx.artists}.
-${category && category !== 'todas' ? `Tipo de hecho preferido: ${category}.` : ''}
+TU OBJETIVO: Utilizar Google Search para encontrar entre 1 y 3 efemérides musicales REALES y VERIFICADAS que ocurrieron el día ${day} de ${monthName} (1900–2025).
 
-Reglas de veracidad (usa la búsqueda de Google para validar antes de responder):
-1. Solo incluir hechos ocurridos EXACTAMENTE el día ${day} de ${monthName}. Si el hecho ocurrió en otro día del mes, NO lo incluyas.
-2. Para lanzamientos: la fecha debe ser la fecha real de edición física o digital verificable, no la de grabación ni la de anuncio.
-3. Si no encontrás suficientes hechos verificados para esa fecha exacta, devolvé menos elementos o un array vacío []. La precisión vale más que la cantidad.
-4. Nunca inventes ni aproximes fechas para completar 3 resultados.
+REGIÓN OBLIGATORIA: ${ctx.name}.
+Géneros de referencia: ${ctx.references}.
 
-Devolvé ÚNICAMENTE un array JSON válido (sin texto fuera del JSON). Cada objeto debe tener exactamente estos campos:
+═══════════════════════════════════════════════
+🔍 INSTRUCCIÓN DE BÚSQUEDA EN GOOGLE (EJECUTAR):
+═══════════════════════════════════════════════
+Buscá en Google términos como:
+- "efemérides musicales" "${day} de ${monthName}"
+- "efemérides de la música" "${day} de ${monthName}"
+- "${day} de ${monthName}" ("nació" OR "falleció" OR "lanzó") música argentina
+- "20 de agosto" ("Black Amaya" OR música OR rock OR folklore)
+
+Lee artículos periodísticos reales (Cienradios, Rolling Stone, Página 12, La Nación, SADAIC, Wikipedia) para extraer la información verídica.
+
+═══════════════════════════════════════════════
+🚨 REGLAS ESTRICTAS DE VERIFICACIÓN (CRÍTICO):
+═══════════════════════════════════════════════
+1. ORIGEN: Solo incluir músicos o sucesos de ${ctx.name}. Artistas británicos, estadounidenses o europeos (como Bernard Sumner, New Order, Joy Division, etc.) están ESTRICTAMENTE PROHIBIDOS.
+2. DÍA EXACTO: El hecho debe haber ocurrido el ${day} de ${monthName}. Si un artista nació el día anterior (ej. Santaolalla nació el 19 de agosto) o en otro mes, NO LO INCLUYAS.
+3. AÑO EXACTO: Verificá el año real del suceso en los resultados de búsqueda (ej. Black Amaya nació en 1950, no en 1968).
+4. CALIDAD SOBRE CANTIDAD: Si para el ${day} de ${monthName} encontrás solo 1 hecho verídico, devolvé solo 1. Si no encontrás ninguno con certeza absoluta, devolvé un array vacío []. NUNCA inventes fechas ni artistas.
+
+${category && category !== 'todas' ? `Categoría preferida: ${category} (solo si hay hechos reales verificados).` : ''}
+
+Devolvé ÚNICAMENTE un array JSON válido, sin ningún texto fuera del JSON:
 [
   {
     "day": ${day},
     "month": ${month},
-    "year": 1985,
-    "title": "Título breve y preciso del hecho",
-    "description": "Dos oraciones informativas: qué ocurrió, quiénes estuvieron involucrados, y su impacto cultural en ${ctx.name} y Latinoamérica.",
+    "year": 1950,
+    "title": "Nacimiento de Juan Carlos «Black» Amaya",
+    "description": "Nace el baterista y figura fundamental en los albores del rock nacional argentino, miembro clave de Pescado Rabioso y Pappo's Blues.",
     "category": "nacimientos",
     "categoryLabel": "Nacimiento",
-    "source": "Fuente consultada (registro civil, discográfica, archivo de prensa, etc.)",
+    "source": "Archivo de prensa / Cienradios / Archivo del Rock",
     "impactBadge": "Hito Histórico"
   }
 ]`;
