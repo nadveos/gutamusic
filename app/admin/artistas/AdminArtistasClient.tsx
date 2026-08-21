@@ -20,6 +20,7 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === artists.length) {
@@ -38,12 +39,22 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
   const confirmDelete = async () => {
     if (deleteTarget) {
       const id = deleteTarget.id;
-      setArtists((prev) => prev.filter((a) => a.id !== id));
-      setSelectedIds((prev) => prev.filter((item) => item !== id));
+      const artistName = deleteTarget.name;
       try {
         await pb.collection('artists').delete(id);
-      } catch (e) {
-        console.warn('Error al eliminar de PocketBase:', e);
+        setArtists((prev) => prev.filter((a) => a.id !== id));
+        setSelectedIds((prev) => prev.filter((item) => item !== id));
+        setNotification({ type: 'success', text: `Artista "${artistName}" eliminado de PocketBase exitosamente.` });
+      } catch (e: any) {
+        console.error('Error al eliminar de PocketBase:', e);
+        if (e?.status === 403 || e?.message?.includes('superusers')) {
+          setNotification({
+            type: 'error',
+            text: `Error de permisos (403): Solo superusuarios pueden eliminar en PocketBase. Desbloqueá la Delete Rule de la colección 'artists' en PocketBase o iniciá sesión como _superuser.`
+          });
+        } else {
+          setNotification({ type: 'error', text: `Error al eliminar de PocketBase: ${e?.message || 'Error desconocido'}` });
+        }
       }
       setDeleteTarget(null);
     }
@@ -51,16 +62,34 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
 
   const confirmBulkDelete = async () => {
     const idsToDelete = [...selectedIds];
-    setArtists((prev) => prev.filter((a) => !idsToDelete.includes(a.id)));
-    setSelectedIds([]);
     setIsBulkDeleteOpen(false);
+
+    let deletedCount = 0;
+    let hasPermissionError = false;
 
     for (const id of idsToDelete) {
       try {
         await pb.collection('artists').delete(id);
-      } catch (e) {
-        console.warn('Error al eliminar masivamente de PocketBase:', id, e);
+        deletedCount++;
+      } catch (e: any) {
+        console.error('Error al eliminar masivamente de PocketBase:', id, e);
+        if (e?.status === 403 || e?.message?.includes('superusers')) {
+          hasPermissionError = true;
+        }
       }
+    }
+
+    if (deletedCount > 0) {
+      setArtists((prev) => prev.filter((a) => !idsToDelete.slice(0, deletedCount).includes(a.id)));
+      setSelectedIds([]);
+      setNotification({ type: 'success', text: `Se eliminaron ${deletedCount} artistas de PocketBase.` });
+    }
+
+    if (hasPermissionError) {
+      setNotification({
+        type: 'error',
+        text: `Error de permisos (403): PocketBase bloqueó la eliminación porque las API Rules de 'artists' requieren _superuser. Desbloqueá la 'Delete Rule' en el panel de PocketBase.`
+      });
     }
   };
 
@@ -72,6 +101,26 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
         actionText="Crear Nuevo Artista"
         actionHref="/admin/artistas/nuevo"
       />
+
+      {/* Notifications */}
+      {notification && (
+        <div
+          className={`p-3.5 rounded-xl border text-xs flex items-center justify-between gap-2 animate-in fade-in duration-150 ${
+            notification.type === 'success'
+              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+              : 'bg-[#c0909b]/15 border-[#c0909b]/30 text-[#e6a8b4]'
+          }`}
+        >
+          <span>{notification.text}</span>
+          <button
+            type="button"
+            onClick={() => setNotification(null)}
+            className="text-[10px] uppercase font-bold underline opacity-80 hover:opacity-100"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
 
       {/* Bulk Actions Toolbar */}
       {selectedIds.length > 0 && (

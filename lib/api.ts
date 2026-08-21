@@ -1,9 +1,8 @@
 import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, GenreType } from './types';
-import { MOCK_ARTISTS, MOCK_EPHEMERIDES, MOCK_INTERVIEWS, MOCK_VIDEOS, MOCK_AGENDA } from './mockData';
 import { pb } from './pocketbase';
 
 // Music Data Service
-// Connects to PocketBase (https://gutamusic.meapp.com.ar) with fallback to MockData
+// Connects exclusively to PocketBase (https://gutamusic.meapp.com.ar) without mock fallbacks
 
 export class MusicDataService {
   // ARTISTS
@@ -196,8 +195,7 @@ export class MusicDataService {
       }
     } catch (e) {}
 
-    const videos = [...MOCK_VIDEOS];
-    return limit ? videos.slice(0, limit) : videos;
+    return [];
   }
 
   // INTERVIEWS
@@ -230,7 +228,7 @@ export class MusicDataService {
       }
     } catch (e) {}
 
-    return [...MOCK_INTERVIEWS];
+    return [];
   }
 
   static async getInterviewBySlug(slug: string): Promise<Interview | null> {
@@ -262,8 +260,7 @@ export class MusicDataService {
       }
     } catch (e) {}
 
-    const item = MOCK_INTERVIEWS.find(i => i.slug === slug);
-    return item || null;
+    return null;
   }
 
   static async getFeaturedInterview(): Promise<Interview | null> {
@@ -297,7 +294,7 @@ export class MusicDataService {
       }
     } catch (e) {}
 
-    return MOCK_EPHEMERIDES.filter(e => e.day === day && e.month === month);
+    return [];
   }
 
   static async getTodayEphemerides(day?: number, month?: number): Promise<EphemerisItem[]> {
@@ -334,7 +331,7 @@ export class MusicDataService {
       }
     } catch (e) {}
 
-    return [...MOCK_EPHEMERIDES];
+    return [];
   }
 
   // AGENDA
@@ -361,7 +358,7 @@ export class MusicDataService {
       }
     } catch (e) {}
 
-    return [...MOCK_AGENDA];
+    return [];
   }
 
   // GENRES
