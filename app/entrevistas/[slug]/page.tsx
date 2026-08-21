@@ -139,7 +139,11 @@ export default async function InterviewDetailPage({
             </div>
             <div>
               <h4 className="text-sm font-bold text-[#f3f1ec]">{artist.stageName}</h4>
-              <p className="text-xs text-[#8c887f]">{artist.city}, {artist.province}</p>
+              <p className="text-xs text-[#8c887f]">
+                {artist.city && artist.province && artist.city.toLowerCase() !== artist.province.toLowerCase()
+                  ? `${artist.city}, ${artist.province}`
+                  : (artist.province ? `${artist.province}, ${artist.country || 'Argentina'}` : (artist.country || 'Argentina'))}
+              </p>
             </div>
           </div>
 

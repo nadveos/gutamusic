@@ -9,6 +9,23 @@ interface ArtistCardProps {
 }
 
 export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
+  // Formato elegante de ubicación: evita duplicados como "Salta, Salta" o "Tarija, Tarija"
+  const locationText = (() => {
+    const city = artist.city?.trim();
+    const province = artist.province?.trim();
+    const country = artist.country?.trim() || 'Argentina';
+
+    if (city && province) {
+      if (city.toLowerCase() === province.toLowerCase()) {
+        return `${province}, ${country}`;
+      }
+      return `${city}, ${province}`;
+    }
+    if (province) return `${province}, ${country}`;
+    if (city) return `${city}, ${country}`;
+    return country;
+  })();
+
   return (
     <article className="group relative rounded-xl overflow-hidden natural-card transition-colors flex flex-col justify-between">
       {/* Thumbnail Container */}
@@ -22,13 +39,18 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1e1f24] via-transparent to-transparent opacity-90" />
 
-        {/* Top Badges */}
-        <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 z-10">
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#1e1f24]/90 text-[#e6cca0] border border-[#3c3f4c]">
-            {artist.genres[0]}
-          </span>
+        {/* Top Badges (muestra hasta 2 géneros seleccionados) */}
+        <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 z-10 max-w-[85%]">
+          {artist.genres.slice(0, 2).map((genre) => (
+            <span
+              key={genre}
+              className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#1e1f24]/90 text-[#e6cca0] border border-[#3c3f4c] backdrop-blur-xs shadow-sm"
+            >
+              {genre}
+            </span>
+          ))}
           {artist.videos.length > 0 && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-[#1e1f24]/90 text-[#93a887] border border-[#3c3f4c] flex items-center gap-1">
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-[#1e1f24]/90 text-[#93a887] border border-[#3c3f4c] flex items-center gap-1 backdrop-blur-xs shadow-sm">
               <Video className="w-3 h-3" />
               {artist.videos.length} {artist.videos.length === 1 ? 'Video' : 'Videos'}
             </span>
@@ -42,7 +64,7 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
           {/* Location */}
           <div className="flex items-center gap-1.5 text-[11px] text-[#aba79e]">
             <MapPin className="w-3 h-3 text-[#d97d64] flex-shrink-0" />
-            <span className="truncate">{artist.city}, {artist.province}</span>
+            <span className="truncate">{locationText}</span>
           </div>
 
           {/* Artist Stage Name */}
@@ -59,9 +81,9 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
         {/* Footer & CTA */}
         <div className="pt-2.5 border-t border-[#2a2c35] flex items-center justify-between">
           <div className="flex items-center gap-1 text-[10px] text-[#8c887f]">
-            {artist.genres.slice(1, 2).map((g) => (
-              <span key={g}>+{g}</span>
-            ))}
+            {artist.genres.length > 2 && (
+              <span>+{artist.genres.length - 2} género{artist.genres.length - 2 > 1 ? 's' : ''}</span>
+            )}
           </div>
 
           <Link

@@ -61,9 +61,11 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
           {/* Identity & Badges */}
           <div className="space-y-2 text-center md:text-left flex-1">
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded bg-sand-soft">
-                {artist.genres[0]}
-              </span>
+              {artist.genres.map((g) => (
+                <span key={g} className="text-[11px] font-semibold px-2.5 py-0.5 rounded bg-sand-soft">
+                  {g}
+                </span>
+              ))}
               <div className="flex items-center gap-1 text-xs text-[#aba79e] bg-[#24252c] px-2.5 py-0.5 rounded border border-[#31333d]">
                 <MapPin className="w-3 h-3 text-[#d97d64]" />
                 <span>{artist.province ? `${artist.province}, ${artist.country || 'Argentina'}` : (artist.country || 'Argentina')}</span>

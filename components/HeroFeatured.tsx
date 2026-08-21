@@ -34,7 +34,9 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist }) => {
           </span>
           <span className="inline-flex items-center gap-1 text-xs text-[#aba79e]">
             <MapPin className="w-3.5 h-3.5 text-[#d97d64]" />
-            {artist.city}, {artist.province}
+            {artist.city && artist.province && artist.city.toLowerCase() !== artist.province.toLowerCase()
+              ? `${artist.city}, ${artist.province}`
+              : (artist.province ? `${artist.province}, ${artist.country || 'Argentina'}` : (artist.country || 'Argentina'))}
           </span>
         </div>
 
