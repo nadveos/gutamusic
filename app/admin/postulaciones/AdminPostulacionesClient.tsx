@@ -134,13 +134,16 @@ export const AdminPostulacionesClient: React.FC = () => {
         } catch {}
 
         // Read from localStorage submitted forms
-        const localApps: ApplicationItem[] = JSON.parse(
-          localStorage.getItem('guta_pending_applications') || '[]'
-        );
+        const localApps: ApplicationItem[] = typeof window !== 'undefined'
+          ? JSON.parse(localStorage.getItem('guta_pending_applications') || '[]')
+          : [];
 
-        // Combine unique by id
-        const merged = [...pbList, ...localApps, ...sampleApplications];
-        const unique = Array.from(new Map(merged.map((item) => [item.id || item.stageName, item])).values());
+        // Combine unique by id: PocketBase first, local submissions second, sample only if empty
+        const merged = [...pbList, ...localApps];
+        const unique = merged.length > 0
+          ? Array.from(new Map(merged.map((item) => [item.id || item.stageName, item])).values())
+          : sampleApplications;
+
         setApplications(unique);
         if (unique.length > 0) {
           setSelectedApp(unique[0]);
@@ -178,7 +181,7 @@ export const AdminPostulacionesClient: React.FC = () => {
         country: app.country || 'Argentina',
         shortBio: app.bio.substring(0, 140) + '...',
         bio: app.bio,
-        photoUrl: app.photoUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop',
+        photoUrl: app.photoUrl || '',
         bannerUrl: '',
         quotes: '',
         featured: false,
@@ -188,7 +191,7 @@ export const AdminPostulacionesClient: React.FC = () => {
         discography: [],
         agenda: [],
         press: [],
-        gallery: [],
+        gallery: app.photoUrl ? [app.photoUrl] : [],
         createdDate: new Date().toISOString().split('T')[0],
       };
 
@@ -197,6 +200,11 @@ export const AdminPostulacionesClient: React.FC = () => {
       } catch (pbErr) {
         console.warn('PocketBase artist creation fallback:', pbErr);
       }
+
+      // Update application status in PocketBase
+      try {
+        await pb.collection('applications').update(app.id, { status: 'approved' });
+      } catch (e) {}
 
       // 3. Mark application as approved in state & local storage
       const updated = applications.map((a) => (a.id === app.id ? { ...a, status: 'approved' as const } : a));
@@ -218,13 +226,30 @@ export const AdminPostulacionesClient: React.FC = () => {
     }
   };
 
-  const handleReject = (appId: string) => {
+  const handleReject = async (appId: string) => {
+    try {
+      await pb.collection('applications').update(appId, { status: 'rejected' });
+    } catch (e) {}
+
     const updated = applications.map((a) => (a.id === appId ? { ...a, status: 'rejected' as const } : a));
     setApplications(updated);
     if (selectedApp?.id === appId) {
       setSelectedApp({ ...selectedApp, status: 'rejected' });
     }
     setToastMessage('Postulación archivada.');
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const handleDeleteApp = async (appId: string) => {
+    try {
+      await pb.collection('applications').delete(appId);
+    } catch (e) {}
+
+    setApplications((prev) => prev.filter((a) => a.id !== appId));
+    if (selectedApp?.id === appId) {
+      setSelectedApp(null);
+    }
+    setToastMessage('Postulación eliminada.');
     setTimeout(() => setToastMessage(''), 3000);
   };
 
@@ -459,12 +484,21 @@ export const AdminPostulacionesClient: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleReject(selectedApp.id)}
-                      className="p-1.5 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#8c887f] hover:text-[#c0909b] transition-colors"
-                      title="Archivar postulación"
+                      className="p-1.5 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#8c887f] hover:text-[#c0909b] transition-colors cursor-pointer"
+                      title="Archivar / Rechazar postulación"
                     >
                       <XCircle className="w-4 h-4" />
                     </button>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteApp(selectedApp.id)}
+                    className="p-1.5 rounded-lg bg-[#24252c] hover:bg-rose-950/60 text-[#8c887f] hover:text-rose-400 transition-colors cursor-pointer"
+                    title="Eliminar postulación definitivamente"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 

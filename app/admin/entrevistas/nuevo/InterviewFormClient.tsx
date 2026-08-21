@@ -66,7 +66,24 @@ export const InterviewFormClient: React.FC<InterviewFormClientProps> = ({ initia
 
   // Cargar entrevista existente desde PocketBase si se encuentra en modo edición
   useEffect(() => {
-    if (!editId) return;
+    if (!editId) {
+      if (typeof window !== 'undefined') {
+        const aiDraft = sessionStorage.getItem('guta_ai_interview_draft');
+        if (aiDraft) {
+          try {
+            const parsed = JSON.parse(aiDraft);
+            setFormData((prev) => ({
+              ...prev,
+              ...parsed,
+            }));
+            sessionStorage.removeItem('guta_ai_interview_draft');
+            setSuccessMessage('¡Borrador generado por IA cargado con éxito en el editor!');
+            setTimeout(() => setSuccessMessage(''), 4000);
+          } catch (e) {}
+        }
+      }
+      return;
+    }
 
     const loadInterview = async () => {
       setIsLoading(true);

@@ -98,9 +98,26 @@ export const ArtistFormClient: React.FC = () => {
   const [aiModelName, setAiModelName] = useState<string>('gemini-3.6-flash');
   const [isAiLoading, setIsAiLoading] = useState(false);
 
-  // Load existing artist if in edit mode
+  // Load existing artist if in edit mode or load AI draft if coming from AI Studio
   useEffect(() => {
-    if (!editId) return;
+    if (!editId) {
+      if (typeof window !== 'undefined') {
+        const aiDraft = sessionStorage.getItem('guta_ai_artist_draft');
+        if (aiDraft) {
+          try {
+            const parsed = JSON.parse(aiDraft);
+            setFormData((prev) => ({
+              ...prev,
+              ...parsed,
+            }));
+            sessionStorage.removeItem('guta_ai_artist_draft');
+            setSuccessMessage('¡Datos generados por IA cargados en el formulario del artista!');
+            setTimeout(() => setSuccessMessage(''), 4000);
+          } catch (e) {}
+        }
+      }
+      return;
+    }
 
     const loadArtist = async () => {
       setIsLoading(true);

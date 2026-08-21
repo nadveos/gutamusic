@@ -120,7 +120,7 @@ export const ContactFormClient: React.FC = () => {
           instagram: formData.instagram.trim(),
           tiktok: formData.tiktok.trim(),
         },
-        photoUrl: finalPhotoUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop',
+        photoUrl: finalPhotoUrl || '',
         message: formData.message.trim(),
         status: 'pending',
         submittedAt: new Date().toISOString(),
@@ -130,7 +130,7 @@ export const ContactFormClient: React.FC = () => {
       try {
         await pb.collection('applications').create(applicationPayload);
       } catch (pbErr) {
-        console.warn('PocketBase applications collection not available, saving to local application store:', pbErr);
+        console.warn('PocketBase applications collection not available or rule blocked, saving to local application store:', pbErr);
       }
 
       // Also persist to localStorage for offline admin review demo

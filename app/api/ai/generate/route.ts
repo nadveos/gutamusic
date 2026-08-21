@@ -287,6 +287,51 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    if (action === 'article_generation' || action === 'journalistic_note') {
+      const { stageName, genres, city, province, topic, host = 'Guta Flores', category = 'Acústico GUTA' } = payload;
+      const genresStr = Array.isArray(genres) ? genres.join(', ') : genres || 'Música Independiente';
+      const locStr = city ? `${city}, ${province || 'Argentina'}` : (province || 'Argentina');
+
+      const prompt = `Sos un periodista musical y crítico cultural de primer nivel para el medio GUTA MÚSICA (conducción editorial: ${host}).
+Redactá una NOTA PERIODÍSTICA / ARTÍCULO EDITORIAL COMPLETO para publicar en la revista/sitio de GUTA sobre el artista "${stageName}" (${locStr}), género "${genresStr}".
+Enfoque temático: "${topic || 'Perfil sonoro, trayectoria independiente y propuesta musical'}".
+
+Devolvé la respuesta exclusivamente en formato JSON válido con la siguiente estructura:
+{
+  "title": "Titular periodístico contundente, atractivo y profesional (evitar títulos cliché o genéricos)",
+  "subtitle": "Bajada o copete periodístico de 2 oraciones que sintetiza el núcleo de la nota",
+  "summary": "Resumen conciso de 1 párrafo para las tarjetas de portada del sitio",
+  "editorialText": "Cuerpo completo del artículo en formato Markdown con subtítulos estructurados (##), análisis musical detallado, citas y contexto territorial (al menos 4 párrafos enriquecedores)",
+  "keyHighlights": [
+    "Dato o reflexión clave 1",
+    "Dato o reflexión clave 2",
+    "Dato o reflexión clave 3",
+    "Dato o reflexión clave 4"
+  ],
+  "quotes": "Frase destacada o declaración del artista entre comillas",
+  "seoTitle": "Título SEO de menos de 60 caracteres",
+  "seoDesc": "Meta description periodística de menos de 155 caracteres",
+  "category": "${category}"
+}`;
+
+      try {
+        const result = await callGeminiWithLog(prompt, geminiKey);
+        return NextResponse.json({
+          success: true,
+          source: 'gemini-live',
+          model: result.usedModel,
+          tokenUsage: result.usage,
+          data: result.data,
+        });
+      } catch (err: any) {
+        console.error('❌ Error en article_generation Gemini:', err.message);
+        return NextResponse.json({
+          success: false,
+          error: err.message,
+        }, { status: 500 });
+      }
+    }
+
     if (action === 'artist_review') {
       const { stageName, genres, city, province } = payload;
       const genresStr = Array.isArray(genres) ? genres.join(', ') : genres || 'Música Independiente';
@@ -323,13 +368,16 @@ Devolvé la respuesta en formato JSON con la siguiente estructura:
     }
 
     if (action === 'interview_chronicle') {
-      const { artistName, host } = payload;
+      const { artistName, host = 'Guta Flores', topic = 'Sesión acústica y charla sobre autogestión' } = payload;
 
-      const prompt = `Sos un redactor periodístico de música para GUTA MÚSICA. Redactá la crónica de una entrevista realizada por el conductor ${host || 'Guta Flores'} al artista "${artistName}".
+      const prompt = `Sos un redactor periodístico de música para GUTA MÚSICA. Redactá la crónica de una entrevista realizada por el conductor ${host} al artista "${artistName}".
+Enfoque: "${topic}".
 Devolvé la respuesta en formato JSON:
 {
+  "title": "Titular de la entrevista o crónica",
+  "subtitle": "Bajada periodística del encuentro",
   "summary": "Resumen conciso del encuentro",
-  "editorialText": "Crónica periodística de 3 párrafos destacando el tono intimista, anécdotas y reflexiones sobre la autogestión",
+  "editorialText": "Crónica periodística de 3 a 4 párrafos en Markdown destacando el tono intimista, anécdotas y reflexiones sobre la autogestión musical",
   "keyHighlights": ["Punto clave 1", "Punto clave 2", "Punto clave 3", "Punto clave 4"]
 }`;
 
