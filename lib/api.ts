@@ -1,6 +1,21 @@
 import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, GenreType } from './types';
 import { pb } from './pocketbase';
 
+async function syncServerAuth() {
+  if (typeof window === 'undefined') {
+    try {
+      const { cookies } = await import('next/headers');
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore.toString();
+      if (cookieHeader) {
+        pb.authStore.loadFromCookie(cookieHeader);
+      }
+    } catch {
+      // outside request context
+    }
+  }
+}
+
 // Music Data Service
 // Connects exclusively to PocketBase (https://gutamusic.meapp.com.ar) without mock fallbacks
 
@@ -8,6 +23,7 @@ export class MusicDataService {
   // ARTISTS
   static async getArtists(filters?: { genre?: string; query?: string; featured?: boolean }): Promise<Artist[]> {
     try {
+      await syncServerAuth();
       // Load directly from PocketBase collection 'artists'
       const records = await pb.collection('artists').getFullList<any>({
         requestKey: null,
@@ -68,6 +84,7 @@ export class MusicDataService {
 
   static async getArtistBySlug(slug: string): Promise<Artist | null> {
     try {
+      await syncServerAuth();
       let record: any = null;
       try {
         record = await pb.collection('artists').getFirstListItem(`slug="${slug}"`, {
@@ -143,6 +160,7 @@ export class MusicDataService {
 
   static async getFeaturedArtistOfWeek(): Promise<Artist | null> {
     try {
+      await syncServerAuth();
       let record: any = null;
       try {
         record = await pb.collection('artists').getFirstListItem('featuredOfWeek=true', {
@@ -170,6 +188,7 @@ export class MusicDataService {
   // VIDEOS
   static async getVideos(limit?: number): Promise<VideoItem[]> {
     try {
+      await syncServerAuth();
       const records = await pb.collection('videos').getFullList<any>({
         sort: '-publishedAt',
         requestKey: null,
@@ -201,6 +220,7 @@ export class MusicDataService {
   // INTERVIEWS
   static async getInterviews(): Promise<Interview[]> {
     try {
+      await syncServerAuth();
       const records = await pb.collection('interviews').getFullList<any>({
         requestKey: null,
       });
@@ -233,6 +253,7 @@ export class MusicDataService {
 
   static async getInterviewBySlug(slug: string): Promise<Interview | null> {
     try {
+      await syncServerAuth();
       const record = await pb.collection('interviews').getFirstListItem(`slug="${slug}"`, {
         requestKey: null,
       });
@@ -271,6 +292,7 @@ export class MusicDataService {
   // EPHEMERIDES
   static async getEphemeridesForDate(day: number, month: number): Promise<EphemerisItem[]> {
     try {
+      await syncServerAuth();
       const records = await pb.collection('ephemerides').getFullList<any>({
         filter: `day=${day} && month=${month}`,
         sort: 'year',
@@ -309,6 +331,7 @@ export class MusicDataService {
 
   static async getAllEphemerides(): Promise<EphemerisItem[]> {
     try {
+      await syncServerAuth();
       const records = await pb.collection('ephemerides').getFullList<any>({
         sort: 'month,day',
         requestKey: null,
@@ -337,6 +360,7 @@ export class MusicDataService {
   // AGENDA
   static async getUpcomingEvents(): Promise<AgendaEvent[]> {
     try {
+      await syncServerAuth();
       const records = await pb.collection('events').getFullList<any>({
         sort: 'date',
         requestKey: null,

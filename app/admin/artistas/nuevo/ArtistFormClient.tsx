@@ -228,7 +228,14 @@ export const ArtistFormClient: React.FC = () => {
       }, 1000);
     } catch (err: any) {
       console.error('Error saving artist:', err);
-      setErrorMessage(`Error al guardar en PocketBase: ${err?.message || 'Verificá tus permisos'}`);
+      let detail = err?.message || 'Verificá tus permisos de PocketBase';
+      if (err?.data && typeof err.data === 'object') {
+        const fieldErrors = Object.entries(err.data)
+          .map(([k, v]: [string, any]) => `${k}: ${v?.message || JSON.stringify(v)}`)
+          .join(' | ');
+        if (fieldErrors) detail += ` [Campos: ${fieldErrors}]`;
+      }
+      setErrorMessage(`Error al guardar en PocketBase: ${detail}`);
       setIsSaved(false);
     }
   };

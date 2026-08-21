@@ -500,7 +500,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
   // Save a single suggestion from the card directly
   const handleSaveSingleSuggestion = async (item: any) => {
     const newItem: EphemerisItem = {
-      id: `eph-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: `eph-${Date.now()}`,
       day: item.day || formData.day,
       month: item.month || formData.month,
       year: item.year,
@@ -518,8 +518,12 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
     };
 
     try {
-      await pb.collection('ephemerides').create(newItem);
-    } catch (e) {}
+      const { id: _, ...payload } = newItem;
+      const created = await pb.collection('ephemerides').create(payload);
+      newItem.id = created.id;
+    } catch (e: any) {
+      console.error('Error guardando en PocketBase:', e);
+    }
 
     setItemsList((prev) => [newItem, ...prev]);
 
@@ -548,7 +552,7 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
 
     for (const sug of aiSuggestions) {
       const newItem: EphemerisItem = {
-        id: `eph-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        id: `eph-${Date.now()}`,
         day: sug.day || formData.day,
         month: sug.month || formData.month,
         year: sug.year,
@@ -566,8 +570,12 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
       };
 
       try {
-        await pb.collection('ephemerides').create(newItem);
-      } catch (e) {}
+        const { id: _, ...payload } = newItem;
+        const created = await pb.collection('ephemerides').create(payload);
+        newItem.id = created.id;
+      } catch (e: any) {
+        console.error('Error guardando en PocketBase:', e);
+      }
 
       newItemsToAdd.push(newItem);
     }
@@ -605,9 +613,14 @@ export const EfemeridesAdminClient: React.FC<EfemeridesAdminClientProps> = ({
     };
 
     try {
-      await pb.collection('ephemerides').create(newItem);
+      const { id: _, ...payload } = newItem;
+      const created = await pb.collection('ephemerides').create(payload);
+      newItem.id = created.id;
       setNotification({ type: 'success', text: `¡Efeméride "${newItem.title}" agregada al calendario histórico!` });
-    } catch (e) {}
+    } catch (e: any) {
+      console.error('Error guardando en PocketBase:', e);
+      setNotification({ type: 'error', text: `Error al guardar en PocketBase: ${e?.message || 'Revisá permisos'}` });
+    }
 
     setItemsList([newItem, ...itemsList]);
     // Descartar de las sugerencias por si quedó alguna versión pendiente
