@@ -6,6 +6,9 @@ import Image from 'next/image';
 import { MusicDataService } from '../../../lib/api';
 import { Radio, User, Calendar, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function generateMetadata({
   params,
 }: {
@@ -18,13 +21,15 @@ export async function generateMetadata({
     return { title: 'Entrevista No Encontrada | GUTA MÚSICA' };
   }
 
+  const thumb = interview.thumbnailUrl || interview.artistPhoto || '';
+
   return {
     title: `${interview.title} | GUTA MÚSICA`,
     description: interview.summary,
     openGraph: {
       title: interview.title,
       description: interview.summary,
-      images: [interview.thumbnailUrl],
+      images: thumb ? [thumb] : [],
     },
   };
 }
@@ -55,6 +60,7 @@ export default async function InterviewDetailPage({
     : null;
 
   const embedUrl = getEmbedVideoUrl(interview.videoUrl);
+  const heroImage = interview.thumbnailUrl || interview.artistPhoto || artist?.photoUrl || '';
 
   return (
     <article className="max-w-4xl mx-auto space-y-8">
@@ -64,7 +70,7 @@ export default async function InterviewDetailPage({
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8c887f] hover:text-[#e6cca0] transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Volver a todas las entrevistas</span>
+        <span>Volver a todas las notas y entrevistas</span>
       </Link>
 
       {/* Header */}
@@ -88,38 +94,41 @@ export default async function InterviewDetailPage({
         </h1>
 
         {interview.subtitle && (
-          <p className="text-base text-[#c5c0b6] leading-relaxed">
+          <p className="text-base text-[#c5c0b6] leading-relaxed border-l-2 border-[#d97d64] pl-3 italic">
             {interview.subtitle}
           </p>
         )}
       </div>
 
-      {/* Video Player or Thumbnail */}
-      <div className="natural-card p-3 sm:p-4 rounded-2xl space-y-2.5">
-        <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-[#2d2f38]">
-          {embedUrl ? (
-            <iframe
-              src={embedUrl}
-              title={interview.title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="w-full h-full border-0"
-            />
-          ) : interview.thumbnailUrl ? (
-            <Image
-              src={interview.thumbnailUrl}
-              alt={interview.title}
-              fill
-              sizes="(max-width: 1200px) 100vw, 800px"
-              className="object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-[#78746c]">
-              <Radio className="w-8 h-8 opacity-40" />
-            </div>
-          )}
+      {/* Video Player or Editorial Hero Banner */}
+      {(embedUrl || heroImage) && (
+        <div className="natural-card p-3 sm:p-4 rounded-2xl space-y-2.5">
+          <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-[#2d2f38]">
+            {embedUrl ? (
+              <iframe
+                src={embedUrl}
+                title={interview.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full border-0"
+              />
+            ) : heroImage ? (
+              <Image
+                src={heroImage}
+                alt={interview.title}
+                fill
+                sizes="(max-width: 1200px) 100vw, 800px"
+                className="object-cover"
+                priority
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-[#78746c]">
+                <Radio className="w-8 h-8 opacity-40" />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Artist Link Bar */}
       {artist && (

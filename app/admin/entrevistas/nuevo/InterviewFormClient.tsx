@@ -738,26 +738,28 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
 
           <div>
             <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
-              URL del Video Completo o Acústico
+              URL del Video Completo o Acústico <span className="text-[#8c887f] font-normal">(Opcional)</span>
             </label>
             <input
               type="text"
               value={formData.videoUrl}
               onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-              placeholder="https://www.youtube.com/watch?v=..."
+              placeholder="https://www.youtube.com/watch?v=... (Dejar vacío si es nota escrita)"
               className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs font-mono focus:outline-none focus:border-[#d97d64]"
             />
+            <p className="text-[10px] text-[#8c887f] mt-1">
+              Si no ingresás video, la nota se publicará como artículo / crónica periodística con su imagen de portada.
+            </p>
           </div>
 
           <div className="sm:col-span-2">
             <ImageUploadField
-              label="Thumbnail / Portada de la Entrevista"
-              required
+              label="Thumbnail / Portada de la Nota o Entrevista"
               value={formData.thumbnailUrl}
               onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
               collectionName="media"
               aspectRatio="video"
-              helperText="Imagen de portada en formato 16:9 de alta resolución"
+              helperText="Imagen en formato horizontal 16:9. Si se deja vacía, se usará la foto de perfil del artista."
             />
           </div>
         </div>
