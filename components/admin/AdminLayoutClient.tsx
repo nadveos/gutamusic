@@ -3,34 +3,28 @@
 import React, { useState, useEffect } from 'react';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminLoginForm } from './AdminLoginForm';
-import { pb, isSuperUserAuthenticated } from '../../lib/pocketbase';
+import { pb, isSuperUserAuthenticated, logoutSuperUser } from '../../lib/pocketbase';
 import { Menu, Music2 } from 'lucide-react';
 import Link from 'next/link';
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(() => {
     if (typeof window !== 'undefined') {
-      const valid = isSuperUserAuthenticated();
-      const localSession = localStorage.getItem('guta_admin_logged') === 'true';
-      return valid || localSession;
+      return isSuperUserAuthenticated();
     }
     return null;
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Check and confirm auth state on mount
+    // Check and confirm real PocketBase auth state on mount
     const valid = isSuperUserAuthenticated();
-    const localSession = typeof window !== 'undefined' && localStorage.getItem('guta_admin_logged') === 'true';
-    setIsAuthenticated(valid || localSession);
+    setIsAuthenticated(valid);
 
     // Subscribe to PocketBase auth changes
     const unsub = pb.authStore.onChange((token, model) => {
-      const isAuth = Boolean(token && model);
-      if (isAuth) {
-        localStorage.setItem('guta_admin_logged', 'true');
-      }
-      setIsAuthenticated(isAuth || (typeof window !== 'undefined' && localStorage.getItem('guta_admin_logged') === 'true'));
+      const isAuth = Boolean(token && pb.authStore.isValid);
+      setIsAuthenticated(isAuth);
     });
 
     return () => {
@@ -39,17 +33,11 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleLoginSuccess = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('guta_admin_logged', 'true');
-    }
     setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('guta_admin_logged');
-    }
-    pb.authStore.clear();
+    logoutSuperUser();
     setIsAuthenticated(false);
   };
 

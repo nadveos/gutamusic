@@ -100,18 +100,11 @@ export const AdminLoginForm: React.FC<AdminLoginFormProps> = ({ onLoginSuccess }
           }, 600);
         }
       } else {
-        // Mock fallback for offline dev
-        if (is2FAEnabled()) {
-          setStep('2fa');
-        } else {
-          setSuccessMsg('Ingresando al panel editorial...');
-          setTimeout(() => {
-            onLoginSuccess();
-          }, 700);
-        }
+        setErrorMsg(res.error || 'Credenciales de _superusers incorrectas en PocketBase (https://gutamusic.meapp.com.ar).');
       }
     } catch (err: any) {
-      setErrorMsg('Error al conectar con el servidor de autenticación.');
+      console.error('Login error:', err);
+      setErrorMsg(err?.message || 'Error al conectar con el servidor de autenticación de PocketBase.');
     } finally {
       setIsLoading(false);
     }

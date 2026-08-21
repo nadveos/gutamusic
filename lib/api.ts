@@ -1,8 +1,9 @@
 import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, GenreType } from './types';
-import { pb } from './pocketbase';
+import { pb, ensureServerSuperUserAuth } from './pocketbase';
 
 async function syncServerAuth() {
   if (typeof window === 'undefined') {
+    // 1. Intentar cargar sesión desde cookies de la petición
     try {
       const { cookies } = await import('next/headers');
       const cookieStore = await cookies();
@@ -12,6 +13,11 @@ async function syncServerAuth() {
       }
     } catch {
       // outside request context
+    }
+
+    // 2. Si no hay token de cookie, autenticar automáticamente con PB_EMAIL y PB_PASSWORD
+    if (!pb.authStore.isValid) {
+      await ensureServerSuperUserAuth();
     }
   }
 }

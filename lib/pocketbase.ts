@@ -66,3 +66,31 @@ export function logoutSuperUser() {
     });
   }
 }
+
+/**
+ * Autentica automáticamente en el servidor (Node.js / Next.js SSR)
+ * utilizando las variables de entorno PB_EMAIL y PB_PASSWORD de CapRover/.env.local
+ */
+export async function ensureServerSuperUserAuth(): Promise<boolean> {
+  if (typeof window === 'undefined') {
+    if (pb.authStore.isValid) return true;
+
+    const email = process.env.PB_EMAIL || process.env.POCKETBASE_ADMIN_EMAIL;
+    const password = process.env.PB_PASSWORD || process.env.POCKETBASE_ADMIN_PASSWORD;
+
+    if (email && password) {
+      try {
+        await pb.collection('_superusers').authWithPassword(email, password);
+        return true;
+      } catch {
+        try {
+          await (pb as any).admins.authWithPassword(email, password);
+          return true;
+        } catch (e: any) {
+          console.warn('⚠️ Auto-autenticación en servidor con PB_EMAIL falló:', e?.message);
+        }
+      }
+    }
+  }
+  return pb.authStore.isValid;
+}
