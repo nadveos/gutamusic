@@ -1,8 +1,8 @@
 import { pb } from './pocketbase';
 
 /**
- * Utility helper to upload files to PocketBase or generate a data URL preview as a fallback.
- * Works seamlessly with any collection (e.g. 'artists', 'interviews', 'applications', or 'uploads').
+ * Utility helper to upload files to PocketBase storage.
+ * It uploads the file to the PocketBase 'media' collection and returns the public HTTP URL.
  */
 export async function uploadImageToPocketBase(
   file: File,
@@ -12,44 +12,69 @@ export async function uploadImageToPocketBase(
     return { success: false, url: '', error: 'No se seleccionó ningún archivo' };
   }
 
+  // 1. Try Next.js server-side /api/upload endpoint first
   try {
-    // 1. Try uploading to the specific collection if it exists
+    const apiFormData = new FormData();
+    apiFormData.append('file', file);
+    apiFormData.append('collection', collectionName);
+
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: apiFormData,
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.url) {
+        return { success: true, url: data.url };
+      }
+    }
+  } catch (apiErr: any) {
+    console.warn('API /api/upload endpoint not reachable or failed, attempting client PocketBase SDK upload:', apiErr?.message);
+  }
+
+  // 2. Direct client-side PocketBase SDK fallback
+  try {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
 
+    let record: any = null;
     try {
-      const record = await pb.collection(collectionName).create(formData);
-      if (record && record.file) {
-        const fileUrl = pb.files.getUrl(record, record.file);
-        return { success: true, url: fileUrl };
-      }
+      record = await pb.collection(collectionName).create(formData);
     } catch (collErr: any) {
-      // If collection doesn't exist, try 'artists' or 'files'
-      console.warn(`Collection ${collectionName} not ready for direct upload, creating temporary preview:`, collErr?.message);
+      if (collectionName !== 'media') {
+        record = await pb.collection('media').create(formData);
+      } else {
+        throw collErr;
+      }
     }
 
-    // 2. Fallback: Convert file to Base64 Data URL so it can be viewed and saved in any environment
-    const base64Url = await fileToBase64(file);
-    return { success: true, url: base64Url };
-  } catch (err: any) {
-    console.error('Error in uploadImageToPocketBase:', err);
+    if (record && record.file) {
+      const fileUrl = pb.files.getURL(record, record.file);
+      return { success: true, url: fileUrl };
+    }
+
     return {
       success: false,
       url: '',
-      error: err?.message || 'Error al procesar la imagen seleccionada',
+      error: 'PocketBase no devolvió el archivo guardado.',
+    };
+  } catch (err: any) {
+    console.error('Error in uploadImageToPocketBase:', err);
+    let errMsg = 'Error al subir la imagen al almacenamiento';
+    if (err?.data && typeof err.data === 'object') {
+      const fieldErrors = Object.entries(err.data)
+        .map(([k, v]: [string, any]) => `${k}: ${v?.message || JSON.stringify(v)}`)
+        .join(', ');
+      if (fieldErrors) errMsg += `: ${fieldErrors}`;
+    } else if (err?.message) {
+      errMsg += `: ${err.message}`;
+    }
+    return {
+      success: false,
+      url: '',
+      error: errMsg,
     };
   }
-}
-
-/**
- * Converts a File into a base64 data string
- */
-export function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
 }

@@ -190,6 +190,22 @@ export const ArtistFormClient: React.FC = () => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
+    // Ensure URLs are valid http(s) URLs or empty string to satisfy PocketBase schema
+    const cleanPhotoUrl = formData.photoUrl.trim();
+    const cleanBannerUrl = formData.bannerUrl.trim();
+
+    const isInvalidUrl = (url: string) => url !== '' && !url.startsWith('http://') && !url.startsWith('https://');
+    if (isInvalidUrl(cleanPhotoUrl)) {
+      setErrorMessage('La foto principal no tiene una URL válida (debe comenzar con http:// o https://). Subí el archivo nuevamente o ingresá un enlace válido.');
+      setIsSaved(false);
+      return;
+    }
+    if (isInvalidUrl(cleanBannerUrl)) {
+      setErrorMessage('El banner de portada no tiene una URL válida (debe comenzar con http:// o https://). Subí el archivo nuevamente o ingresá un enlace válido.');
+      setIsSaved(false);
+      return;
+    }
+
     const payload = {
       stageName: formData.stageName.trim(),
       slug,
@@ -200,8 +216,8 @@ export const ArtistFormClient: React.FC = () => {
       country: formData.country.trim(),
       shortBio: formData.shortBio.trim(),
       bio: formData.bio.trim(),
-      photoUrl: formData.photoUrl.trim(),
-      bannerUrl: formData.bannerUrl.trim(),
+      photoUrl: cleanPhotoUrl,
+      bannerUrl: cleanBannerUrl,
       quotes: formData.quotes.trim(),
       featured: formData.featured,
       featuredOfWeek: formData.featuredOfWeek,
@@ -536,7 +552,7 @@ export const ArtistFormClient: React.FC = () => {
             required
             value={formData.photoUrl}
             onChange={(url) => setFormData({ ...formData, photoUrl: url })}
-            collectionName="artists"
+            collectionName="media"
             aspectRatio="square"
             helperText="Formato cuadrado o vertical recomendado (JPG, PNG, WebP)"
           />
@@ -545,7 +561,7 @@ export const ArtistFormClient: React.FC = () => {
             label="Banner de Perfil / Portada"
             value={formData.bannerUrl}
             onChange={(url) => setFormData({ ...formData, bannerUrl: url })}
-            collectionName="artists"
+            collectionName="media"
             aspectRatio="banner"
             helperText="Formato horizontal panorámico para la cabecera"
           />

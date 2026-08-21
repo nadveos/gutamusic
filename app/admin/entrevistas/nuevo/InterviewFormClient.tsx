@@ -708,7 +708,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
               required
               value={formData.thumbnailUrl}
               onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
-              collectionName="interviews"
+              collectionName="media"
               aspectRatio="video"
               helperText="Imagen de portada en formato 16:9 de alta resolución"
             />
