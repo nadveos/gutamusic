@@ -132,6 +132,38 @@ export class MusicDataService {
           }
         } catch (e) {}
 
+        let artistVideos: VideoItem[] = Array.isArray(record.videos) ? [...record.videos] : [];
+        try {
+          const matchingVideos = await pb.collection('videos').getFullList<any>({
+            filter: `artistId="${record.id}" || artistName ~ "${record.stageName}"`,
+            sort: '-created',
+            requestKey: null,
+          });
+          if (matchingVideos && matchingVideos.length > 0) {
+            const existingIds = new Set(artistVideos.map((v) => v.id));
+            for (const mv of matchingVideos) {
+              if (!existingIds.has(mv.id)) {
+                artistVideos.push({
+                  id: mv.id,
+                  title: mv.title,
+                  platform: mv.platform || 'youtube',
+                  url: mv.url,
+                  embedUrl: mv.embedUrl,
+                  thumbnailUrl: mv.thumbnailUrl,
+                  channelOrAuthor: mv.channelOrAuthor || record.stageName,
+                  type: mv.type || 'session',
+                  duration: mv.duration,
+                  publishedAt: mv.publishedAt || mv.created?.split(' ')[0] || '',
+                  views: mv.views,
+                  featured: Boolean(mv.featured),
+                  artistId: mv.artistId || record.id,
+                  artistName: mv.artistName || record.stageName,
+                });
+              }
+            }
+          }
+        } catch (e) {}
+
         return {
           id: record.id,
           slug: record.slug,
@@ -148,7 +180,7 @@ export class MusicDataService {
           featured: Boolean(record.featured),
           featuredOfWeek: Boolean(record.featuredOfWeek),
           socials: record.socials || {},
-          videos: record.videos || [],
+          videos: artistVideos,
           discography: record.discography || [],
           agenda: artistAgenda,
           press: record.press || [],

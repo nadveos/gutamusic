@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { Artist } from '../../../lib/types';
+import { getVideoEmbedUrl } from '../../../lib/videoUtils';
 import {
   MapPin,
   Calendar,
@@ -22,7 +23,9 @@ interface ArtistProfileClientProps {
 export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist }) => {
   const [activeTab, setActiveTab] = useState<'bio' | 'videos' | 'discografia' | 'agenda' | 'prensa'>('bio');
   const [activeVideoEmbed, setActiveVideoEmbed] = useState<string | null>(
-    artist.videos.length > 0 ? artist.videos[0].embedUrl || null : null
+    artist.videos.length > 0
+      ? getVideoEmbedUrl(artist.videos[0].embedUrl || artist.videos[0].url, artist.videos[0].platform)
+      : null
   );
 
   return (
@@ -253,30 +256,37 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {artist.videos.map((vid) => (
-              <div
-                key={vid.id}
-                className="natural-card rounded-xl overflow-hidden p-3.5 space-y-2.5 cursor-pointer hover:border-[#464956] transition-colors"
-                onClick={() => vid.embedUrl && setActiveVideoEmbed(vid.embedUrl)}
-              >
-                <div className="relative aspect-video rounded-lg overflow-hidden bg-black">
-                  <Image src={vid.thumbnailUrl} alt={vid.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-9 h-9 rounded-full bg-[#d97d64] text-[#151618] flex items-center justify-center">
-                      <Play className="w-4 h-4 fill-[#151618] ml-0.5" />
+          {artist.videos.length === 0 ? (
+            <p className="text-[#8c887f] text-xs italic py-4">No hay videos ni sesiones cargadas aún para este artista.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {artist.videos.map((vid) => (
+                <div
+                  key={vid.id}
+                  className="natural-card rounded-xl overflow-hidden p-3.5 space-y-2.5 cursor-pointer hover:border-[#464956] transition-colors"
+                  onClick={() => {
+                    const embed = getVideoEmbedUrl(vid.embedUrl || vid.url, vid.platform);
+                    if (embed) setActiveVideoEmbed(embed);
+                  }}
+                >
+                  <div className="relative aspect-video rounded-lg overflow-hidden bg-black">
+                    <Image src={vid.thumbnailUrl} alt={vid.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-full bg-[#d97d64] text-[#151618] flex items-center justify-center">
+                        <Play className="w-4 h-4 fill-[#151618] ml-0.5" />
+                      </div>
                     </div>
                   </div>
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase text-[#e6cca0]">{vid.type}</span>
+                    <h4 className="text-xs sm:text-sm font-bold text-[#f3f1ec] line-clamp-2">
+                      {vid.title}
+                    </h4>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] font-semibold uppercase text-[#e6cca0]">{vid.type}</span>
-                  <h4 className="text-xs sm:text-sm font-bold text-[#f3f1ec] line-clamp-2">
-                    {vid.title}
-                  </h4>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

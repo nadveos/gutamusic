@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Artist, Interview, VideoPlatform } from '../../../../lib/types';
-import { MusicDataService } from '../../../../lib/api';
+import { Artist, VideoPlatform } from '../../../../lib/types';
 import { pb } from '../../../../lib/pocketbase';
 import { ImageUploadField } from '../../../../components/admin/ImageUploadField';
 import {
@@ -36,25 +35,24 @@ export const InterviewFormClient: React.FC<InterviewFormClientProps> = ({ initia
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
 
+  const defaultArtist = initialArtists[0];
+
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
     subtitle: '',
-    artistId: initialArtists[0]?.id || '',
-    artistName: initialArtists[0]?.stageName || '',
-    artistSlug: initialArtists[0]?.slug || '',
-    artistPhoto: initialArtists[0]?.photoUrl || '',
+    artistId: defaultArtist?.id || '',
+    artistName: defaultArtist?.stageName || '',
+    artistSlug: defaultArtist?.slug || '',
+    artistPhoto: defaultArtist?.photoUrl || '',
     host: 'Guta Flores',
     date: new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }),
     summary: '',
     editorialText: '',
-    keyHighlights: [
-      'Proceso creativo y composición independiente',
-      'Defensa de la identidad cultural federal',
-    ],
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    keyHighlights: [] as string[],
+    videoUrl: '',
     videoPlatform: 'youtube' as VideoPlatform,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop',
+    thumbnailUrl: '',
     featured: false,
     category: 'Acústico GUTA' as 'Estudio' | 'En Vivo' | 'Acústico GUTA' | 'Especial',
   });
@@ -66,19 +64,20 @@ export const InterviewFormClient: React.FC<InterviewFormClientProps> = ({ initia
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Load existing interview if editing
+  // Cargar entrevista existente desde PocketBase si se encuentra en modo edición
   useEffect(() => {
     if (!editId) return;
 
     const loadInterview = async () => {
       setIsLoading(true);
+      setErrorMessage('');
       try {
         let record: any = null;
         try {
           record = await pb.collection('interviews').getOne(editId);
         } catch {
-          const all = await MusicDataService.getInterviews();
-          record = all.find((i) => i.id === editId || i.slug === editId);
+          // Intentar buscar por slug o ID
+          record = await pb.collection('interviews').getFirstListItem(`slug="${editId}" || id="${editId}"`);
         }
 
         if (record) {
@@ -103,8 +102,10 @@ export const InterviewFormClient: React.FC<InterviewFormClientProps> = ({ initia
           });
         }
       } catch (err: any) {
-        console.error('Error loading interview:', err);
-        setErrorMessage('No se pudo cargar la entrevista a editar.');
+        console.error('Error al cargar la entrevista desde PocketBase:', err);
+        setErrorMessage(
+          `No se pudo cargar la entrevista seleccionada desde PocketBase: ${err?.message || 'Error desconocido'}`
+        );
       } finally {
         setIsLoading(false);
       }
@@ -113,8 +114,19 @@ export const InterviewFormClient: React.FC<InterviewFormClientProps> = ({ initia
     loadInterview();
   }, [editId]);
 
-  // When artist selection changes, sync artist info and thumbnail if empty
+  // Al seleccionar un artista, sincronizar sus datos
   const handleArtistChange = (selectedId: string) => {
+    if (selectedId === 'custom') {
+      setFormData((prev) => ({
+        ...prev,
+        artistId: 'custom',
+        artistName: '',
+        artistSlug: '',
+        artistPhoto: '',
+      }));
+      return;
+    }
+
     const artist = initialArtists.find((a) => a.id === selectedId);
     if (artist) {
       setFormData((prev) => ({
@@ -160,7 +172,7 @@ export const InterviewFormClient: React.FC<InterviewFormClientProps> = ({ initia
     }));
   };
 
-  // Formatting helpers for text editor
+  // Helper de formateo de texto tipo markdown
   const insertFormatting = (prefix: string, suffix = '') => {
     const textarea = document.getElementById('editorial-textarea') as HTMLTextAreaElement | null;
     if (!textarea) return;
@@ -180,7 +192,7 @@ export const InterviewFormClient: React.FC<InterviewFormClientProps> = ({ initia
     setFormData((prev) => ({ ...prev, editorialText: newText }));
   };
 
-  // AI Assistant generator
+  // Asistente IA para sugerir borradores de crónica
   const handleGenerateWithAi = (type: 'full' | 'summary' | 'highlights') => {
     setIsAiGenerating(true);
     setTimeout(() => {
@@ -218,7 +230,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
       }
 
       setIsAiGenerating(false);
-    }, 900);
+    }, 800);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -233,13 +245,19 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
       return;
     }
 
+    if (!formData.summary.trim()) {
+      setErrorMessage('Por favor completá el resumen de portada de la entrevista.');
+      setIsLoading(false);
+      return;
+    }
+
     const payload = {
       title: formData.title.trim(),
       slug: formData.slug.trim(),
       subtitle: formData.subtitle.trim(),
       artistId: formData.artistId,
       artistName: formData.artistName.trim(),
-      artistSlug: formData.artistSlug.trim(),
+      artistSlug: formData.artistSlug.trim() || formData.slug.trim(),
       artistPhoto: formData.artistPhoto,
       host: formData.host.trim(),
       date: formData.date.trim(),
@@ -266,11 +284,19 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
         router.push('/admin/entrevistas');
       }, 1000);
     } catch (err: any) {
-      console.warn('PocketBase save fallback:', err);
-      setSuccessMessage('¡Entrevista guardada correctamente (Modo Local/Mock)!');
-      setTimeout(() => {
-        router.push('/admin/entrevistas');
-      }, 1000);
+      console.error('Error al guardar en PocketBase:', err);
+      if (err?.status === 403 || err?.message?.includes('superusers')) {
+        setErrorMessage(
+          'Error de permisos (403): PocketBase rechazó la operación. Verificá las API Rules de la colección "interviews".'
+        );
+      } else if (err?.data?.data) {
+        const fieldErrors = Object.entries(err.data.data)
+          .map(([key, val]: any) => `${key}: ${val.message}`)
+          .join(' | ');
+        setErrorMessage(`Error de validación en PocketBase: ${fieldErrors}`);
+      } else {
+        setErrorMessage(`Error al guardar en PocketBase: ${err?.message || 'Error desconocido'}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -330,7 +356,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
           {editId ? 'Editar Entrevista / Live' : 'Redactar Nueva Entrevista'}
         </h1>
         <p className="text-xs text-[#8c887f]">
-          Editor editorial con asistente de IA, carga de videos multiformato y publicación a PocketBase
+          Editor editorial con asistente de IA, carga de videos multiformato y guardado directo en PocketBase
         </p>
       </div>
 
@@ -355,13 +381,13 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
                   {artist.stageName} ({artist.city || 'Argentina'})
                 </option>
               ))}
-              <option value="custom">+ Artista no listado (escribir nombre abajo)</option>
+              <option value="custom">+ Artista no listado (ingresar manualmente)</option>
             </select>
           </div>
 
           <div>
             <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
-              Nombre a mostrar del Artista
+              Nombre a mostrar del Artista *
             </label>
             <input
               type="text"
@@ -389,7 +415,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
 
           <div>
             <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
-              Slug URL (identificador único)
+              Slug URL (identificador único) *
             </label>
             <input
               type="text"
@@ -471,7 +497,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
               type="button"
               onClick={() => handleGenerateWithAi('summary')}
               disabled={isAiGenerating}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#202228] hover:bg-[#282a32] text-[#aba79e] text-[11px] transition-colors"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#202228] hover:bg-[#282a32] text-[#aba79e] text-[11px] transition-colors cursor-pointer"
             >
               <span>+ Resumen IA</span>
             </button>
@@ -500,7 +526,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
               <button
                 type="button"
                 onClick={() => insertFormatting('**', '**')}
-                className="p-1.5 rounded hover:bg-[#282a33] text-[#aba79e] hover:text-[#f3f1ec]"
+                className="p-1.5 rounded hover:bg-[#282a33] text-[#aba79e] hover:text-[#f3f1ec] cursor-pointer"
                 title="Negrita"
               >
                 <Bold className="w-3.5 h-3.5" />
@@ -508,7 +534,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
               <button
                 type="button"
                 onClick={() => insertFormatting('*', '*')}
-                className="p-1.5 rounded hover:bg-[#282a33] text-[#aba79e] hover:text-[#f3f1ec]"
+                className="p-1.5 rounded hover:bg-[#282a33] text-[#aba79e] hover:text-[#f3f1ec] cursor-pointer"
                 title="Cursiva"
               >
                 <Italic className="w-3.5 h-3.5" />
@@ -516,7 +542,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
               <button
                 type="button"
                 onClick={() => insertFormatting('\n### ', '\n')}
-                className="p-1.5 rounded hover:bg-[#282a33] text-[#aba79e] hover:text-[#f3f1ec]"
+                className="p-1.5 rounded hover:bg-[#282a33] text-[#aba79e] hover:text-[#f3f1ec] cursor-pointer"
                 title="Subtítulo"
               >
                 <Heading2 className="w-3.5 h-3.5" />
@@ -524,7 +550,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
               <button
                 type="button"
                 onClick={() => insertFormatting('\n> "', '"\n')}
-                className="p-1.5 rounded hover:bg-[#282a33] text-[#aba79e] hover:text-[#f3f1ec]"
+                className="p-1.5 rounded hover:bg-[#282a33] text-[#aba79e] hover:text-[#f3f1ec] cursor-pointer"
                 title="Cita"
               >
                 <Quote className="w-3.5 h-3.5" />
@@ -532,7 +558,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
               <button
                 type="button"
                 onClick={() => insertFormatting('\n- ')}
-                className="p-1.5 rounded hover:bg-[#282a33] text-[#aba79e] hover:text-[#f3f1ec]"
+                className="p-1.5 rounded hover:bg-[#282a33] text-[#aba79e] hover:text-[#f3f1ec] cursor-pointer"
                 title="Lista"
               >
                 <List className="w-3.5 h-3.5" />
@@ -544,7 +570,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
               <button
                 type="button"
                 onClick={() => setActiveTab('editor')}
-                className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
+                className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
                   activeTab === 'editor' ? 'bg-[#282a33] text-[#f3f1ec]' : 'text-[#8c887f]'
                 }`}
               >
@@ -553,7 +579,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
               <button
                 type="button"
                 onClick={() => setActiveTab('preview')}
-                className={`px-2.5 py-1 rounded text-[11px] font-semibold flex items-center gap-1 transition-colors ${
+                className={`px-2.5 py-1 rounded text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
                   activeTab === 'preview' ? 'bg-[#282a33] text-[#e6cca0]' : 'text-[#8c887f]'
                 }`}
               >
@@ -619,33 +645,37 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
           <button
             type="button"
             onClick={() => handleGenerateWithAi('highlights')}
-            className="text-[11px] font-semibold text-[#e6cca0] hover:underline"
+            className="text-[11px] font-semibold text-[#e6cca0] hover:underline cursor-pointer"
           >
             Sugerir con IA
           </button>
         </div>
 
-        <div className="space-y-2">
-          {formData.keyHighlights.map((highlight, idx) => (
-            <div
-              key={idx}
-              className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-xs text-[#f3f1ec]"
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#d97d64]" />
-                <span>{highlight}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleRemoveHighlight(idx)}
-                className="p-1 rounded text-[#8c887f] hover:text-[#c0909b] transition-colors"
-                title="Eliminar punto clave"
+        {formData.keyHighlights.length > 0 ? (
+          <div className="space-y-2">
+            {formData.keyHighlights.map((highlight, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-xs text-[#f3f1ec]"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#d97d64]" />
+                  <span>{highlight}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveHighlight(idx)}
+                  className="p-1 rounded text-[#8c887f] hover:text-[#c0909b] transition-colors cursor-pointer"
+                  title="Eliminar punto clave"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[11px] text-[#78746c] italic">Añadí puntos clave de la entrevista o utilizá el sugeridor de IA.</p>
+        )}
 
         <div className="flex items-center gap-2">
           <input
@@ -659,7 +689,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
           <button
             type="button"
             onClick={handleAddHighlight}
-            className="px-3.5 py-2 rounded-xl bg-[#282a33] hover:bg-[#343742] text-[#f3f1ec] text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-2 rounded-xl bg-[#282a33] hover:bg-[#343742] text-[#f3f1ec] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-[#e6cca0]" />
             <span>Añadir</span>
@@ -722,7 +752,7 @@ Con una ejecución acústica impecable que conmovió a todo el equipo, ${artistN
               type="checkbox"
               checked={formData.featured}
               onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-              className="w-4 h-4 rounded border-[#383b47] bg-[#18191e] text-[#d97d64] focus:ring-0"
+              className="w-4 h-4 rounded border-[#383b47] bg-[#18191e] text-[#d97d64] focus:ring-0 cursor-pointer"
             />
             <span className="text-xs text-[#f3f1ec] font-semibold">
               Destacar esta entrevista en la portada principal del portal

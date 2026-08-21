@@ -29,6 +29,15 @@ export async function generateMetadata({
   };
 }
 
+function getEmbedVideoUrl(url: string): string {
+  if (!url) return '';
+  const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=0`;
+  }
+  return url;
+}
+
 export default async function InterviewDetailPage({
   params,
 }: {
@@ -41,7 +50,11 @@ export default async function InterviewDetailPage({
     notFound();
   }
 
-  const artist = await MusicDataService.getArtistBySlug(interview.artistSlug);
+  const artist = interview.artistSlug
+    ? await MusicDataService.getArtistBySlug(interview.artistSlug)
+    : null;
+
+  const embedUrl = getEmbedVideoUrl(interview.videoUrl);
 
   return (
     <article className="max-w-4xl mx-auto space-y-8">
@@ -81,16 +94,30 @@ export default async function InterviewDetailPage({
         )}
       </div>
 
-      {/* Video Player */}
+      {/* Video Player or Thumbnail */}
       <div className="natural-card p-3 sm:p-4 rounded-2xl space-y-2.5">
         <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-[#2d2f38]">
-          <iframe
-            src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=0"
-            title={interview.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="w-full h-full border-0"
-          />
+          {embedUrl ? (
+            <iframe
+              src={embedUrl}
+              title={interview.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full border-0"
+            />
+          ) : interview.thumbnailUrl ? (
+            <Image
+              src={interview.thumbnailUrl}
+              alt={interview.title}
+              fill
+              sizes="(max-width: 1200px) 100vw, 800px"
+              className="object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-[#78746c]">
+              <Radio className="w-8 h-8 opacity-40" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -117,19 +144,21 @@ export default async function InterviewDetailPage({
       )}
 
       {/* Key Highlights */}
-      <div className="natural-card p-5 rounded-2xl space-y-2.5">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
-          Puntos Clave de la Charla
-        </h3>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#aba79e]">
-          {interview.keyHighlights.map((hl, idx) => (
-            <li key={idx} className="flex items-start gap-2 bg-[#24252c] p-2 rounded-lg border border-[#31333d]">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#93a887] flex-shrink-0 mt-0.5" />
-              <span>{hl}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {interview.keyHighlights && interview.keyHighlights.length > 0 && (
+        <div className="natural-card p-5 rounded-2xl space-y-2.5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
+            Puntos Clave de la Charla
+          </h3>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#aba79e]">
+            {interview.keyHighlights.map((hl, idx) => (
+              <li key={idx} className="flex items-start gap-2 bg-[#24252c] p-2 rounded-lg border border-[#31333d]">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#93a887] flex-shrink-0 mt-0.5" />
+                <span>{hl}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Editorial Article Body */}
       <div className="natural-card p-6 sm:p-8 rounded-2xl space-y-4 text-[#aba79e] leading-relaxed text-xs sm:text-sm whitespace-pre-line">
