@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { GenreType, AgendaEvent } from '../../../../lib/types';
+import { GenreType, AgendaEvent, DiscographyItem, DiscographyType } from '../../../../lib/types';
 import { MusicDataService } from '../../../../lib/api';
 import { pb } from '../../../../lib/pocketbase';
 import { ImageUploadField } from '../../../../components/admin/ImageUploadField';
@@ -21,6 +21,7 @@ import {
   Trash2,
   MapPin,
   Ticket,
+  Disc3,
 } from 'lucide-react';
 import { AITokenBadge } from '../../../../components/admin/AITokenBadge';
 
@@ -40,8 +41,8 @@ export const ArtistFormClient: React.FC = () => {
     country: 'Argentina',
     shortBio: '',
     bio: '',
-    photoUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop',
-    bannerUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=1600&auto=format&fit=crop',
+    photoUrl: '',
+    bannerUrl: '',
     quotes: '',
     featured: false,
     featuredOfWeek: false,
@@ -50,7 +51,30 @@ export const ArtistFormClient: React.FC = () => {
     instagram: '',
     tiktok: '',
     agenda: [] as AgendaEvent[],
+    gallery: [] as string[],
+    discography: [] as DiscographyItem[],
   });
+
+  const [galleryUploadUrl, setGalleryUploadUrl] = useState('');
+  const [manualGalleryUrl, setManualGalleryUrl] = useState('');
+
+  // State for new discography release form
+  const [newRelease, setNewRelease] = useState<{
+    title: string;
+    type: DiscographyType;
+    year: number;
+    coverUrl: string;
+    spotifyUrl: string;
+    tracksCount: string;
+  }>({
+    title: '',
+    type: 'album',
+    year: new Date().getFullYear(),
+    coverUrl: '',
+    spotifyUrl: '',
+    tracksCount: '',
+  });
+  const [showReleaseForm, setShowReleaseForm] = useState(false);
 
   // State for new agenda event form
   const [newEvent, setNewEvent] = useState({
@@ -98,7 +122,7 @@ export const ArtistFormClient: React.FC = () => {
             country: record.country || 'Argentina',
             shortBio: record.shortBio || '',
             bio: record.bio || '',
-            photoUrl: record.photoUrl || (record.photo ? pb.files.getUrl(record, record.photo) : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop'),
+            photoUrl: record.photoUrl || (record.photo ? pb.files.getUrl(record, record.photo) : ''),
             bannerUrl: record.bannerUrl || '',
             quotes: record.quotes || '',
             featured: Boolean(record.featured),
@@ -108,6 +132,8 @@ export const ArtistFormClient: React.FC = () => {
             instagram: record.socials?.instagram || '',
             tiktok: record.socials?.tiktok || '',
             agenda: Array.isArray(record.agenda) ? record.agenda : [],
+            gallery: Array.isArray(record.gallery) ? record.gallery : (typeof record.gallery === 'string' && record.gallery ? [record.gallery] : []),
+            discography: Array.isArray(record.discography) ? record.discography : [],
           });
         }
       } catch (err: any) {
@@ -119,6 +145,63 @@ export const ArtistFormClient: React.FC = () => {
 
     loadArtist();
   }, [editId]);
+
+  const handleAddRelease = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRelease.title.trim()) {
+      setErrorMessage('Por favor completá el título del álbum o sencillo.');
+      return;
+    }
+
+    const createdRelease: DiscographyItem = {
+      id: `disc-${Date.now()}`,
+      title: newRelease.title.trim(),
+      type: newRelease.type,
+      year: Number(newRelease.year) || new Date().getFullYear(),
+      coverUrl: newRelease.coverUrl.trim() || formData.photoUrl || '',
+      spotifyUrl: newRelease.spotifyUrl.trim() || undefined,
+      tracksCount: newRelease.tracksCount ? parseInt(newRelease.tracksCount, 10) : undefined,
+    };
+
+    setFormData((prev) => ({
+      ...prev,
+      discography: [...prev.discography, createdRelease],
+    }));
+
+    setNewRelease({
+      title: '',
+      type: 'album',
+      year: new Date().getFullYear(),
+      coverUrl: '',
+      spotifyUrl: '',
+      tracksCount: '',
+    });
+    setShowReleaseForm(false);
+  };
+
+  const handleRemoveRelease = (id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      discography: prev.discography.filter((d) => d.id !== id),
+    }));
+  };
+
+  const handleAddGalleryPhoto = (url: string) => {
+    if (!url || !url.trim()) return;
+    setFormData((prev) => ({
+      ...prev,
+      gallery: [...prev.gallery, url.trim()],
+    }));
+    setGalleryUploadUrl('');
+    setManualGalleryUrl('');
+  };
+
+  const handleRemoveGalleryPhoto = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      gallery: prev.gallery.filter((_, idx) => idx !== index),
+    }));
+  };
 
   const toggleGenre = (genre: GenreType) => {
     setFormData((prev) => ({
@@ -228,6 +311,8 @@ export const ArtistFormClient: React.FC = () => {
         tiktok: formData.tiktok.trim(),
       },
       agenda: formData.agenda,
+      gallery: formData.gallery.filter((url) => Boolean(url && url.trim())),
+      discography: formData.discography,
     };
 
     try {
@@ -536,10 +621,10 @@ export const ArtistFormClient: React.FC = () => {
       </div>
 
       {/* 3. Fotos & Multimedia */}
-      <div className="natural-card p-5 sm:p-6 rounded-2xl space-y-4">
+      <div className="natural-card p-5 sm:p-6 rounded-2xl space-y-5">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
-            <ImageIcon className="w-3.5 h-3.5" /> 3. Imágenes del Artista
+            <ImageIcon className="w-3.5 h-3.5" /> 3. Imágenes del Artista & Galería Fotográfica
           </h2>
           <p className="text-[11px] text-[#8c887f] mt-0.5">
             Podés subir fotos directamente desde tu computadora/celular a PocketBase o pegar un enlace externo.
@@ -548,7 +633,7 @@ export const ArtistFormClient: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ImageUploadField
-            label="Foto Principal / Retrato"
+            label="Foto Principal / Retrato *"
             required
             value={formData.photoUrl}
             onChange={(url) => setFormData({ ...formData, photoUrl: url })}
@@ -565,6 +650,102 @@ export const ArtistFormClient: React.FC = () => {
             aspectRatio="banner"
             helperText="Formato horizontal panorámico para la cabecera"
           />
+        </div>
+
+        {/* Galería Fotográfica Múltiple */}
+        <div className="pt-4 border-t border-[#2d2f38] space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xs font-semibold text-[#f3f1ec]">
+                Galería de Fotos en Vivo & Backstage ({formData.gallery.length})
+              </h3>
+              <p className="text-[11px] text-[#8c887f]">
+                Estas imágenes aparecerán en la pestaña "Biografía & Reseña" del perfil del artista.
+              </p>
+            </div>
+          </div>
+
+          {/* Grid de fotos cargadas en la galería */}
+          {formData.gallery.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {formData.gallery.map((photo, idx) => (
+                <div
+                  key={idx}
+                  className="relative aspect-video rounded-xl overflow-hidden bg-black border border-[#31333d] group"
+                >
+                  <img
+                    src={photo}
+                    alt={`Galería ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveGalleryPhoto(idx)}
+                      className="p-1.5 rounded-lg bg-rose-600/90 text-white hover:bg-rose-700 transition-colors cursor-pointer"
+                      title="Eliminar de la galería"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/70 text-[9px] text-[#e6cca0] font-mono">
+                    #{idx + 1}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Carga de nueva foto a la galería */}
+          <div className="p-4 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-3">
+            <span className="text-[11px] font-semibold text-[#e6cca0] block">
+              + Agregar foto a la galería
+            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+              <div className="sm:col-span-8">
+                <ImageUploadField
+                  label="Subir Archivo o Tomar Foto"
+                  value={galleryUploadUrl}
+                  onChange={(url) => {
+                    if (url) {
+                      handleAddGalleryPhoto(url);
+                    }
+                  }}
+                  collectionName="media"
+                  aspectRatio="video"
+                  helperText="Al seleccionar y subir el archivo se agregará automáticamente a la galería"
+                />
+              </div>
+
+              <div className="sm:col-span-4 space-y-1">
+                <label className="text-[11px] text-[#aba79e] font-semibold block">O pegar enlace web</label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    value={manualGalleryUrl}
+                    onChange={(e) => setManualGalleryUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddGalleryPhoto(manualGalleryUrl);
+                      }
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-[#202228] border border-[#31333d] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddGalleryPhoto(manualGalleryUrl)}
+                    disabled={!manualGalleryUrl.trim()}
+                    className="px-3 py-1.5 rounded-lg bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors cursor-pointer disabled:opacity-40"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -840,12 +1021,201 @@ export const ArtistFormClient: React.FC = () => {
         )}
       </div>
 
+      {/* 6. Discografía & Lanzamientos */}
+      <div className="natural-card p-5 sm:p-6 rounded-2xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#2d2f38]">
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
+              <Disc3 className="w-3.5 h-3.5" /> 6. Discografía & Lanzamientos ({formData.discography.length})
+            </h2>
+            <p className="text-[11px] text-[#8c887f]">
+              Álbumes, EPs, sencillos y producciones discográficas del artista
+            </p>
+          </div>
+
+          {!showReleaseForm && (
+            <button
+              type="button"
+              onClick={() => setShowReleaseForm(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 text-[#e6cca0] transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Agregar Lanzamiento</span>
+            </button>
+          )}
+        </div>
+
+        {/* Formulario para nuevo lanzamiento */}
+        {showReleaseForm && (
+          <div className="p-4 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-3.5 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between border-b border-[#2d2f38] pb-2">
+              <span className="text-xs font-bold text-[#f3f1ec]">+ Cargar Nuevo Lanzamiento</span>
+              <button
+                type="button"
+                onClick={() => setShowReleaseForm(false)}
+                className="text-xs text-[#8c887f] hover:text-[#f3f1ec]"
+              >
+                Cancelar
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Título del Álbum / Single *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej: El Viento de la Quebrada"
+                  value={newRelease.title}
+                  onChange={(e) => setNewRelease({ ...newRelease, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#202228] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Tipo de Formato</label>
+                <select
+                  value={newRelease.type}
+                  onChange={(e) => setNewRelease({ ...newRelease, type: e.target.value as DiscographyType })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#202228] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                >
+                  <option value="album">Álbum de Estudio</option>
+                  <option value="single">Single / Sencillo</option>
+                  <option value="ep">EP</option>
+                  <option value="live_album">Álbum en Vivo</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Año de Lanzamiento</label>
+                <input
+                  type="number"
+                  placeholder="2026"
+                  value={newRelease.year}
+                  onChange={(e) => setNewRelease({ ...newRelease, year: parseInt(e.target.value, 10) || new Date().getFullYear() })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#202228] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Cantidad de Canciones</label>
+                <input
+                  type="number"
+                  placeholder="Ej: 10"
+                  value={newRelease.tracksCount}
+                  onChange={(e) => setNewRelease({ ...newRelease, tracksCount: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#202228] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Link de Spotify (Opcional)</label>
+                <input
+                  type="text"
+                  placeholder="https://open.spotify.com/album/..."
+                  value={newRelease.spotifyUrl}
+                  onChange={(e) => setNewRelease({ ...newRelease, spotifyUrl: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#202228] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <ImageUploadField
+                label="Portada del Disco / Arte de Tapa"
+                value={newRelease.coverUrl}
+                onChange={(url) => setNewRelease({ ...newRelease, coverUrl: url })}
+                collectionName="media"
+                aspectRatio="square"
+                helperText="Formato cuadrado 1:1 recomendado (JPG, PNG, WebP)"
+              />
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={handleAddRelease}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#e6cca0] hover:bg-[#d4b785] text-[#151618] font-bold text-xs transition-colors shadow-sm cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Agregar a la Discografía</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Lista de lanzamientos cargados */}
+        {formData.discography.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+            {formData.discography.map((disc) => {
+              const typeLabels: Record<string, string> = {
+                single: 'Single',
+                ep: 'EP',
+                album: 'Álbum',
+                live_album: 'En Vivo',
+              };
+              return (
+                <div
+                  key={disc.id}
+                  className="p-3 rounded-xl bg-[#18191e] border border-[#2c2e38] flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-black border border-[#31333d] flex-shrink-0">
+                      {disc.coverUrl ? (
+                        <img src={disc.coverUrl} alt={disc.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[#d97d64]">
+                          <Disc3 className="w-6 h-6" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded bg-[#24252c] text-[#e6cca0]">
+                        {typeLabels[disc.type] || disc.type} • {disc.year}
+                      </span>
+                      <h4 className="text-xs font-bold text-[#f3f1ec] line-clamp-1 mt-0.5">{disc.title}</h4>
+                      {disc.tracksCount && (
+                        <span className="text-[10px] text-[#8c887f]">{disc.tracksCount} canciones</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveRelease(disc.id)}
+                    className="p-1.5 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#c0909b] hover:text-[#e07a8b] transition-colors cursor-pointer"
+                    title="Eliminar lanzamiento"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          !showReleaseForm && (
+            <div className="p-4 rounded-xl bg-[#18191e]/50 border border-dashed border-[#2d303b] text-center">
+              <p className="text-xs text-[#8c887f]">No hay lanzamientos discográficos cargados aún.</p>
+              <button
+                type="button"
+                onClick={() => setShowReleaseForm(true)}
+                className="mt-1.5 text-xs font-semibold text-[#d97d64] hover:underline cursor-pointer"
+              >
+                + Cargar el primer álbum o sencillo
+              </button>
+            </div>
+          )
+        )}
+      </div>
+
       {/* Submit Button */}
       <div className="pt-2 flex justify-end">
         <button
           type="submit"
           disabled={isSaved || isLoading}
-          className="px-6 py-2.5 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors disabled:opacity-50"
+          className="px-6 py-2.5 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors disabled:opacity-50 cursor-pointer"
         >
           {isSaved ? 'Guardando en DB...' : (editId ? 'Actualizar Artista' : 'Guardar y Publicar Artista')}
         </button>

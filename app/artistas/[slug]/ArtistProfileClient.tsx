@@ -66,7 +66,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
               </span>
               <div className="flex items-center gap-1 text-xs text-[#aba79e] bg-[#24252c] px-2.5 py-0.5 rounded border border-[#31333d]">
                 <MapPin className="w-3 h-3 text-[#d97d64]" />
-                <span>{artist.city}, {artist.province}, {artist.country}</span>
+                <span>{artist.province ? `${artist.province}, ${artist.country || 'Argentina'}` : (artist.country || 'Argentina')}</span>
               </div>
             </div>
 
@@ -196,7 +196,9 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
               <div className="space-y-2 text-xs text-[#aba79e]">
                 <div className="flex justify-between border-b border-[#2a2c35] pb-1.5">
                   <span className="text-[#8c887f]">Origen</span>
-                  <span className="font-medium text-[#f3f1ec]">{artist.city}, {artist.province}</span>
+                  <span className="font-medium text-[#f3f1ec]">
+                    {artist.province ? `${artist.province}, ${artist.country || 'Argentina'}` : (artist.country || 'Argentina')}
+                  </span>
                 </div>
                 <div className="flex justify-between border-b border-[#2a2c35] pb-1.5">
                   <span className="text-[#8c887f]">Géneros</span>
@@ -204,7 +206,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                 </div>
                 <div className="flex justify-between border-b border-[#2a2c35] pb-1.5">
                   <span className="text-[#8c887f]">Incorporación</span>
-                  <span className="font-medium text-[#f3f1ec]">{artist.createdDate}</span>
+                  <span className="font-medium text-[#f3f1ec]">{artist.createdDate || 'Agosto 2026'}</span>
                 </div>
               </div>
             </div>
@@ -294,35 +296,55 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
       {activeTab === 'discografia' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {artist.discography.length > 0 ? (
-            artist.discography.map((disc) => (
-              <div key={disc.id} className="natural-card rounded-xl p-4 space-y-3 flex flex-col justify-between">
-                <div className="relative aspect-square rounded-lg overflow-hidden bg-[#18191d] border border-[#2d2f38]">
-                  <Image src={disc.coverUrl} alt={disc.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
-                </div>
-                <div className="space-y-0.5">
-                  <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-[#24252c] text-[#e6cca0]">
-                    {disc.type} • {disc.year}
-                  </span>
-                  <h4 className="text-base font-bold text-[#f3f1ec]">{disc.title}</h4>
-                  {disc.tracksCount && (
-                    <p className="text-xs text-[#8c887f]">{disc.tracksCount} canciones</p>
+            artist.discography.map((disc) => {
+              const typeLabels: Record<string, string> = {
+                single: 'Single',
+                ep: 'EP',
+                album: 'Álbum',
+                live_album: 'Álbum en Vivo',
+              };
+              return (
+                <div key={disc.id} className="natural-card rounded-xl p-4 space-y-3 flex flex-col justify-between">
+                  <div className="relative aspect-square rounded-lg overflow-hidden bg-[#18191d] border border-[#2d2f38]">
+                    {disc.coverUrl ? (
+                      <Image
+                        src={disc.coverUrl}
+                        alt={disc.title}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[#d97d64] bg-[#202228]">
+                        <Disc3 className="w-12 h-12 opacity-60" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-[#24252c] text-[#e6cca0]">
+                      {typeLabels[disc.type] || disc.type} • {disc.year}
+                    </span>
+                    <h4 className="text-base font-bold text-[#f3f1ec]">{disc.title}</h4>
+                    {disc.tracksCount && (
+                      <p className="text-xs text-[#8c887f]">{disc.tracksCount} canciones</p>
+                    )}
+                  </div>
+                  {disc.spotifyUrl && (
+                    <a
+                      href={disc.spotifyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#93a887] font-semibold text-xs border border-[#31333d] transition-colors"
+                    >
+                      <span>Escuchar en Spotify</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
                   )}
                 </div>
-                {disc.spotifyUrl && (
-                  <a
-                    href={disc.spotifyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#93a887] font-semibold text-xs border border-[#31333d] transition-colors"
-                  >
-                    <span>Escuchar en Spotify</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-              </div>
-            ))
+              );
+            })
           ) : (
-            <p className="text-[#8c887f] text-xs">No hay lanzamientos cargados aún.</p>
+            <p className="text-[#8c887f] text-xs italic py-4">No hay lanzamientos cargados aún para este artista.</p>
           )}
         </div>
       )}

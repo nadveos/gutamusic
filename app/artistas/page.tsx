@@ -3,6 +3,9 @@ import { Metadata } from 'next';
 import { MusicDataService } from '../../lib/api';
 import { ArtistsDirectoryClient } from './ArtistsDirectoryClient';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: 'Directorio de Artistas & Bandas Emergentes | GUTA MÚSICA',
   description: 'Explorá el catálogo de artistas independientes de folklore, rock, tango, hip hop y música urbana de Argentina y Latinoamérica.',

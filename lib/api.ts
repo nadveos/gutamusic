@@ -47,7 +47,7 @@ export class MusicDataService {
           country: r.country || 'Argentina',
           bio: r.bio || '',
           shortBio: r.shortBio || '',
-          photoUrl: r.photoUrl || (r.photo ? pb.files.getUrl(r, r.photo) : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop'),
+          photoUrl: r.photoUrl || (r.photo ? pb.files.getUrl(r, r.photo) : ''),
           bannerUrl: r.bannerUrl || '',
           featured: Boolean(r.featured),
           featuredOfWeek: Boolean(r.featuredOfWeek),
@@ -56,9 +56,9 @@ export class MusicDataService {
           discography: r.discography || [],
           agenda: r.agenda || [],
           press: r.press || [],
-          gallery: r.gallery || [],
+          gallery: Array.isArray(r.gallery) ? r.gallery : (typeof r.gallery === 'string' && r.gallery ? [r.gallery] : []),
           quotes: r.quotes || '',
-          createdDate: r.createdDate || r.created?.split(' ')[0] || '2026-08-18',
+          createdDate: r.createdDate || r.created?.split(' ')[0] || '',
         }));
 
         if (filters?.featured !== undefined) {
@@ -107,13 +107,14 @@ export class MusicDataService {
         let artistAgenda: AgendaEvent[] = Array.isArray(record.agenda) ? record.agenda : [];
         try {
           const matchingEvents = await pb.collection('events').getFullList<any>({
-            filter: `title ~ "${record.stageName}"`,
+            sort: 'date',
             requestKey: null,
           });
           if (matchingEvents && matchingEvents.length > 0) {
             const existingIds = new Set(artistAgenda.map(e => e.id));
+            const stageNameLower = (record.stageName || '').toLowerCase().trim();
             for (const me of matchingEvents) {
-              if (!existingIds.has(me.id)) {
+              if (!existingIds.has(me.id) && me.title && me.title.toLowerCase().includes(stageNameLower)) {
                 artistAgenda.push({
                   id: me.id,
                   title: me.title,
@@ -134,35 +135,31 @@ export class MusicDataService {
 
         let artistVideos: VideoItem[] = Array.isArray(record.videos) ? [...record.videos] : [];
         try {
-          const matchingVideos = await pb.collection('videos').getFullList<any>({
-            filter: `artistId="${record.id}" || artistName ~ "${record.stageName}"`,
-            sort: '-created',
-            requestKey: null,
-          });
-          if (matchingVideos && matchingVideos.length > 0) {
+          const allVideos = await this.getVideos();
+          if (allVideos && allVideos.length > 0) {
             const existingIds = new Set(artistVideos.map((v) => v.id));
-            for (const mv of matchingVideos) {
-              if (!existingIds.has(mv.id)) {
-                artistVideos.push({
-                  id: mv.id,
-                  title: mv.title,
-                  platform: mv.platform || 'youtube',
-                  url: mv.url,
-                  embedUrl: mv.embedUrl,
-                  thumbnailUrl: mv.thumbnailUrl,
-                  channelOrAuthor: mv.channelOrAuthor || record.stageName,
-                  type: mv.type || 'session',
-                  duration: mv.duration,
-                  publishedAt: mv.publishedAt || mv.created?.split(' ')[0] || '',
-                  views: mv.views,
-                  featured: Boolean(mv.featured),
-                  artistId: mv.artistId || record.id,
-                  artistName: mv.artistName || record.stageName,
-                });
+            const stageNameLower = (record.stageName || '').toLowerCase().trim();
+            const artistId = record.id;
+            const artistSlug = record.slug;
+
+            for (const mv of allVideos) {
+              const mvArtistName = (mv.artistName || '').toLowerCase().trim();
+              const matchesArtist =
+                (mv.artistId && (mv.artistId === artistId || mv.artistId === artistSlug)) ||
+                (mvArtistName && stageNameLower && (
+                  mvArtistName === stageNameLower ||
+                  mvArtistName.includes(stageNameLower) ||
+                  stageNameLower.includes(mvArtistName)
+                ));
+
+              if (matchesArtist && !existingIds.has(mv.id)) {
+                artistVideos.push(mv);
               }
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('Error fetching matching videos for artist:', e);
+        }
 
         return {
           id: record.id,
@@ -175,7 +172,7 @@ export class MusicDataService {
           country: record.country || 'Argentina',
           bio: record.bio || '',
           shortBio: record.shortBio || '',
-          photoUrl: record.photoUrl || (record.photo ? pb.files.getUrl(record, record.photo) : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop'),
+          photoUrl: record.photoUrl || (record.photo ? pb.files.getUrl(record, record.photo) : ''),
           bannerUrl: record.bannerUrl || '',
           featured: Boolean(record.featured),
           featuredOfWeek: Boolean(record.featuredOfWeek),
@@ -184,9 +181,9 @@ export class MusicDataService {
           discography: record.discography || [],
           agenda: artistAgenda,
           press: record.press || [],
-          gallery: record.gallery || [],
+          gallery: Array.isArray(record.gallery) ? record.gallery : (typeof record.gallery === 'string' && record.gallery ? [record.gallery] : []),
           quotes: record.quotes || '',
-          createdDate: record.createdDate || record.created?.split(' ')[0] || '2026-08-18',
+          createdDate: record.createdDate || record.created?.split(' ')[0] || '',
         };
       }
     } catch (e) {
@@ -227,26 +224,31 @@ export class MusicDataService {
   static async getVideos(limit?: number): Promise<VideoItem[]> {
     try {
       await syncServerAuth();
-      const records = await pb.collection('videos').getFullList<any>({
-        sort: '-publishedAt',
-        requestKey: null,
-      });
+      let records: any[] = [];
+      try {
+        records = await pb.collection('videos').getFullList<any>({
+          requestKey: null,
+        });
+      } catch (e) {
+        console.error('Error fetching videos collection from PocketBase:', e);
+      }
+
       if (records && records.length > 0) {
         const list: VideoItem[] = records.map((r) => ({
           id: r.id,
           title: r.title,
-          platform: r.platform,
+          platform: r.platform || 'youtube',
           url: r.url,
           embedUrl: r.embedUrl,
           thumbnailUrl: r.thumbnailUrl,
-          channelOrAuthor: r.channelOrAuthor,
-          type: r.type,
-          duration: r.duration,
-          publishedAt: r.publishedAt,
-          views: r.views,
+          channelOrAuthor: r.channelOrAuthor || '',
+          type: r.type || 'session',
+          duration: r.duration || '',
+          publishedAt: r.publishedAt || r.created?.split(' ')[0] || '',
+          views: r.views || '1K',
           featured: Boolean(r.featured),
-          artistId: r.artistId,
-          artistName: r.artistName,
+          artistId: r.artistId || '',
+          artistName: r.artistName || '',
         }));
         return limit ? list.slice(0, limit) : list;
       }
