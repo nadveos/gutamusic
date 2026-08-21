@@ -251,18 +251,18 @@ export async function POST(req: NextRequest) {
     const { action, payload } = body;
 
     if (action === 'generate_daily_ephemerides') {
-      const { day, month, region = 'latam_general' } = payload;
+      const { day, month, region = 'latam_general', sources } = payload;
       const requestedDay = Number(day);
       const requestedMonth = Number(month);
 
       try {
         console.log(`\n🔍 [EPHEMERIDES] Buscando efemérides en fuentes reales para el ${requestedDay}/${requestedMonth}...`);
-        const items = await getRealEphemerides(requestedDay, requestedMonth, region);
+        const items = await getRealEphemerides(requestedDay, requestedMonth, region, sources);
 
         return NextResponse.json({
           success: true,
           source: 'real-archives',
-          model: 'Archivos Históricos Reales (Efe Eme, Folklore Tradiciones & CRock)',
+          model: 'Archivos Históricos Reales (MusicBrainz, CRock, Efe Eme, Folklore & Mía FM)',
           tokenUsage: { totalTokenCount: 0 },
           region,
           groundedSources: items.length,

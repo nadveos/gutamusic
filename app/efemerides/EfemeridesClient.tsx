@@ -188,9 +188,26 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
                 </p>
 
                 {item.source && (
-                  <p className="text-[11px] text-[#78746c] pt-0.5">
-                    Fuente de verificación: <strong className="text-[#aba79e]">{item.source}</strong>
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <p className="text-[11px] text-[#78746c]">
+                      Fuente de verificación: <strong className="text-[#aba79e]">{item.source}</strong>
+                    </p>
+                    {item.mbid && (
+                      <a
+                        href={`https://musicbrainz.org/artist/${item.mbid}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-[#93a887]/15 text-[#93a887] border border-[#93a887]/30 hover:bg-[#93a887]/25 transition-colors"
+                      >
+                        ✓ Verificado en MusicBrainz
+                      </a>
+                    )}
+                    {item.originCity && item.country && (
+                      <span className="text-[10px] text-[#8c887f] bg-[#1a1b1f] px-2 py-0.5 rounded border border-[#2d2f38]">
+                        📍 {item.originCity}, {item.country}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
 

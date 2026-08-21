@@ -168,4 +168,8 @@ export interface EphemerisItem {
   imageUrl?: string;
   artistRelated?: string;
   impactBadge?: string;
+  mbid?: string;
+  country?: string;
+  originCity?: string;
+  ipi?: string;
 }

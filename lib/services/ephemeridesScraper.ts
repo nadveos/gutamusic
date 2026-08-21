@@ -3,6 +3,8 @@
 // Extrae acontecimientos 100% verificados sin alucinaciones de IA ni costos.
 // =========================================================================
 
+import { fetchLatamMusicEphemeridesFromWikidata } from './musicbrainzService';
+
 export interface ScrapedEphemeris {
   day: number;
   month: number;
@@ -12,8 +14,15 @@ export interface ScrapedEphemeris {
   category: string;
   categoryLabel: string;
   source: string;
+  sourceKey?: 'musicbrainz' | 'efe_eme' | 'crock' | 'folklore' | 'mia_fm';
   impactBadge: string;
   imageUrl?: string;
+  mbid?: string;
+  country?: string;
+  originCity?: string;
+  ipi?: string;
+  duplicateId?: string;
+  matchedSources?: string[];
 }
 
 const MONTH_SLUGS = [
@@ -83,6 +92,62 @@ function categorizeEvent(text: string): { category: string; categoryLabel: strin
 }
 
 /**
+ * Extrae tokens relevantes para comparar coincidencias entre fuentes distintas
+ */
+function extractEntityTokens(text: string): string[] {
+  const stopWords = new Set([
+    'nace', 'muere', 'fallece', 'fallecimiento', 'nacimiento', 'publica', 'lanza', 'disco', 'album', 'cancion',
+    'cancion', 'sencillo', 'single', 'banda', 'grupo', 'cantante', 'compositor', 'musico', 'guitarrista', 'bajista',
+    'baterista', 'argentina', 'latinoamerica', 'anos', 'este', 'esta', 'para', 'como', 'con', 'por', 'del', 'los',
+    'las', 'una', 'uno', 'unos', 'unas', 'sobre', 'primer', 'segundo', 'tercer', 'miembro', 'fundador', 'referente',
+    'graba', 'estrena', 'gira', 'tema', 'temas', 'lugar', 'fecha', 'ciudad', 'vida'
+  ]);
+
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length >= 4 && !stopWords.has(w));
+}
+
+/**
+ * Detecta coincidencias y duplicados entre fuentes distintas para que el editor pueda comparar
+ */
+function detectDuplicateEvents(items: ScrapedEphemeris[]): ScrapedEphemeris[] {
+  const enriched = items.map(item => ({ ...item }));
+
+  for (let i = 0; i < enriched.length; i++) {
+    const itemA = enriched[i];
+    const tokensA = new Set(extractEntityTokens(`${itemA.title} ${itemA.description}`));
+
+    for (let j = i + 1; j < enriched.length; j++) {
+      const itemB = enriched[j];
+
+      // Mismo año y distinta fuente
+      if (itemA.year === itemB.year && itemA.sourceKey !== itemB.sourceKey) {
+        const tokensB = extractEntityTokens(`${itemB.title} ${itemB.description}`);
+        const sharedTokens = tokensB.filter(t => tokensA.has(t));
+
+        // Coinciden por al menos un término clave distintivo (ej. apellido de artista o nombre de banda)
+        if (sharedTokens.length >= 1) {
+          const dupId = itemA.duplicateId || itemB.duplicateId || `dup-${itemA.year}-${sharedTokens[0]}`;
+
+          itemA.duplicateId = dupId;
+          itemB.duplicateId = dupId;
+
+          itemA.matchedSources = Array.from(new Set([...(itemA.matchedSources || []), itemB.source]));
+          itemB.matchedSources = Array.from(new Set([...(itemB.matchedSources || []), itemA.source]));
+        }
+      }
+    }
+  }
+
+  return enriched;
+}
+
+/**
  * Fuente 1: Efe Eme (Revista especializada en música popular, rock latino, pop e internacional)
  */
 export async function scrapeEfeEme(day: number, month: number): Promise<ScrapedEphemeris[]> {
@@ -112,7 +177,6 @@ export async function scrapeEfeEme(day: number, month: number): Promise<ScrapedE
         if (desc.length > 15) {
           const { category, categoryLabel, badge } = categorizeEvent(desc);
 
-          // Extraer título conciso de la primera oración
           let firstSentence = desc.split(/[\.\;\:]/)[0] || desc;
           if (firstSentence.length > 90) {
             firstSentence = firstSentence.substring(0, 87) + '...';
@@ -126,7 +190,8 @@ export async function scrapeEfeEme(day: number, month: number): Promise<ScrapedE
             description: desc,
             category,
             categoryLabel,
-            source: 'Efe Eme (Efemérides de la Música Popular)',
+            source: 'Efe Eme',
+            sourceKey: 'efe_eme',
             impactBadge: badge,
             imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
           });
@@ -168,7 +233,6 @@ export async function scrapeFolkloreTradiciones(day: number, month: number): Pro
     const results: ScrapedEphemeris[] = [];
 
     for (const matchText of dayMatches) {
-      // Formatos habituales: "20 de agosto de 1936 - Muere..." o "20 de agosto de 1948 : Nace..."
       const yearMatch = matchText.match(/(?:de\s+)?(\d{4})\s*[-–:]\s*(.*)/i);
       const year = yearMatch ? parseInt(yearMatch[1], 10) : 1950;
       const desc = yearMatch ? yearMatch[2].trim() : matchText;
@@ -188,7 +252,8 @@ export async function scrapeFolkloreTradiciones(day: number, month: number): Pro
           description: desc,
           category,
           categoryLabel,
-          source: 'Folklore Tradiciones (Archivo de Tradición Argentina)',
+          source: 'Folklore Tradiciones',
+          sourceKey: 'folklore',
           impactBadge: badge,
           imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop',
         });
@@ -240,7 +305,8 @@ export async function scrapeCRock(day: number, month: number): Promise<ScrapedEp
           description: desc,
           category,
           categoryLabel,
-          source: 'CRock.com.ar (Archivo de Rock)',
+          source: 'CRock.com.ar',
+          sourceKey: 'crock',
           impactBadge: badge,
           imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop',
         });
@@ -255,46 +321,151 @@ export async function scrapeCRock(day: number, month: number): Promise<ScrapedEp
 }
 
 /**
- * Función principal: Consulta en paralelo todas las fuentes reales,
- * deduplica y devuelve la lista completa de efemérides 100% verificadas.
+ * Fuente 4: Mía FM · Cienradios (Efemérides musicales periodísticas)
  */
-export async function getRealEphemerides(day: number, month: number, region = 'latam_general'): Promise<ScrapedEphemeris[]> {
-  console.log(`\n🔍 [DIRECT SCRAPING] Consultando fuentes reales para el ${day} de ${MONTH_SLUGS[month - 1]} (Región: ${region})...`);
+export async function scrapeMiaFM(day: number, month: number): Promise<ScrapedEphemeris[]> {
+  const monthName = MONTH_SLUGS[month - 1];
+  const urlVariants = [
+    `https://miafm.cienradios.com/sociedad/efemerides-del-${day}-de-${monthName}-que-paso-un-dia-como-hoy-en-la-musica-2/`,
+    `https://miafm.cienradios.com/sociedad/efemerides-del-${day}-de-${monthName}-que-paso-un-dia-como-hoy-en-la-musica/`,
+    `https://miafm.cienradios.com/espectaculos/efemerides-del-${day}-de-${monthName}-que-paso-un-dia-como-hoy-en-la-musica/`,
+    `https://miafm.cienradios.com/espectaculos/efemerides-del-${day}-de-${monthName}-que-paso-un-dia-como-hoy-en-la-musica-2/`,
+  ];
 
-  const [efeEmeResults, folkloreResults, crockResults] = await Promise.all([
-    scrapeEfeEme(day, month),
-    scrapeFolkloreTradiciones(day, month),
-    scrapeCRock(day, month),
-  ]);
+  for (const url of urlVariants) {
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        next: { revalidate: 3600 },
+      });
 
-  console.log(`📊 Fuentes encontradas: Efe Eme (${efeEmeResults.length}), Folklore Tradiciones (${folkloreResults.length}), CRock (${crockResults.length})`);
+      if (!res.ok) continue;
 
-  let allResults = [...folkloreResults, ...efeEmeResults];
+      const html = await res.text();
+      let articleBody = '';
 
-  // Si la fecha solicitada coincide con hoy o si CRock tiene datos relevantes, incorporamos los de CRock
-  if (crockResults.length > 0) {
-    // Si la fecha actual coincide
-    const now = new Date();
-    if (day === now.getDate() && month === (now.getMonth() + 1)) {
-      allResults = [...crockResults, ...allResults];
+      // 1. Extraer JSON-LD schema.org NewsArticle
+      const schemaMatches = [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)];
+      for (const sm of schemaMatches) {
+        try {
+          const json = JSON.parse(sm[1]);
+          if (json.articleBody) {
+            articleBody = json.articleBody;
+            break;
+          }
+        } catch (e) {}
+      }
+
+      // 2. Fallback: extraer párrafos directos del HTML
+      if (!articleBody) {
+        const pMatches = [...html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
+        articleBody = pMatches.map((m) => m[1].replace(/<[^>]+>/g, ' ')).join('\n');
+      }
+
+      if (!articleBody) continue;
+
+      const paragraphs = articleBody
+        .split(/\n+|<br\s*\/?>/gi)
+        .map((p) => p.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim())
+        .filter((p) => p.length > 25);
+
+      const results: ScrapedEphemeris[] = [];
+
+      for (const p of paragraphs) {
+        if (/escuch[aá]\s*m[ií]a|hac[eé]\s*click/i.test(p)) continue;
+        if (/no existen efem[eé]rides/i.test(p)) continue;
+
+        // Extraer año de 4 dígitos (19XX o 20XX)
+        const yearMatch = p.match(/\b(19\d\d|20\d\d)\b/);
+        if (!yearMatch) continue;
+
+        const year = parseInt(yearMatch[1], 10);
+        const { category, categoryLabel, badge } = categorizeEvent(p);
+
+        let firstSentence = p.split(/[\.\;]/)[0] || p;
+        if (firstSentence.length > 90) {
+          firstSentence = firstSentence.substring(0, 87) + '...';
+        }
+
+        results.push({
+          day,
+          month,
+          year,
+          title: `[${year}] ${firstSentence}`,
+          description: p,
+          category,
+          categoryLabel,
+          source: 'Mía FM · Cienradios',
+          sourceKey: 'mia_fm',
+          impactBadge: badge,
+          imageUrl: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?q=80&w=800&auto=format&fit=crop',
+        });
+      }
+
+      if (results.length > 0) {
+        return results;
+      }
+    } catch (err: any) {
+      console.warn(`⚠️ Error scrapeando MiaFM (${url}):`, err.message);
     }
   }
 
-  // Deduplicar por año y título similar
-  const seen = new Set<string>();
-  const uniqueItems: ScrapedEphemeris[] = [];
+  return [];
+}
+
+/**
+ * Función principal: Consulta en paralelo las fuentes seleccionadas por el usuario,
+ * detecta coincidencias entre fuentes y devuelve la lista completa organizada.
+ */
+export async function getRealEphemerides(
+  day: number,
+  month: number,
+  region = 'latam_general',
+  enabledSources: string[] = ['musicbrainz', 'crock', 'efe_eme', 'folklore', 'mia_fm']
+): Promise<ScrapedEphemeris[]> {
+  console.log(`\n🔍 [DIRECT SCRAPING + APIS] Consultando fuentes para el ${day} de ${MONTH_SLUGS[month - 1]} (Fuentes: ${enabledSources.join(', ')}) (Región: ${region})...`);
+
+  const promises: Promise<ScrapedEphemeris[]>[] = [];
+
+  if (enabledSources.includes('musicbrainz')) {
+    promises.push(fetchLatamMusicEphemeridesFromWikidata(day, month));
+  }
+  if (enabledSources.includes('crock')) {
+    promises.push(scrapeCRock(day, month));
+  }
+  if (enabledSources.includes('efe_eme')) {
+    promises.push(scrapeEfeEme(day, month));
+  }
+  if (enabledSources.includes('folklore')) {
+    promises.push(scrapeFolkloreTradiciones(day, month));
+  }
+  if (enabledSources.includes('mia_fm')) {
+    promises.push(scrapeMiaFM(day, month));
+  }
+
+  const resultsBySource = await Promise.all(promises);
+  const allResults: ScrapedEphemeris[] = resultsBySource.flat();
+
+  // 1. Deduplicación interna por fuente para evitar entradas idénticas
+  const uniqueResults: ScrapedEphemeris[] = [];
+  const seenInternalKeys = new Set<string>();
 
   for (const item of allResults) {
-    const key = `${item.year}-${item.title.toLowerCase().substring(0, 30)}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      uniqueItems.push(item);
+    const key = `${item.sourceKey || 'src'}_${item.year}_${item.title.toLowerCase().trim()}`;
+    if (!seenInternalKeys.has(key)) {
+      seenInternalKeys.add(key);
+      uniqueResults.push(item);
     }
   }
 
-  // Ordenar cronológicamente por año
-  uniqueItems.sort((a, b) => a.year - b.year);
+  console.log(`📊 Total de efemérides extraídas únicas por fuente: ${uniqueResults.length}`);
 
-  console.log(`✅ [SCRAPER SUCCESS] Total de efemérides reales verificadas: ${uniqueItems.length}`);
-  return uniqueItems;
+  // 2. Detectar y etiquetar coincidencias entre fuentes distintas
+  const enrichedResults = detectDuplicateEvents(uniqueResults);
+
+  // 3. Ordenar cronológicamente por año
+  enrichedResults.sort((a, b) => a.year - b.year);
+
+  console.log(`✅ [SCRAPER SUCCESS] Total de efemérides reales verificadas: ${enrichedResults.length}`);
+  return enrichedResults;
 }

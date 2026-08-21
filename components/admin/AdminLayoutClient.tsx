@@ -8,13 +8,19 @@ import { Menu, Music2 } from 'lucide-react';
 import Link from 'next/link';
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(() => {
+    if (typeof window !== 'undefined') {
+      const valid = isSuperUserAuthenticated();
+      const localSession = localStorage.getItem('guta_admin_logged') === 'true';
+      return valid || localSession;
+    }
+    return null;
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Check initial auth state
+    // Check and confirm auth state on mount
     const valid = isSuperUserAuthenticated();
-    // For seamless offline testing or existing session
     const localSession = typeof window !== 'undefined' && localStorage.getItem('guta_admin_logged') === 'true';
     setIsAuthenticated(valid || localSession);
 
@@ -24,7 +30,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
       if (isAuth) {
         localStorage.setItem('guta_admin_logged', 'true');
       }
-      setIsAuthenticated(isAuth);
+      setIsAuthenticated(isAuth || (typeof window !== 'undefined' && localStorage.getItem('guta_admin_logged') === 'true'));
     });
 
     return () => {
