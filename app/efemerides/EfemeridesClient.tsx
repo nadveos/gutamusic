@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { EphemerisItem, EphemerisCategory } from '../../lib/types';
 import { Calendar, BookOpen, Search } from 'lucide-react';
+import { ShareButton } from '../../components/ShareButton';
 
 interface EfemeridesClientProps {
   initialItems: EphemerisItem[];
@@ -62,17 +63,24 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
-          <BookOpen className="w-3.5 h-3.5" />
-          <span>Archivo Histórico del Patrimonio Musical</span>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Archivo Histórico del Patrimonio Musical</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-black text-[#f3f1ec]">
+            Efemérides Musicales
+          </h1>
+          <p className="text-[#aba79e] text-xs sm:text-sm max-w-2xl">
+            Lanzamientos fundacionales, registros en SADAIC, hitos en Billboard, festivales de Cosquín, Jesús María y tributos de la música argentina y latinoamericana.
+          </p>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-[#f3f1ec]">
-          Efemérides Musicales
-        </h1>
-        <p className="text-[#aba79e] text-xs sm:text-sm max-w-2xl">
-          Lanzamientos fundacionales, registros en SADAIC, hitos en Billboard, festivales de Cosquín, Jesús María y tributos de la música argentina y latinoamericana.
-        </p>
+
+        <ShareButton
+          title="Efemérides Musicales | GUTA MÚSICA"
+          text="Descubrí los lanzamientos, hitos y fechas históricas de la música argentina y latinoamericana en GUTA MÚSICA."
+        />
       </div>
 
       {/* Date & Filter Selector Bar */}
@@ -165,18 +173,26 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
               className="natural-card p-5 rounded-2xl flex flex-col sm:flex-row gap-5 items-start justify-between"
             >
               <div className="space-y-2 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded bg-sand-soft">
-                    Año {item.year}
-                  </span>
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#24252c] text-[#aba79e]">
-                    {item.categoryLabel}
-                  </span>
-                  {item.impactBadge && (
-                    <span className="text-[11px] font-medium text-[#d97d64] bg-terracotta-soft px-2 py-0.5 rounded">
-                      {item.impactBadge}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded bg-sand-soft">
+                      Año {item.year}
                     </span>
-                  )}
+                    <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded bg-[#24252c] text-[#aba79e]">
+                      {item.categoryLabel}
+                    </span>
+                    {item.impactBadge && (
+                      <span className="text-[11px] font-medium text-[#d97d64] bg-terracotta-soft px-2 py-0.5 rounded">
+                        {item.impactBadge}
+                      </span>
+                    )}
+                  </div>
+
+                  <ShareButton
+                    title={`${item.title} (${item.year}) | Efemérides GUTA MÚSICA`}
+                    text={`${item.title} — ${item.description}`}
+                    variant="compact"
+                  />
                 </div>
 
                 <h3 className="text-lg sm:text-xl font-bold text-[#f3f1ec] leading-snug">

@@ -59,6 +59,7 @@ export class MusicDataService {
           gallery: Array.isArray(r.gallery) ? r.gallery : (typeof r.gallery === 'string' && r.gallery ? [r.gallery] : []),
           quotes: r.quotes || '',
           createdDate: r.createdDate || r.created?.split(' ')[0] || '',
+          likesCount: typeof r.likesCount === 'number' ? r.likesCount : (parseInt(r.likesCount, 10) || 0),
         }));
 
         if (filters?.featured !== undefined) {
@@ -245,6 +246,7 @@ export class MusicDataService {
           gallery: Array.isArray(record.gallery) ? record.gallery : (typeof record.gallery === 'string' && record.gallery ? [record.gallery] : []),
           quotes: record.quotes || '',
           createdDate: record.createdDate || record.created?.split(' ')[0] || '',
+          likesCount: typeof record.likesCount === 'number' ? record.likesCount : (parseInt(record.likesCount, 10) || 0),
         };
       }
     } catch (e) {

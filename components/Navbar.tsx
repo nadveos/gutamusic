@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Radio, Music2, Calendar, Mic2, BookOpen, Menu, X, Search, Sparkles } from 'lucide-react';
+import { ShareButton } from './ShareButton';
 
 export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -104,6 +105,11 @@ export const Navbar: React.FC = () => {
 
             {/* CTA & Search Action */}
             <div className="hidden lg:flex items-center gap-3">
+              <ShareButton
+                title="GUTA MÚSICA — Plataforma Federal de Difusión"
+                text="Descubrí la plataforma federal para artistas independientes y emergentes en GUTA MÚSICA."
+                variant="icon"
+              />
               <Link
                 href="/artistas"
                 className="flex items-center gap-1.5 text-xs text-[#aba79e] hover:text-[#f3f1ec] px-3 py-1.5 rounded-lg bg-[#222329] border border-[#31333d] hover:border-[#464957] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
@@ -121,6 +127,11 @@ export const Navbar: React.FC = () => {
 
             {/* Mobile menu button */}
             <div className="flex md:hidden items-center gap-2">
+              <ShareButton
+                title="GUTA MÚSICA — Plataforma Federal de Difusión"
+                text="Descubrí la plataforma federal para artistas independientes y emergentes en GUTA MÚSICA."
+                variant="icon"
+              />
               <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}

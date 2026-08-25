@@ -16,6 +16,8 @@ import {
   Ticket,
   Music,
 } from 'lucide-react';
+import { LikeButton } from '../../../components/LikeButton';
+import { ShareButton } from '../../../components/ShareButton';
 
 interface ArtistProfileClientProps {
   artist: Artist;
@@ -83,14 +85,25 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
               </p>
             )}
 
-            {/* Social Links */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
+            {/* Actions & Social Links */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 pt-2">
+              <LikeButton
+                artistId={artist.id}
+                artistSlug={artist.slug}
+                initialLikesCount={artist.likesCount || 0}
+              />
+
+              <ShareButton
+                title={`${artist.stageName} | GUTA MÚSICA`}
+                text={`Descubrí la música, videos y discografía de ${artist.stageName} en GUTA MÚSICA.`}
+              />
+
               {artist.socials?.spotify && artist.socials.spotify.trim() && !['https://spotify.com', 'https://spotify.com/'].includes(artist.socials.spotify.trim()) && (
                 <a
                   href={artist.socials.spotify}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-2.5 py-1 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#93a887] border border-[#31333d] text-xs font-medium flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1.5 rounded-xl bg-[#24252c] hover:bg-[#2e303b] text-[#93a887] border border-[#31333d] text-xs font-medium flex items-center gap-1 transition-colors"
                 >
                   <span>Spotify</span>
                   <ExternalLink className="w-3 h-3" />
@@ -101,7 +114,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                   href={artist.socials.youtube}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-2.5 py-1 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#d97d64] border border-[#31333d] text-xs font-medium flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1.5 rounded-xl bg-[#24252c] hover:bg-[#2e303b] text-[#d97d64] border border-[#31333d] text-xs font-medium flex items-center gap-1 transition-colors"
                 >
                   <span>YouTube</span>
                   <ExternalLink className="w-3 h-3" />
@@ -112,7 +125,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                   href={artist.socials.instagram}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-2.5 py-1 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#e6cca0] border border-[#31333d] text-xs font-medium flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1.5 rounded-xl bg-[#24252c] hover:bg-[#2e303b] text-[#e6cca0] border border-[#31333d] text-xs font-medium flex items-center gap-1 transition-colors"
                 >
                   <span>Instagram</span>
                   <ExternalLink className="w-3 h-3" />
@@ -123,7 +136,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                   href={artist.socials.tiktok}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-2.5 py-1 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#8fa1b3] border border-[#31333d] text-xs font-medium flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1.5 rounded-xl bg-[#24252c] hover:bg-[#2e303b] text-[#8fa1b3] border border-[#31333d] text-xs font-medium flex items-center gap-1 transition-colors"
                 >
                   <span>TikTok</span>
                   <ExternalLink className="w-3 h-3" />

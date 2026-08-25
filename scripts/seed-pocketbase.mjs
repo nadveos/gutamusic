@@ -24,6 +24,7 @@ const ARTISTS = [
     featuredOfWeek: true,
     quotes: '"No venimos a romper la tradición, venimos a regarla con agua nueva."',
     createdDate: '2026-08-10',
+    likesCount: 24,
     socials: {
       spotify: 'https://spotify.com',
       youtube: 'https://youtube.com',

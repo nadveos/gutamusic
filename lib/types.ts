@@ -132,6 +132,7 @@ export interface Artist {
   gallery: string[];
   quotes?: string;
   createdDate: string;
+  likesCount?: number;
 }
 
 export interface Interview {

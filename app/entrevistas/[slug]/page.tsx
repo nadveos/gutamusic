@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MusicDataService } from '../../../lib/api';
 import { Radio, User, Calendar, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ShareButton } from '../../../components/ShareButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -64,14 +65,22 @@ export default async function InterviewDetailPage({
 
   return (
     <article className="max-w-4xl mx-auto space-y-8">
-      {/* Back button */}
-      <Link
-        href="/entrevistas"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8c887f] hover:text-[#e6cca0] transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Volver a todas las notas y entrevistas</span>
-      </Link>
+      {/* Top Nav & Share */}
+      <div className="flex items-center justify-between gap-4">
+        <Link
+          href="/entrevistas"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8c887f] hover:text-[#e6cca0] transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Volver a todas las notas y entrevistas</span>
+        </Link>
+
+        <ShareButton
+          title={`${interview.title} | GUTA MÚSICA`}
+          text={interview.summary || interview.subtitle || `Entrevista exclusiva: ${interview.title}`}
+          variant="compact"
+        />
+      </div>
 
       {/* Header */}
       <div className="space-y-3">
