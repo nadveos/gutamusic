@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Artist } from '../../../lib/types';
 import { getVideoEmbedUrl } from '../../../lib/videoUtils';
 import {
@@ -401,16 +402,51 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
 
       {/* Tab: PRENSA */}
       {activeTab === 'prensa' && (
-        <div className="space-y-3 max-w-3xl">
+        <div className="space-y-4 max-w-3xl">
           {artist.press.length > 0 ? (
             artist.press.map((item) => (
-              <div key={item.id} className="natural-card p-5 rounded-xl space-y-1.5">
-                <div className="flex items-center justify-between text-xs text-[#8c887f]">
-                  <span className="font-semibold text-[#e6cca0]">{item.medium}</span>
-                  <span>{item.date}</span>
+              <div
+                key={item.id}
+                className="natural-card p-5 sm:p-6 rounded-2xl space-y-3 border border-[#2d2f38] hover:border-[#464956] transition-colors"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#8c887f]">
+                  <span className="font-semibold text-[#e6cca0] px-2.5 py-1 rounded bg-[#24252c] border border-[#31333d]">
+                    {item.medium}
+                  </span>
+                  <span className="flex items-center gap-1 text-[#93a887]">
+                    <Calendar className="w-3 h-3" />
+                    {item.date}
+                  </span>
                 </div>
-                <h4 className="text-sm font-bold text-[#f3f1ec]">{item.title}</h4>
-                <p className="text-xs text-[#aba79e] leading-relaxed">{item.excerpt}</p>
+                <h4 className="text-base sm:text-lg font-bold text-[#f3f1ec] leading-snug">
+                  {item.title}
+                </h4>
+                <p className="text-xs sm:text-sm text-[#aba79e] leading-relaxed">
+                  {item.excerpt}
+                </p>
+                {item.url && (
+                  <div className="pt-1">
+                    {item.url.startsWith('/') ? (
+                      <Link
+                        href={item.url}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors"
+                      >
+                        <Newspaper className="w-3.5 h-3.5" />
+                        <span>Leer nota editorial / entrevista</span>
+                      </Link>
+                    ) : (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#e6cca0] font-semibold text-xs border border-[#31333d] transition-colors"
+                      >
+                        <span>Ver nota externa</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             ))
           ) : (

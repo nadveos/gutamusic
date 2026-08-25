@@ -1,4 +1,4 @@
-import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, GenreType } from './types';
+import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, GenreType, PressNote } from './types';
 import { pb, ensureServerSuperUserAuth } from './pocketbase';
 
 async function syncServerAuth() {
@@ -104,7 +104,7 @@ export class MusicDataService {
       }
 
       if (record) {
-        let artistAgenda: AgendaEvent[] = Array.isArray(record.agenda) ? record.agenda : [];
+        const artistAgenda: AgendaEvent[] = Array.isArray(record.agenda) ? record.agenda : [];
         try {
           const matchingEvents = await pb.collection('events').getFullList<any>({
             sort: 'date',
@@ -133,7 +133,7 @@ export class MusicDataService {
           }
         } catch (e) {}
 
-        let artistVideos: VideoItem[] = Array.isArray(record.videos) ? [...record.videos] : [];
+        const artistVideos: VideoItem[] = Array.isArray(record.videos) ? [...record.videos] : [];
         try {
           const allVideos = await this.getVideos();
           if (allVideos && allVideos.length > 0) {
@@ -161,6 +161,67 @@ export class MusicDataService {
           console.error('Error fetching matching videos for artist:', e);
         }
 
+        const artistPress: PressNote[] = Array.isArray(record.press) ? [...record.press] : [];
+        try {
+          const allInterviews = await this.getInterviews();
+          if (allInterviews && allInterviews.length > 0) {
+            const existingPressTitles = new Set(artistPress.map((p) => (p.title || '').toLowerCase().trim()));
+            const existingPressIds = new Set(artistPress.map((p) => p.id));
+            const stageNameLower = (record.stageName || '').toLowerCase().trim();
+            const artistId = record.id;
+            const artistSlug = record.slug;
+
+            for (const mi of allInterviews) {
+              const miArtistName = (mi.artistName || '').toLowerCase().trim();
+              const matchesArtist =
+                (mi.artistId && (mi.artistId === artistId || mi.artistId === artistSlug)) ||
+                (mi.artistSlug && (mi.artistSlug === artistSlug || mi.artistSlug === artistId)) ||
+                (miArtistName && stageNameLower && (
+                  miArtistName === stageNameLower ||
+                  miArtistName.includes(stageNameLower) ||
+                  stageNameLower.includes(miArtistName)
+                ));
+
+              if (matchesArtist && !existingPressIds.has(mi.id) && !existingPressTitles.has((mi.title || '').toLowerCase().trim())) {
+                artistPress.push({
+                  id: mi.id,
+                  title: mi.title,
+                  medium: `GUTA MÚSICA — Editorial (${mi.category || 'Entrevista'})`,
+                  date: mi.date,
+                  url: `/entrevistas/${mi.slug}`,
+                  excerpt: mi.summary || mi.subtitle || 'Entrevista y cobertura editorial exclusiva en GUTA MÚSICA.',
+                });
+              }
+
+              // Si la entrevista incluye video propio, integrarlo también en Videos & Lives del artista si no estaba
+              if (matchesArtist && mi.videoUrl) {
+                const existingVideoUrls = new Set(artistVideos.map((v) => (v.url || '').trim()));
+                const existingVideoTitles = new Set(artistVideos.map((v) => (v.title || '').toLowerCase().trim()));
+                if (!existingVideoUrls.has(mi.videoUrl.trim()) && !existingVideoTitles.has((mi.title || '').toLowerCase().trim())) {
+                  artistVideos.push({
+                    id: `interview-vid-${mi.id}`,
+                    title: mi.title,
+                    platform: mi.videoPlatform || 'youtube',
+                    url: mi.videoUrl,
+                    embedUrl: mi.videoUrl,
+                    thumbnailUrl: mi.thumbnailUrl || mi.artistPhoto || record.photoUrl || '',
+                    channelOrAuthor: `GUTA MÚSICA (${mi.host || 'Editorial'})`,
+                    type: 'interview',
+                    duration: '',
+                    publishedAt: mi.date || '',
+                    views: '1K',
+                    featured: Boolean(mi.featured),
+                    artistId: record.id,
+                    artistName: record.stageName,
+                  });
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching matching interviews for artist:', e);
+        }
+
         return {
           id: record.id,
           slug: record.slug,
@@ -180,7 +241,7 @@ export class MusicDataService {
           videos: artistVideos,
           discography: record.discography || [],
           agenda: artistAgenda,
-          press: record.press || [],
+          press: artistPress,
           gallery: Array.isArray(record.gallery) ? record.gallery : (typeof record.gallery === 'string' && record.gallery ? [record.gallery] : []),
           quotes: record.quotes || '',
           createdDate: record.createdDate || record.created?.split(' ')[0] || '',
@@ -193,31 +254,45 @@ export class MusicDataService {
     return null;
   }
 
-  static async getFeaturedArtistOfWeek(): Promise<Artist | null> {
+  static async getFeaturedArtists(): Promise<Artist[]> {
     try {
       await syncServerAuth();
-      let record: any = null;
-      try {
-        record = await pb.collection('artists').getFirstListItem('featuredOfWeek=true', {
-          requestKey: null,
-        });
-      } catch {
-        try {
-          record = await pb.collection('artists').getFirstListItem('featured=true', {
-            requestKey: null,
-          });
-        } catch {
-          const list = await pb.collection('artists').getList(1, 1, { requestKey: null });
-          if (list.items.length > 0) record = list.items[0];
-        }
-      }
+      const records = await pb.collection('artists').getFullList<any>({
+        requestKey: null,
+      });
 
-      if (record) return this.getArtistBySlug(record.slug);
+      if (records && records.length > 0) {
+        let featuredRecords = records.filter(
+          (r) => Boolean(r.featuredOfWeek) || Boolean(r.featured)
+        );
+
+        // Ordenar: primero featuredOfWeek, luego featured
+        featuredRecords.sort((a, b) => {
+          if (a.featuredOfWeek && !b.featuredOfWeek) return -1;
+          if (!a.featuredOfWeek && b.featuredOfWeek) return 1;
+          return 0;
+        });
+
+        // Fallback al primer artista si ninguno está tildado como destacado
+        if (featuredRecords.length === 0) {
+          featuredRecords = [records[0]];
+        }
+
+        const results = await Promise.all(
+          featuredRecords.map((r) => this.getArtistBySlug(r.slug))
+        );
+        return results.filter((a): a is Artist => a !== null);
+      }
     } catch (e) {
-      console.error('Error fetching featured artist of week:', e);
+      console.error('Error fetching featured artists list:', e);
     }
 
-    return null;
+    return [];
+  }
+
+  static async getFeaturedArtistOfWeek(): Promise<Artist | null> {
+    const list = await this.getFeaturedArtists();
+    return list[0] || null;
   }
 
   // VIDEOS

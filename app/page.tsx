@@ -13,7 +13,7 @@ export default async function HomePage() {
   const currentDay = now.getDate();
   const currentMonth = now.getMonth() + 1;
 
-  const featuredArtist = await MusicDataService.getFeaturedArtistOfWeek();
+  const featuredArtists = await MusicDataService.getFeaturedArtists();
   const latestArtists = await MusicDataService.getArtists();
   const videos = await MusicDataService.getVideos(4);
   const featuredInterview = await MusicDataService.getFeaturedInterview();
@@ -21,8 +21,8 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-10">
-      {/* 1. Hero Principal - Artista de la Semana */}
-      {featuredArtist && <HeroFeatured artist={featuredArtist} />}
+      {/* 1. Hero Principal - Artistas Destacados (Slider) */}
+      {featuredArtists.length > 0 && <HeroFeatured artists={featuredArtists} />}
 
       {/* 2. Efemérides Musicales del Día */}
       <EphemeridesWidget items={ephemerides} day={currentDay} month={currentMonth} />
