@@ -25,12 +25,12 @@ export async function GET() {
     let records: any[] = [];
     try {
       records = await pb.collection('applications').getFullList<any>({
-        sort: '-created',
         requestKey: null,
       });
+      // Sort newest first by submittedAt
+      records.sort((a: any, b: any) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
     } catch (collErr: any) {
       console.warn('⚠️ Could not fetch from PocketBase applications collection:', collErr?.message);
-      // Return empty array instead of 500 if collection is temporarily empty or missing
       return NextResponse.json({ success: true, data: [] });
     }
 

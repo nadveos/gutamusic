@@ -62,13 +62,40 @@ export const AdminPostulacionesClient: React.FC = () => {
     const loadApplications = async () => {
       setIsLoading(true);
       try {
-        // 1. Cargar desde API route server-side (usa superuser auth garantizado)
+        // 1. Cargar desde API route server-side
         const res = await fetch('/api/admin/applications');
         const json = await res.json();
 
         let items: ApplicationItem[] = [];
-        if (json.success && Array.isArray(json.data)) {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
           items = json.data;
+        } else {
+          // Fallback directo a PocketBase client-side
+          try {
+            const pbRecords = await pb.collection('applications').getFullList<any>({ requestKey: null });
+            if (Array.isArray(pbRecords) && pbRecords.length > 0) {
+              pbRecords.sort((a: any, b: any) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+              items = pbRecords.map((r: any) => ({
+                id: r.id,
+                stageName: r.stageName || 'Artista Sin Nombre',
+                contactName: r.contactName || '',
+                email: r.email || '',
+                phone: r.phone || '',
+                genres: Array.isArray(r.genres) ? r.genres : (r.genres ? [r.genres] : ['Folklore']),
+                city: r.city || '',
+                province: r.province || '',
+                country: r.country || 'Argentina',
+                bio: r.bio || '',
+                socials: r.socials || {},
+                photoUrl: r.photoUrl || (r.photo ? `${pb.baseUrl}/api/files/${r.collectionId || r.collectionName}/${r.id}/${r.photo}` : ''),
+                message: r.message || '',
+                status: r.status || 'pending',
+                submittedAt: r.submittedAt ? r.submittedAt.split('T')[0] : (r.created?.split(' ')[0] || ''),
+              }));
+            }
+          } catch (pbErr) {
+            console.warn('Direct PB fallback error:', pbErr);
+          }
         }
 
         // 2. Si hay postulaciones guardadas localmente en este navegador, integrarlas
