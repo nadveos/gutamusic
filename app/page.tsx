@@ -1,6 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { MusicDataService } from '../lib/api';
+
+export const dynamic = 'force-dynamic';
 import { HeroFeatured } from '../components/HeroFeatured';
 import { ArtistCard } from '../components/ArtistCard';
 import { EphemeridesWidget } from '../components/EphemeridesWidget';

@@ -157,7 +157,7 @@ export async function scrapeEfeEme(day: number, month: number): Promise<ScrapedE
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-      next: { revalidate: 86400 },
+      cache: 'no-store',
     });
 
     if (!res.ok) return [];
@@ -216,7 +216,7 @@ export async function scrapeFolkloreTradiciones(day: number, month: number): Pro
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-      next: { revalidate: 86400 },
+      cache: 'no-store',
     });
 
     if (!res.ok) return [];
@@ -271,12 +271,14 @@ export async function scrapeFolkloreTradiciones(day: number, month: number): Pro
  * Fuente 3: CRock.com.ar (Efemérides de Rock Argentino e Internacional)
  */
 export async function scrapeCRock(day: number, month: number): Promise<ScrapedEphemeris[]> {
-  const url = 'https://crock.com.ar/efemerides/';
+  // Incluir fecha en la URL para invalidar caches CDN intermedias
+  const dateKey = `${new Date().getFullYear()}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`;
+  const url = `https://crock.com.ar/efemerides/?_d=${dateKey}`;
 
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-      next: { revalidate: 3600 },
+      cache: 'no-store',
     });
 
     if (!res.ok) return [];
@@ -336,7 +338,7 @@ export async function scrapeMiaFM(day: number, month: number): Promise<ScrapedEp
     try {
       const res = await fetch(url, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-        next: { revalidate: 3600 },
+        cache: 'no-store',
       });
 
       if (!res.ok) continue;

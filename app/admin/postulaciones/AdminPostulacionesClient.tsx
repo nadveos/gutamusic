@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { pb } from '../../../lib/pocketbase';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
+
 import {
   FileSpreadsheet,
   CheckCircle2,
@@ -106,50 +107,22 @@ export const AdminPostulacionesClient: React.FC = () => {
     const loadApplications = async () => {
       setIsLoading(true);
       try {
-        let pbList: ApplicationItem[] = [];
-        try {
-          const records = await pb.collection('applications').getFullList<any>({
-            sort: '-created',
-            requestKey: null,
-          });
-          if (records && records.length > 0) {
-            pbList = records.map((r) => ({
-              id: r.id,
-              stageName: r.stageName,
-              contactName: r.contactName || '',
-              email: r.email || '',
-              phone: r.phone || '',
-              genres: Array.isArray(r.genres) ? r.genres : [r.genres || 'Folklore'],
-              city: r.city || '',
-              province: r.province || '',
-              country: r.country || 'Argentina',
-              bio: r.bio || '',
-              socials: r.socials || {},
-              photoUrl: r.photoUrl || (r.photo ? pb.files.getUrl(r, r.photo) : ''),
-              message: r.message || '',
-              status: r.status || 'pending',
-              submittedAt: r.submittedAt || r.created?.split(' ')[0] || '',
-            }));
-          }
-        } catch {}
+        // Cargar desde API route server-side (usa superuser auth garantizado)
+        const res = await fetch('/api/admin/applications');
+        const json = await res.json();
 
-        // Read from localStorage submitted forms
-        const localApps: ApplicationItem[] = typeof window !== 'undefined'
-          ? JSON.parse(localStorage.getItem('guta_pending_applications') || '[]')
-          : [];
-
-        // Combine unique by id: PocketBase first, local submissions second, sample only if empty
-        const merged = [...pbList, ...localApps];
-        const unique = merged.length > 0
-          ? Array.from(new Map(merged.map((item) => [item.id || item.stageName, item])).values())
-          : sampleApplications;
-
-        setApplications(unique);
-        if (unique.length > 0) {
-          setSelectedApp(unique[0]);
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setApplications(json.data);
+          setSelectedApp(json.data[0]);
+        } else {
+          // Fallback: sample data solo en modo demo sin datos reales
+          setApplications(sampleApplications);
+          setSelectedApp(sampleApplications[0]);
         }
       } catch (err) {
         console.error('Error loading applications:', err);
+        setApplications(sampleApplications);
+        setSelectedApp(sampleApplications[0]);
       } finally {
         setIsLoading(false);
       }
@@ -201,21 +174,19 @@ export const AdminPostulacionesClient: React.FC = () => {
         console.warn('PocketBase artist creation fallback:', pbErr);
       }
 
-      // Update application status in PocketBase
-      try {
-        await pb.collection('applications').update(app.id, { status: 'approved' });
-      } catch (e) {}
+      // 3. Update application status via API route
+      await fetch('/api/admin/applications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: app.id, status: 'approved' }),
+      });
 
-      // 3. Mark application as approved in state & local storage
+      // 4. Update local state
       const updated = applications.map((a) => (a.id === app.id ? { ...a, status: 'approved' as const } : a));
       setApplications(updated);
       if (selectedApp?.id === app.id) {
         setSelectedApp({ ...selectedApp, status: 'approved' });
       }
-
-      const localApps: ApplicationItem[] = JSON.parse(localStorage.getItem('guta_pending_applications') || '[]');
-      const localUpdated = localApps.map((a) => (a.id === app.id ? { ...a, status: 'approved' as const } : a));
-      localStorage.setItem('guta_pending_applications', JSON.stringify(localUpdated));
 
       setToastMessage(`¡"${app.stageName}" fue aprobado y publicado como artista en GUTA!`);
       setTimeout(() => setToastMessage(''), 4000);
@@ -228,7 +199,11 @@ export const AdminPostulacionesClient: React.FC = () => {
 
   const handleReject = async (appId: string) => {
     try {
-      await pb.collection('applications').update(appId, { status: 'rejected' });
+      await fetch('/api/admin/applications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: appId, status: 'rejected' }),
+      });
     } catch (e) {}
 
     const updated = applications.map((a) => (a.id === appId ? { ...a, status: 'rejected' as const } : a));
@@ -242,7 +217,7 @@ export const AdminPostulacionesClient: React.FC = () => {
 
   const handleDeleteApp = async (appId: string) => {
     try {
-      await pb.collection('applications').delete(appId);
+      await fetch(`/api/admin/applications?id=${appId}`, { method: 'DELETE' });
     } catch (e) {}
 
     setApplications((prev) => prev.filter((a) => a.id !== appId));
