@@ -54,7 +54,7 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist, artists: raw
 
   return (
     <section
-      className="relative w-full rounded-2xl overflow-hidden natural-card my-6 group"
+      className="relative w-full rounded-2xl overflow-hidden natural-card my-6 group h-[420px] sm:h-[460px]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       aria-roledescription="carousel"
@@ -77,7 +77,7 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist, artists: raw
       </div>
 
       {/* Hero Content */}
-      <div className="relative z-10 p-6 sm:p-10 lg:p-12 max-w-4xl space-y-5 min-h-[380px] flex flex-col justify-between">
+      <div className="relative z-10 p-6 sm:p-10 lg:p-12 max-w-4xl h-full flex flex-col justify-between">
         <div className="space-y-4">
           {/* Badge & Navigation info */}
           <div className="flex flex-wrap items-center gap-3">
