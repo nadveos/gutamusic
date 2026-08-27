@@ -58,71 +58,57 @@ export const AdminPostulacionesClient: React.FC = () => {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Initial mock applications for instant rich admin experience
-  const sampleApplications: ApplicationItem[] = [
-    {
-      id: 'app-sample-1',
-      stageName: 'La Chusma del Monte',
-      contactName: 'Luciano Cabrera',
-      email: 'lachusma.monte@gmail.com',
-      phone: '+54 9 351 555-1234',
-      genres: ['Folklore', 'Fusión Latinoamericana'],
-      city: 'Mina Clavero',
-      province: 'Córdoba',
-      country: 'Argentina',
-      bio: 'Ensamble de guitarras de siete cuerdas, acordeón verdulera y sintetizadores. Canciones con raíz traslaserrana inspiradas en la flora y la resistencia campesina.',
-      photoUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop',
-      socials: {
-        spotify: 'https://open.spotify.com',
-        instagram: 'https://instagram.com',
-        youtube: 'https://youtube.com',
-      },
-      message: 'Nos gustaría poder tocar en un Acústico GUTA o salir en las efemérides con el lanzamiento de nuestro primer LP en octubre.',
-      status: 'pending',
-      submittedAt: '2026-08-19',
-    },
-    {
-      id: 'app-sample-2',
-      stageName: 'Bandoneón Negro',
-      contactName: 'Mariana Quiroga',
-      email: 'mariana.quiroga.tango@gmail.com',
-      phone: '+54 9 11 4444-9988',
-      genres: ['Tango', 'Indie'],
-      city: 'Avellaneda',
-      province: 'Buenos Aires',
-      country: 'Argentina',
-      bio: 'Tango moderno y letras distópicas con arreglos de trío de cuerdas y batería electrónica.',
-      photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop',
-      socials: {
-        spotify: 'https://open.spotify.com',
-        instagram: 'https://instagram.com',
-      },
-      message: 'Tenemos fecha confirmada en el CAFF y queremos promocionarla en la agenda de GUTA.',
-      status: 'pending',
-      submittedAt: '2026-08-18',
-    },
-  ];
-
   useEffect(() => {
     const loadApplications = async () => {
       setIsLoading(true);
       try {
-        // Cargar desde API route server-side (usa superuser auth garantizado)
+        // 1. Cargar desde API route server-side (usa superuser auth garantizado)
         const res = await fetch('/api/admin/applications');
         const json = await res.json();
 
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          setApplications(json.data);
-          setSelectedApp(json.data[0]);
+        let items: ApplicationItem[] = [];
+        if (json.success && Array.isArray(json.data)) {
+          items = json.data;
+        }
+
+        // 2. Si hay postulaciones guardadas localmente en este navegador, integrarlas
+        try {
+          const localPending = JSON.parse(localStorage.getItem('guta_pending_applications') || '[]');
+          if (Array.isArray(localPending) && localPending.length > 0) {
+            const existingIds = new Set(items.map((i) => i.id));
+            const existingNames = new Set(items.map((i) => (i.stageName || '').toLowerCase().trim()));
+            for (const localApp of localPending) {
+              if (
+                !existingIds.has(localApp.id) &&
+                !existingNames.has((localApp.stageName || '').toLowerCase().trim())
+              ) {
+                items.push(localApp);
+              }
+            }
+          }
+        } catch {}
+
+        setApplications(items);
+        if (items.length > 0) {
+          setSelectedApp(items[0]);
         } else {
-          // Fallback: sample data solo en modo demo sin datos reales
-          setApplications(sampleApplications);
-          setSelectedApp(sampleApplications[0]);
+          setSelectedApp(null);
         }
       } catch (err) {
         console.error('Error loading applications:', err);
-        setApplications(sampleApplications);
-        setSelectedApp(sampleApplications[0]);
+        try {
+          const localPending = JSON.parse(localStorage.getItem('guta_pending_applications') || '[]');
+          if (Array.isArray(localPending) && localPending.length > 0) {
+            setApplications(localPending);
+            setSelectedApp(localPending[0]);
+          } else {
+            setApplications([]);
+            setSelectedApp(null);
+          }
+        } catch {
+          setApplications([]);
+          setSelectedApp(null);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -325,10 +311,15 @@ export const AdminPostulacionesClient: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Applications Table / Cards */}
         <div className="lg:col-span-7 space-y-3">
-          {filteredApps.length === 0 ? (
+          {isLoading ? (
+            <div className="natural-card p-12 rounded-2xl text-center space-y-3">
+              <Loader2 className="w-8 h-8 text-[#d97d64] animate-spin mx-auto" />
+              <p className="text-xs text-[#aba79e] font-semibold">Cargando postulaciones desde la base de datos...</p>
+            </div>
+          ) : filteredApps.length === 0 ? (
             <div className="natural-card p-8 rounded-2xl text-center space-y-2">
               <FileSpreadsheet className="w-8 h-8 text-[#78746c] mx-auto" />
-              <p className="text-xs text-[#aba79e] font-semibold">No se encontraron postulaciones con este criterio.</p>
+              <p className="text-xs text-[#aba79e] font-semibold">No se encontraron postulaciones registradas con este criterio.</p>
             </div>
           ) : (
             filteredApps.map((app) => {

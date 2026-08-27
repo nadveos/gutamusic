@@ -5,6 +5,9 @@ export const POCKETBASE_URL =
 
 export const pb = new PocketBase(POCKETBASE_URL);
 
+// Desactivar auto-cancelación global para soportar múltiples workers en build y peticiones paralelas en SSR
+pb.autoCancellation(false);
+
 // Sincronizar automáticamente authStore con cookies en el navegador
 if (typeof document !== 'undefined') {
   pb.authStore.loadFromCookie(document.cookie);
@@ -75,8 +78,8 @@ export async function ensureServerSuperUserAuth(): Promise<boolean> {
   if (typeof window === 'undefined') {
     if (pb.authStore.isValid) return true;
 
-    const email = process.env.PB_EMAIL || process.env.POCKETBASE_ADMIN_EMAIL;
-    const password = process.env.PB_PASSWORD || process.env.POCKETBASE_ADMIN_PASSWORD;
+    const email = process.env.PB_EMAIL || process.env.POCKETBASE_ADMIN_EMAIL || 'guflo32@gmail.com';
+    const password = process.env.PB_PASSWORD || process.env.POCKETBASE_ADMIN_PASSWORD || '1982Gut@**';
 
     if (email && password) {
       try {

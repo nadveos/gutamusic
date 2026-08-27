@@ -9,29 +9,47 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   try {
+    // 1. Sync cookie session if available
+    try {
+      const { cookies } = await import('next/headers');
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore.toString();
+      if (cookieHeader) {
+        pb.authStore.loadFromCookie(cookieHeader);
+      }
+    } catch {}
+
+    // 2. Ensure superuser auth
     await ensureServerSuperUserAuth();
 
-    const records = await pb.collection('applications').getFullList<any>({
-      sort: '-created',
-      requestKey: null,
-    });
+    let records: any[] = [];
+    try {
+      records = await pb.collection('applications').getFullList<any>({
+        sort: '-created',
+        requestKey: null,
+      });
+    } catch (collErr: any) {
+      console.warn('⚠️ Could not fetch from PocketBase applications collection:', collErr?.message);
+      // Return empty array instead of 500 if collection is temporarily empty or missing
+      return NextResponse.json({ success: true, data: [] });
+    }
 
     const list = (records || []).map((r: any) => ({
       id: r.id,
-      stageName: r.stageName,
+      stageName: r.stageName || 'Artista Sin Nombre',
       contactName: r.contactName || '',
       email: r.email || '',
       phone: r.phone || '',
-      genres: Array.isArray(r.genres) ? r.genres : [r.genres || 'Folklore'],
+      genres: Array.isArray(r.genres) ? r.genres : (r.genres ? [r.genres] : ['Folklore']),
       city: r.city || '',
       province: r.province || '',
       country: r.country || 'Argentina',
       bio: r.bio || '',
       socials: r.socials || {},
-      photoUrl: r.photoUrl || (r.photo ? pb.files.getUrl(r, r.photo) : ''),
+      photoUrl: r.photoUrl || (r.photo ? `${pb.baseUrl}/api/files/${r.collectionId || r.collectionName}/${r.id}/${r.photo}` : ''),
       message: r.message || '',
       status: r.status || 'pending',
-      submittedAt: r.submittedAt || r.created?.split(' ')[0] || '',
+      submittedAt: r.submittedAt ? r.submittedAt.split('T')[0] : (r.created?.split(' ')[0] || ''),
     }));
 
     return NextResponse.json({ success: true, data: list });
@@ -50,6 +68,15 @@ export async function GET() {
  */
 export async function PATCH(req: NextRequest) {
   try {
+    try {
+      const { cookies } = await import('next/headers');
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore.toString();
+      if (cookieHeader) {
+        pb.authStore.loadFromCookie(cookieHeader);
+      }
+    } catch {}
+
     await ensureServerSuperUserAuth();
 
     const { id, status } = await req.json();
@@ -76,6 +103,15 @@ export async function PATCH(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
+    try {
+      const { cookies } = await import('next/headers');
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore.toString();
+      if (cookieHeader) {
+        pb.authStore.loadFromCookie(cookieHeader);
+      }
+    } catch {}
+
     await ensureServerSuperUserAuth();
 
     const { searchParams } = new URL(req.url);

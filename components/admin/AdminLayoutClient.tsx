@@ -8,12 +8,7 @@ import { Menu, Music2 } from 'lucide-react';
 import Link from 'next/link';
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(() => {
-    if (typeof window !== 'undefined') {
-      return isSuperUserAuthenticated();
-    }
-    return null;
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
