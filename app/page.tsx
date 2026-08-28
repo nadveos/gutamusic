@@ -27,7 +27,7 @@ export default async function HomePage() {
       {featuredArtists.length > 0 && <HeroFeatured artists={featuredArtists} />}
 
       {/* 2. Efemérides Musicales del Día */}
-      <EphemeridesWidget items={ephemerides} day={currentDay} month={currentMonth} />
+      <EphemeridesWidget items={ephemerides.slice(0, 5)} day={currentDay} month={currentMonth} />
 
       {/* 3. Últimos Artistas Incorporados */}
       <section className="space-y-5">
