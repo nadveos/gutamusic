@@ -174,3 +174,27 @@ export interface EphemerisItem {
   originCity?: string;
   ipi?: string;
 }
+
+export type AllianceSector =
+  | 'global_footer'   // Recomendado: Visible en todas las secciones antes del footer
+  | 'home_mid'        // Visible en la portada principal
+  | 'artistas_catalog'// Visible en el catálogo de artistas
+  | 'agenda_events'   // Visible en la cartelera de eventos
+  | 'all_sections';   // Multisección transversal
+
+export interface AlliancePartner {
+  id: string;
+  name: string;
+  category?: string;       // e.g. "Equipamiento de Audio", "Luthier & Instrumentos", "Estudio de Grabación"
+  imageUrl: string;        // URL de imagen/logo (adaptativo a cualquier alto/ancho)
+  phone?: string;          // Teléfono para llamadas directas
+  whatsapp?: string;       // Número limpio para enlace wa.me directo
+  websiteUrl?: string;     // Sitio web o red social
+  email?: string;          // Email de contacto
+  sector: AllianceSector;  // Sector asignado en la web
+  active: boolean;         // Estado de publicación (activo/pausado)
+  priority?: number;       // Orden de visualización (1, 2, 3...)
+  description?: string;    // Breve reseña o eslogan institucional
+  createdDate?: string;
+}
+

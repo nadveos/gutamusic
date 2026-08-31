@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
+import { BrandAllianceShowcase } from '../components/BrandAllianceShowcase';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
 
@@ -76,6 +77,7 @@ export default function RootLayout({
         <Navbar />
         <main id="main-content" tabIndex={-1} className="min-h-[calc(100vh-140px)] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 outline-none">
           {children}
+          <BrandAllianceShowcase sector="global_footer" />
         </main>
         <Footer />
       </body>

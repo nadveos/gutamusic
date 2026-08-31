@@ -9,6 +9,7 @@ interface AdminHeaderProps {
   subtitle?: string;
   actionText?: string;
   actionHref?: string;
+  onActionClick?: () => void;
 }
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({
@@ -16,6 +17,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   subtitle,
   actionText,
   actionHref,
+  onActionClick,
 }) => {
   return (
     <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#2a2c35] mb-6">
@@ -33,6 +35,17 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             <Plus className="w-4 h-4" />
             <span>{actionText}</span>
           </Link>
+        )}
+
+        {actionText && onActionClick && !actionHref && (
+          <button
+            type="button"
+            onClick={onActionClick}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{actionText}</span>
+          </button>
         )}
       </div>
     </header>

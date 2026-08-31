@@ -10,6 +10,10 @@ export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   const navLinks = [
     { href: '/', label: 'Inicio', icon: Music2 },
     { href: '/artistas', label: 'Artistas', icon: Mic2 },

@@ -1,4 +1,5 @@
-import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, GenreType, PressNote } from './types';
+import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, GenreType, PressNote, AlliancePartner, AllianceSector } from './types';
+import { MOCK_ALLIANCES } from './mockData';
 import { getRealEphemerides } from './services/ephemeridesScraper';
 import { pb, ensureServerSuperUserAuth } from './pocketbase';
 
@@ -555,6 +556,84 @@ export class MusicDataService {
     } catch (e) {}
 
     return [];
+  }
+
+  // ALLIANCES & AUSPICIANTES
+  static async getAlliances(sector?: AllianceSector, onlyActive: boolean = true): Promise<AlliancePartner[]> {
+    try {
+      await syncServerAuth();
+      const filterParts: string[] = [];
+      if (onlyActive) {
+        filterParts.push('active=true');
+      }
+      if (sector && sector !== 'all_sections') {
+        filterParts.push(`(sector="${sector}" || sector="all_sections")`);
+      }
+      const filter = filterParts.join(' && ');
+
+      const records = await pb.collection('alliances').getFullList<any>({
+        sort: 'priority,created',
+        filter: filter || undefined,
+        requestKey: null,
+      });
+
+      if (records && records.length > 0) {
+        return records.map((r) => ({
+          id: r.id,
+          name: r.name,
+          category: r.category || '',
+          description: r.description || '',
+          imageUrl: r.imageUrl || (r.image ? pb.files.getUrl(r, r.image) : ''),
+          phone: r.phone || '',
+          whatsapp: r.whatsapp || '',
+          websiteUrl: r.websiteUrl || '',
+          email: r.email || '',
+          sector: r.sector || 'global_footer',
+          active: Boolean(r.active),
+          priority: typeof r.priority === 'number' ? r.priority : 1,
+          createdDate: r.createdDate || r.created?.split(' ')[0] || '',
+        }));
+      }
+    } catch (err) {
+      // Graceful fallback to mock data if collection doesn't exist yet
+    }
+
+    let list = MOCK_ALLIANCES;
+    if (onlyActive) {
+      list = list.filter((a) => a.active);
+    }
+    if (sector && sector !== 'all_sections') {
+      list = list.filter((a) => a.sector === sector || a.sector === 'all_sections' || a.sector === 'global_footer');
+    }
+    return list;
+  }
+
+  static async getAllianceById(id: string): Promise<AlliancePartner | null> {
+    try {
+      await syncServerAuth();
+      const record = await pb.collection('alliances').getOne<any>(id, { requestKey: null });
+      if (record) {
+        return {
+          id: record.id,
+          name: record.name,
+          category: record.category || '',
+          description: record.description || '',
+          imageUrl: record.imageUrl || (record.image ? pb.files.getUrl(record, record.image) : ''),
+          phone: record.phone || '',
+          whatsapp: record.whatsapp || '',
+          websiteUrl: record.websiteUrl || '',
+          email: record.email || '',
+          sector: record.sector || 'global_footer',
+          active: Boolean(record.active),
+          priority: typeof record.priority === 'number' ? record.priority : 1,
+          createdDate: record.createdDate || record.created?.split(' ')[0] || '',
+        };
+      }
+    } catch (err) {
+      const found = MOCK_ALLIANCES.find((a) => a.id === id);
+      if (found) return found;
+    }
+    return null;
   }
 
   // GENRES

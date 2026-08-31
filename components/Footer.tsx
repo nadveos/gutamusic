@@ -1,8 +1,17 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Music2, Radio, Heart, Sparkles } from 'lucide-react';
 
 export const Footer: React.FC = () => {
+  const pathname = usePathname();
+
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <footer className="border-t border-[#2a2c35] bg-[#111214] text-[#8c887f] pt-14 pb-10 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

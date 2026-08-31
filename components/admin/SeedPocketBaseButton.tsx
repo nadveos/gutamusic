@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { pb, loginAsSuperUser } from '../../lib/pocketbase';
-import { MOCK_ARTISTS, MOCK_VIDEOS, MOCK_EPHEMERIDES, MOCK_INTERVIEWS, MOCK_AGENDA } from '../../lib/mockData';
+import { MOCK_ARTISTS, MOCK_VIDEOS, MOCK_EPHEMERIDES, MOCK_INTERVIEWS, MOCK_AGENDA, MOCK_ALLIANCES } from '../../lib/mockData';
 import { ConfirmModal } from './ConfirmModal';
 import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 
@@ -73,6 +73,15 @@ export const SeedPocketBaseButton: React.FC = () => {
       for (const ev of MOCK_AGENDA) {
         try {
           await pb.collection('events').create(ev);
+          createdCount++;
+        } catch (e: any) {}
+      }
+
+      // 7. Insert Alliances / Auspiciantes
+      setStatus('Insertando Auspiciantes & Alianzas...');
+      for (const ally of MOCK_ALLIANCES) {
+        try {
+          await pb.collection('alliances').create(ally);
           createdCount++;
         } catch (e: any) {}
       }

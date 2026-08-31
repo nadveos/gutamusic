@@ -1,4 +1,4 @@
-import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent } from './types';
+import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, AlliancePartner } from './types';
 
 export const MOCK_ARTISTS: Artist[] = [
   {
@@ -629,3 +629,63 @@ export const MOCK_AGENDA: AgendaEvent[] = [
     type: 'festival',
   }
 ];
+
+export const MOCK_ALLIANCES: AlliancePartner[] = [
+  {
+    id: 'ally-1',
+    name: 'Guitarras & Cuerdas Criollas',
+    category: 'Luthier & Instrumentos',
+    description: 'Fabricación artesanal de instrumentos de concierto para música popular latinoamericana.',
+    imageUrl: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=800&auto=format&fit=crop',
+    phone: '+54 9 351 456-7890',
+    whatsapp: '5493514567890',
+    websiteUrl: 'https://instagram.com',
+    sector: 'global_footer',
+    active: true,
+    priority: 1,
+    createdDate: '2026-08-15',
+  },
+  {
+    id: 'ally-2',
+    name: 'Estudio La Calera Sound',
+    category: 'Grabación & Mastering',
+    description: 'Estudio boutique especializado en mezcla de música raíz folklórica, rock e indie federal.',
+    imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=800&auto=format&fit=crop',
+    phone: '+54 9 11 3344-5566',
+    whatsapp: '5491133445566',
+    websiteUrl: 'https://instagram.com',
+    sector: 'global_footer',
+    active: true,
+    priority: 2,
+    createdDate: '2026-08-18',
+  },
+  {
+    id: 'ally-3',
+    name: 'Sonido Federal & Escenarios',
+    category: 'Audio en Vivo & Técnica',
+    description: 'Sistemas line array, iluminación inteligente y microfonía profesional para festivales.',
+    imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop',
+    phone: '+54 9 341 678-9012',
+    whatsapp: '5493416789012',
+    websiteUrl: 'https://instagram.com',
+    sector: 'global_footer',
+    active: true,
+    priority: 3,
+    createdDate: '2026-08-20',
+  },
+  {
+    id: 'ally-4',
+    name: 'Cultura en Movimiento Prensa',
+    category: 'Difusión & Medios',
+    description: 'Red de cobertura periodística y fotografía especializada en festivales emergentes.',
+    imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
+    phone: '+54 9 387 411-2233',
+    whatsapp: '5493874112233',
+    websiteUrl: 'https://instagram.com',
+    sector: 'home_mid',
+    active: true,
+    priority: 4,
+    createdDate: '2026-08-22',
+  }
+];
+

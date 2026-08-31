@@ -387,6 +387,56 @@ async function seed() {
       }
     }
 
+    // Seed Alliances
+    console.log('\n🤝 Insertando Auspiciantes & Alianzas...');
+    const ALLIANCES = [
+      {
+        name: 'Guitarras & Cuerdas Criollas',
+        category: 'Luthier & Instrumentos',
+        description: 'Fabricación artesanal de instrumentos de concierto para música popular latinoamericana.',
+        imageUrl: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=800&auto=format&fit=crop',
+        phone: '+54 9 351 456-7890',
+        whatsapp: '5493514567890',
+        websiteUrl: 'https://instagram.com',
+        sector: 'global_footer',
+        active: true,
+        priority: 1,
+      },
+      {
+        name: 'Estudio La Calera Sound',
+        category: 'Grabación & Mastering',
+        description: 'Estudio boutique especializado en mezcla de música raíz folklórica, rock e indie federal.',
+        imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=800&auto=format&fit=crop',
+        phone: '+54 9 11 3344-5566',
+        whatsapp: '5491133445566',
+        websiteUrl: 'https://instagram.com',
+        sector: 'global_footer',
+        active: true,
+        priority: 2,
+      },
+      {
+        name: 'Sonido Federal & Escenarios',
+        category: 'Audio en Vivo & Técnica',
+        description: 'Sistemas line array, iluminación inteligente y microfonía profesional para festivales.',
+        imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop',
+        phone: '+54 9 341 678-9012',
+        whatsapp: '5493416789012',
+        websiteUrl: 'https://instagram.com',
+        sector: 'global_footer',
+        active: true,
+        priority: 3,
+      }
+    ];
+
+    for (const ally of ALLIANCES) {
+      try {
+        await pb.collection('alliances').create(ally);
+        console.log(`   + Auspiciante: ${ally.name}`);
+      } catch (err) {
+        console.log(`   ! Auspiciante ${ally.name} (ya existe o nota: ${err.message})`);
+      }
+    }
+
     console.log('\n🎉 ¡Poblado de PocketBase completado exitosamente!');
   } catch (error) {
     console.error('❌ Error durante el seed:', error.message);

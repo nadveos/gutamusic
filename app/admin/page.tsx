@@ -15,6 +15,7 @@ import {
   Eye,
   Edit,
   Radio,
+  HeartHandshake,
 } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
@@ -23,6 +24,7 @@ export default async function AdminDashboardPage() {
   const ephemerides = await MusicDataService.getAllEphemerides();
   const events = await MusicDataService.getUpcomingEvents();
   const interviews = await MusicDataService.getInterviews();
+  const alliances = await MusicDataService.getAlliances(undefined, false);
 
   const stats = [
     {
@@ -38,6 +40,13 @@ export default async function AdminDashboardPage() {
       icon: Radio,
       badgeColor: 'bg-sand-soft text-[#e6cca0]',
       href: '/admin/entrevistas',
+    },
+    {
+      label: 'Auspiciantes & Alianzas',
+      value: alliances.length,
+      icon: HeartHandshake,
+      badgeColor: 'bg-sand-soft text-[#e6cca0]',
+      href: '/admin/aliados',
     },
     {
       label: 'Videos en Videoteca',
@@ -125,6 +134,16 @@ export default async function AdminDashboardPage() {
                 <Sparkles className="w-3.5 h-3.5" />
               </div>
               <span>Revisar Postulaciones</span>
+            </Link>
+
+            <Link
+              href="/admin/aliados"
+              className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
+            >
+              <div className="p-1.5 rounded bg-sand-soft">
+                <HeartHandshake className="w-3.5 h-3.5 text-[#e6cca0]" />
+              </div>
+              <span>Nuevo Auspiciante</span>
             </Link>
 
             <Link
