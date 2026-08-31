@@ -7,7 +7,7 @@ import { pb } from '../../../lib/pocketbase';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
 import { ImageUploadField } from '../../../components/admin/ImageUploadField';
 import { ConfirmModal } from '../../../components/admin/ConfirmModal';
-import { BrandAllianceShowcase } from '../../../components/BrandAllianceShowcase';
+import { BrandAllianceShowcase, AllianceCard } from '../../../components/BrandAllianceShowcase';
 import {
   HeartHandshake,
   Plus,
@@ -360,6 +360,7 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
                   onChange={(url) => setFormData({ ...formData, imageUrl: url })}
                   collectionName="media"
                   required
+                  aspectRatio="contain"
                   helperText="💡 Podés subir imágenes cuadradas, horizontales o verticales. El contenedor inteligente adapta el encuadre automáticamente sin recortar ni deformar."
                 />
               </div>
@@ -608,22 +609,20 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
               </div>
 
               {/* Visual Container representing live portal */}
-              <div
-                className={`transition-all duration-300 mx-auto ${
-                  previewDevice === 'mobile' ? 'max-w-[280px]' : 'w-full'
-                }`}
-              >
-                <div className="rounded-xl border border-[#343846] bg-[#151618] p-3 shadow-2xl">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#78746c] block mb-2">
-                    Simulación del Bloque Público:
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#78746c]">
+                    Tarjeta en Portal Web:
                   </span>
-                  <BrandAllianceShowcase
-                    items={[previewItem]}
-                    isPreview={true}
-                    compact={previewDevice === 'mobile'}
-                    title="Alianzas & Auspicios"
-                    subtitle="Acompañan la cultura independiente"
-                  />
+                  <span className="text-[10px] text-[#e6cca0] font-mono">
+                    {previewDevice === 'mobile' ? 'Móvil (320px)' : 'Escritorio (Proporción Real)'}
+                  </span>
+                </div>
+
+                <div className="rounded-xl border border-[#343846] bg-[#121316] p-3 sm:p-4 flex justify-center shadow-2xl">
+                  <div className={`w-full ${previewDevice === 'mobile' ? 'max-w-[260px]' : 'max-w-[320px]'}`}>
+                    <AllianceCard item={previewItem} isPreview={true} />
+                  </div>
                 </div>
               </div>
 
@@ -631,10 +630,10 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
               <div className="p-3 rounded-xl bg-[#1d1f26] border border-[#2e313d] text-[11px] text-[#aba79e] space-y-1">
                 <div className="flex items-center gap-1.5 text-[#93a887] font-semibold text-[10px]">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Adaptación Inteligente de Dimensiones:</span>
+                  <span>Encuadre Proporcional Garantizado:</span>
                 </div>
                 <p className="text-[10px] text-[#8c887f] leading-relaxed">
-                  Logos horizontales, isotipos cuadrados o banners verticales se ajustan automáticamente en el centro de la tarjeta con calidad óptima y sin distorsión.
+                  Logos horizontales, cuadrados o verticales se ajustan siempre centrados con calidad óptima y sin deformaciones.
                 </p>
               </div>
             </div>

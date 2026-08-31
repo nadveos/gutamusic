@@ -12,7 +12,7 @@ interface ImageUploadFieldProps {
   collectionName?: string;
   required?: boolean;
   helperText?: string;
-  aspectRatio?: 'square' | 'video' | 'banner';
+  aspectRatio?: 'square' | 'video' | 'banner' | 'contain';
 }
 
 export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
@@ -64,11 +64,14 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
     setErrorMsg('');
   };
 
+  const isContain = aspectRatio === 'contain';
   const aspectClass =
     aspectRatio === 'banner'
       ? 'aspect-[21/9] sm:aspect-[3/1]'
       : aspectRatio === 'video'
       ? 'aspect-video'
+      : isContain
+      ? 'h-28 sm:h-32 w-full'
       : 'aspect-square';
 
   return (
@@ -181,12 +184,12 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
       {/* Live Preview Thumbnail */}
       {value && (
         <div className="relative rounded-xl overflow-hidden border border-[#2e3039] bg-[#101114] mt-2">
-          <div className={`relative w-full ${aspectClass} max-h-48`}>
+          <div className={`relative w-full ${aspectClass} ${isContain ? 'p-3 flex items-center justify-center' : 'max-h-48'}`}>
             <Image
               src={value}
               alt={label}
               fill
-              className="object-cover"
+              className={isContain ? 'object-contain object-center' : 'object-cover'}
               sizes="(max-width: 768px) 100vw, 400px"
               onError={() => setErrorMsg('No se pudo cargar la vista previa de la imagen.')}
             />
