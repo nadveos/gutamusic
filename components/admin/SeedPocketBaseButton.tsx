@@ -34,7 +34,8 @@ export const SeedPocketBaseButton: React.FC = () => {
       // 2. Insert Artists
       for (const artist of MOCK_ARTISTS) {
         try {
-          await pb.collection('artists').create(artist);
+          const { id, ...artistData } = artist;
+          await pb.collection('artists').create(artistData);
           createdCount++;
         } catch (e: any) {
           // May already exist
@@ -45,7 +46,8 @@ export const SeedPocketBaseButton: React.FC = () => {
       setStatus('Insertando Videos...');
       for (const video of MOCK_VIDEOS) {
         try {
-          await pb.collection('videos').create(video);
+          const { id, ...videoData } = video;
+          await pb.collection('videos').create(videoData);
           createdCount++;
         } catch (e: any) {}
       }
@@ -54,7 +56,8 @@ export const SeedPocketBaseButton: React.FC = () => {
       setStatus('Insertando Efemérides Históricas...');
       for (const eph of MOCK_EPHEMERIDES) {
         try {
-          await pb.collection('ephemerides').create(eph);
+          const { id, ...ephData } = eph;
+          await pb.collection('ephemerides').create(ephData);
           createdCount++;
         } catch (e: any) {}
       }
@@ -63,7 +66,8 @@ export const SeedPocketBaseButton: React.FC = () => {
       setStatus('Insertando Entrevistas...');
       for (const item of MOCK_INTERVIEWS) {
         try {
-          await pb.collection('interviews').create(item);
+          const { id, ...itemData } = item;
+          await pb.collection('interviews').create(itemData);
           createdCount++;
         } catch (e: any) {}
       }
@@ -72,7 +76,8 @@ export const SeedPocketBaseButton: React.FC = () => {
       setStatus('Insertando Agenda de Recitales...');
       for (const ev of MOCK_AGENDA) {
         try {
-          await pb.collection('events').create(ev);
+          const { id, ...evData } = ev;
+          await pb.collection('events').create(evData);
           createdCount++;
         } catch (e: any) {}
       }
@@ -81,7 +86,8 @@ export const SeedPocketBaseButton: React.FC = () => {
       setStatus('Insertando Auspiciantes & Alianzas...');
       for (const ally of MOCK_ALLIANCES) {
         try {
-          await pb.collection('alliances').create(ally);
+          const { id, ...allyData } = ally;
+          await pb.collection('alliances').create(allyData);
           createdCount++;
         } catch (e: any) {}
       }

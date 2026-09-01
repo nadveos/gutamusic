@@ -172,15 +172,36 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
 
     try {
       if (editingId) {
-        // Update in PocketBase
-        try {
-          await pb.collection('alliances').update(editingId, payload);
-        } catch (pbErr: any) {
-          console.warn('Notice PocketBase update:', pbErr?.message);
+        let updatedRecord: any = null;
+        const isMockId = editingId.startsWith('ally-') || editingId.startsWith('preview-') || !/^[a-z0-9]{15}$/.test(editingId);
+
+        if (isMockId) {
+          // If mock or local ID, create real record in PocketBase
+          try {
+            updatedRecord = await pb.collection('alliances').create(payload);
+          } catch (pbErr: any) {
+            console.warn('Notice PocketBase create for mock item:', pbErr?.message);
+          }
+        } else {
+          // Update in PocketBase
+          try {
+            updatedRecord = await pb.collection('alliances').update(editingId, payload);
+          } catch (pbErr: any) {
+            if (pbErr?.status === 404 || pbErr?.message?.includes('404') || pbErr?.status === 0) {
+              try {
+                updatedRecord = await pb.collection('alliances').create(payload);
+              } catch (createErr: any) {
+                console.warn('Notice PocketBase create fallback after 404:', createErr?.message);
+              }
+            } else {
+              console.warn('Notice PocketBase update:', pbErr?.message);
+            }
+          }
         }
 
+        const newId = updatedRecord?.id || editingId;
         setAlliances((prev) =>
-          prev.map((item) => (item.id === editingId ? { ...item, ...payload } : item))
+          prev.map((item) => (item.id === editingId ? { ...item, ...payload, id: newId } : item))
         );
         setNotification({ type: 'success', text: `¡Auspiciante "${payload.name}" actualizado con éxito!` });
       } else {
@@ -213,12 +234,57 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
   const handleToggleActive = async (item: AlliancePartner) => {
     const updatedStatus = !item.active;
     try {
-      try {
-        await pb.collection('alliances').update(item.id, { active: updatedStatus });
-      } catch (e) {}
+      let updatedId = item.id;
+      const isMockId = item.id.startsWith('ally-') || item.id.startsWith('preview-') || !/^[a-z0-9]{15}$/.test(item.id);
+
+      if (isMockId) {
+        try {
+          const created = await pb.collection('alliances').create({
+            name: item.name,
+            category: item.category,
+            description: item.description,
+            imageUrl: item.imageUrl,
+            phone: item.phone,
+            whatsapp: item.whatsapp,
+            websiteUrl: item.websiteUrl,
+            email: item.email,
+            sector: item.sector,
+            priority: item.priority,
+            active: updatedStatus,
+          });
+          if (created?.id) updatedId = created.id;
+        } catch (e: any) {
+          console.warn('Toggle create fallback error:', e?.message);
+        }
+      } else {
+        try {
+          await pb.collection('alliances').update(item.id, { active: updatedStatus });
+        } catch (pbErr: any) {
+          if (pbErr?.status === 404 || pbErr?.message?.includes('404')) {
+            try {
+              const created = await pb.collection('alliances').create({
+                name: item.name,
+                category: item.category,
+                description: item.description,
+                imageUrl: item.imageUrl,
+                phone: item.phone,
+                whatsapp: item.whatsapp,
+                websiteUrl: item.websiteUrl,
+                email: item.email,
+                sector: item.sector,
+                priority: item.priority,
+                active: updatedStatus,
+              });
+              if (created?.id) updatedId = created.id;
+            } catch (createErr: any) {
+              console.warn('Toggle create error:', createErr?.message);
+            }
+          }
+        }
+      }
 
       setAlliances((prev) =>
-        prev.map((a) => (a.id === item.id ? { ...a, active: updatedStatus } : a))
+        prev.map((a) => (a.id === item.id ? { ...a, id: updatedId, active: updatedStatus } : a))
       );
       setNotification({
         type: 'success',
@@ -233,9 +299,14 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
     if (!deleteTarget) return;
 
     try {
-      try {
-        await pb.collection('alliances').delete(deleteTarget.id);
-      } catch (e) {}
+      const isMockId = deleteTarget.id.startsWith('ally-') || deleteTarget.id.startsWith('preview-') || !/^[a-z0-9]{15}$/.test(deleteTarget.id);
+      if (!isMockId) {
+        try {
+          await pb.collection('alliances').delete(deleteTarget.id);
+        } catch (e: any) {
+          console.warn('Delete alliance notice:', e?.message);
+        }
+      }
 
       setAlliances((prev) => prev.filter((a) => a.id !== deleteTarget.id));
       setNotification({ type: 'success', text: `Auspiciante "${deleteTarget.name}" eliminado correctamente.` });

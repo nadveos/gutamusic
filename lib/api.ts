@@ -572,12 +572,12 @@ export class MusicDataService {
       const filter = filterParts.join(' && ');
 
       const records = await pb.collection('alliances').getFullList<any>({
-        sort: 'priority,created',
+        sort: 'priority',
         filter: filter || undefined,
         requestKey: null,
       });
 
-      if (records && records.length > 0) {
+      if (records) {
         return records.map((r) => ({
           id: r.id,
           name: r.name,
@@ -595,17 +595,10 @@ export class MusicDataService {
         }));
       }
     } catch (err) {
-      // Graceful fallback to mock data if collection doesn't exist yet
+      console.warn('Error loading alliances from PocketBase:', err);
     }
 
-    let list = MOCK_ALLIANCES;
-    if (onlyActive) {
-      list = list.filter((a) => a.active);
-    }
-    if (sector && sector !== 'all_sections') {
-      list = list.filter((a) => a.sector === sector || a.sector === 'all_sections' || a.sector === 'global_footer');
-    }
-    return list;
+    return [];
   }
 
   static async getAllianceById(id: string): Promise<AlliancePartner | null> {
@@ -630,8 +623,7 @@ export class MusicDataService {
         };
       }
     } catch (err) {
-      const found = MOCK_ALLIANCES.find((a) => a.id === id);
-      if (found) return found;
+      // not found
     }
     return null;
   }
