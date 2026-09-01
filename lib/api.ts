@@ -1,4 +1,5 @@
-import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, GenreType, PressNote, AlliancePartner, AllianceSector } from './types';
+import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, GenreType, PressNote, AlliancePartner, AllianceSector, OfficialSocialsSettings } from './types';
+import { DEFAULT_OFFICIAL_SOCIALS, buildSocialUrl } from './socialUtils';
 import { MOCK_ALLIANCES } from './mockData';
 import { getRealEphemerides } from './services/ephemeridesScraper';
 import { pb, ensureServerSuperUserAuth } from './pocketbase';
@@ -628,6 +629,133 @@ export class MusicDataService {
     return null;
   }
 
+  // OFFICIAL SOCIAL NETWORKS (@sesionesrg)
+  static async getOfficialSocials(): Promise<OfficialSocialsSettings> {
+    try {
+      await syncServerAuth();
+      let record: any = null;
+      try {
+        record = await pb.collection('site_settings').getFirstListItem('key="official_socials"', {
+          requestKey: null,
+        });
+      } catch {
+        try {
+          const list = await pb.collection('site_settings').getFullList<any>({ requestKey: null });
+          if (list && list.length > 0) record = list[0];
+        } catch {}
+      }
+
+      if (record && record.data) {
+        const d = typeof record.data === 'string' ? JSON.parse(record.data) : record.data;
+        return {
+          id: record.id,
+          brandName: d.brandName || '@sesionesrg',
+          badgeText: d.badgeText || 'Sesiones RG Oficial',
+          tiktok: {
+            handle: d.tiktok?.handle ?? 'sesionesrg',
+            url: buildSocialUrl('tiktok', d.tiktok?.handle ?? 'sesionesrg'),
+            active: d.tiktok?.active !== false,
+          },
+          instagram: {
+            handle: d.instagram?.handle ?? 'sesionesrg',
+            url: buildSocialUrl('instagram', d.instagram?.handle ?? 'sesionesrg'),
+            active: d.instagram?.active !== false,
+          },
+          facebook: {
+            handle: d.facebook?.handle ?? 'sesionesrg',
+            url: buildSocialUrl('facebook', d.facebook?.handle ?? 'sesionesrg'),
+            active: d.facebook?.active !== false,
+          },
+          kick: {
+            handle: d.kick?.handle ?? 'sesionesrg',
+            url: buildSocialUrl('kick', d.kick?.handle ?? 'sesionesrg'),
+            active: d.kick?.active !== false,
+          },
+          twitch: {
+            handle: d.twitch?.handle ?? 'sesionesrg',
+            url: buildSocialUrl('twitch', d.twitch?.handle ?? 'sesionesrg'),
+            active: d.twitch?.active !== false,
+          },
+          updatedDate: record.updated?.split(' ')[0] || record.created?.split(' ')[0] || '',
+        };
+      }
+    } catch (err) {
+      console.warn('Error fetching official socials from PocketBase, using defaults:', err);
+    }
+
+    return DEFAULT_OFFICIAL_SOCIALS;
+  }
+
+  static async updateOfficialSocials(settings: OfficialSocialsSettings): Promise<OfficialSocialsSettings> {
+    try {
+      await syncServerAuth();
+
+      const normalized: OfficialSocialsSettings = {
+        brandName: settings.brandName || '@sesionesrg',
+        badgeText: settings.badgeText || 'Sesiones RG Oficial',
+        tiktok: {
+          handle: settings.tiktok.handle || '',
+          url: buildSocialUrl('tiktok', settings.tiktok.handle),
+          active: Boolean(settings.tiktok.active),
+        },
+        instagram: {
+          handle: settings.instagram.handle || '',
+          url: buildSocialUrl('instagram', settings.instagram.handle),
+          active: Boolean(settings.instagram.active),
+        },
+        facebook: {
+          handle: settings.facebook.handle || '',
+          url: buildSocialUrl('facebook', settings.facebook.handle),
+          active: Boolean(settings.facebook.active),
+        },
+        kick: {
+          handle: settings.kick.handle || '',
+          url: buildSocialUrl('kick', settings.kick.handle),
+          active: Boolean(settings.kick.active),
+        },
+        twitch: {
+          handle: settings.twitch.handle || '',
+          url: buildSocialUrl('twitch', settings.twitch.handle),
+          active: Boolean(settings.twitch.active),
+        },
+        updatedDate: new Date().toISOString().split('T')[0],
+      };
+
+      const payload = {
+        key: 'official_socials',
+        data: JSON.stringify(normalized),
+      };
+
+      let record: any = null;
+      if (settings.id) {
+        try {
+          record = await pb.collection('site_settings').update(settings.id, payload);
+        } catch (updateErr) {
+          record = await pb.collection('site_settings').create(payload);
+        }
+      } else {
+        try {
+          const existing = await pb.collection('site_settings').getFirstListItem('key="official_socials"');
+          if (existing) {
+            record = await pb.collection('site_settings').update(existing.id, payload);
+          } else {
+            record = await pb.collection('site_settings').create(payload);
+          }
+        } catch {
+          record = await pb.collection('site_settings').create(payload);
+        }
+      }
+
+      return {
+        ...normalized,
+        id: record?.id,
+      };
+    } catch (err: any) {
+      console.warn('Error saving official socials to PocketBase:', err?.message);
+      return settings;
+    }
+  }
+
   // GENRES
   static getGenresList(): GenreType[] {
     return [
@@ -644,3 +772,4 @@ export class MusicDataService {
     ];
   }
 }
+

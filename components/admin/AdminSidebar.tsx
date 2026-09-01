@@ -17,6 +17,7 @@ import {
   FileSpreadsheet,
   ShieldCheck,
   HeartHandshake,
+  Share2,
   X,
 } from 'lucide-react';
 import { logoutSuperUser } from '../../lib/pocketbase';
@@ -33,6 +34,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile, onLog
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/artistas', label: 'Gestión de Artistas', icon: Mic2 },
     { href: '/admin/entrevistas', label: 'Entrevistas & Lives', icon: Radio },
+    { href: '/admin/redes', label: 'Redes @sesionesrg', icon: Share2 },
     { href: '/admin/aliados', label: 'Auspiciantes & Alianzas', icon: HeartHandshake },
     { href: '/admin/postulaciones', label: 'Postulaciones / Convocatorias', icon: FileSpreadsheet },
     { href: '/admin/ia', label: 'IA Editorial & SEO', icon: Sparkles },

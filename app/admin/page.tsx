@@ -16,6 +16,7 @@ import {
   Edit,
   Radio,
   HeartHandshake,
+  Share2,
 } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
@@ -25,6 +26,11 @@ export default async function AdminDashboardPage() {
   const events = await MusicDataService.getUpcomingEvents();
   const interviews = await MusicDataService.getInterviews();
   const alliances = await MusicDataService.getAlliances(undefined, false);
+  const socials = await MusicDataService.getOfficialSocials();
+
+  const activeSocialCount = ['tiktok', 'instagram', 'facebook', 'kick', 'twitch'].filter(
+    (k) => (socials as any)[k]?.active && (socials as any)[k]?.handle
+  ).length;
 
   const stats = [
     {
@@ -40,6 +46,13 @@ export default async function AdminDashboardPage() {
       icon: Radio,
       badgeColor: 'bg-sand-soft text-[#e6cca0]',
       href: '/admin/entrevistas',
+    },
+    {
+      label: 'Redes @sesionesrg',
+      value: `${activeSocialCount} / 5`,
+      icon: Share2,
+      badgeColor: 'bg-terracotta-soft text-[#d97d64]',
+      href: '/admin/redes',
     },
     {
       label: 'Auspiciantes & Alianzas',
@@ -63,6 +76,7 @@ export default async function AdminDashboardPage() {
       href: '/admin/efemerides',
     },
   ];
+
 
   return (
     <div className="space-y-6">
@@ -137,6 +151,16 @@ export default async function AdminDashboardPage() {
             </Link>
 
             <Link
+              href="/admin/redes"
+              className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
+            >
+              <div className="p-1.5 rounded bg-terracotta-soft">
+                <Share2 className="w-3.5 h-3.5 text-[#d97d64]" />
+              </div>
+              <span>Redes @sesionesrg</span>
+            </Link>
+
+            <Link
               href="/admin/aliados"
               className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
             >
@@ -158,6 +182,7 @@ export default async function AdminDashboardPage() {
           </div>
         </div>
       </section>
+
 
       {/* Recent Artists Table */}
       <section className="natural-card p-5 rounded-2xl space-y-3.5">

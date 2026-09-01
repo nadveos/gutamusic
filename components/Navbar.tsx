@@ -1,14 +1,33 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Radio, Music2, Calendar, Mic2, BookOpen, Menu, X, Search, Sparkles } from 'lucide-react';
 import { ShareButton } from './ShareButton';
+import { OfficialSocialsBar } from './OfficialSocialsBar';
+import { MusicDataService } from '../lib/api';
+import { DEFAULT_OFFICIAL_SOCIALS } from '../lib/socialUtils';
+import { OfficialSocialsSettings } from '../lib/types';
 
 export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [socials, setSocials] = useState<OfficialSocialsSettings>(DEFAULT_OFFICIAL_SOCIALS);
   const pathname = usePathname();
+
+  useEffect(() => {
+    let isMounted = true;
+    MusicDataService.getOfficialSocials()
+      .then((data) => {
+        if (isMounted && data) {
+          setSocials(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   if (pathname?.startsWith('/admin')) {
     return null;
@@ -41,21 +60,24 @@ export const Navbar: React.FC = () => {
       </a>
 
       <header className="sticky top-0 z-50 w-full natural-panel border-b border-[#2d2f38]">
-        {/* Top Banner Ticker */}
-        <div className="bg-[#1c1d22] text-xs py-1.5 px-4 border-b border-[#2a2c34] flex items-center justify-between text-[#aba79e]">
+        {/* Top Banner Ticker with Official Socials */}
+        <div className="bg-[#18191e] text-xs py-1 px-4 border-b border-[#2a2c34] flex items-center justify-between text-[#aba79e]">
           <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap text-[11px]">
-            <span className="font-semibold text-[#e6cca0]">
+            <span className="font-bold text-[#e6cca0]">
               GUTA MÚSICA —
             </span>
-            <span className="text-[#a09c93]">
-              Plataforma Federal de Difusión para Artistas Independientes & Emergentes
+            <span className="hidden sm:inline text-[#a09c93]">
+              Plataforma Federal de Difusión para Artistas Independientes
             </span>
-          </div>
-          <div className="hidden md:flex items-center gap-3 text-[11px]">
-            <Link href="/efemerides" className="flex items-center gap-1.5 text-[#93a887] hover:text-[#e6cca0] transition-colors">
+            <Link href="/efemerides" className="hidden lg:flex items-center gap-1.5 text-[#93a887] hover:text-[#e6cca0] transition-colors ml-2 pl-2 border-l border-[#2e3039]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#93a887]" aria-hidden="true"></span>
-              <span>Efeméride del Día: {todayFormatted}</span>
+              <span>Efeméride: {todayFormatted}</span>
             </Link>
+          </div>
+
+          {/* Official Social Links in Header Topbar */}
+          <div className="flex items-center gap-2 text-[11px]">
+            <OfficialSocialsBar settings={socials} variant="header" />
           </div>
         </div>
 
@@ -174,7 +196,9 @@ export const Navbar: React.FC = () => {
                 </Link>
               );
             })}
-            <div className="pt-3 border-t border-[#2d2f38]">
+            <div className="pt-3 border-t border-[#2d2f38] space-y-3">
+              <OfficialSocialsBar settings={socials} variant="drawer" />
+
               <Link
                 href="/contacto"
                 onClick={() => setIsOpen(false)}
@@ -189,3 +213,4 @@ export const Navbar: React.FC = () => {
     </>
   );
 };
+

@@ -198,3 +198,24 @@ export interface AlliancePartner {
   createdDate?: string;
 }
 
+export type OfficialPlatformKey = 'tiktok' | 'facebook' | 'instagram' | 'kick' | 'twitch';
+
+export interface SocialChannelConfig {
+  handle: string; // e.g. "@sesionesrg" o "sesionesrg" o URL completa
+  url?: string;   // URL calculada o personalizada
+  active: boolean;
+}
+
+export interface OfficialSocialsSettings {
+  id?: string;
+  brandName: string; // e.g. "@sesionesrg" o "Sesiones RG"
+  badgeText?: string; // e.g. "Canales Oficiales" o "En Vivo"
+  tiktok: SocialChannelConfig;
+  facebook: SocialChannelConfig;
+  instagram: SocialChannelConfig;
+  kick: SocialChannelConfig;
+  twitch: SocialChannelConfig;
+  updatedDate?: string;
+}
+
+
