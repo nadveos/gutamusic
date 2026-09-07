@@ -108,3 +108,40 @@
   font-weight: 800;
   letter-spacing: -0.025em;
 }
+
+/* ================================================================
+   Editorial Highlights — ==texto== → <mark>
+   Color: arena dorada GUTA con fondo ambarino suave
+   Semánticamente válido para SEO (<mark> es relevancia contextual)
+   ================================================================ */
+mark {
+  background-color: rgba(230, 204, 160, 0.18);
+  color: #e6cca0;
+  border-radius: 3px;
+  padding: 0.05em 0.35em;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(230, 204, 160, 0.35);
+  /* Subtle glow sin ser agresivo */
+  box-shadow: 0 0 8px rgba(230, 204, 160, 0.08);
+}
+
+/* ================================================================
+   Editorial prose body container
+   ================================================================ */
+.editorial-body {
+  color: #aba79e;
+  font-size: 0.8125rem; /* ~13px */
+  line-height: 1.75;
+}
+
+@media (min-width: 640px) {
+  .editorial-body {
+    font-size: 0.875rem; /* ~14px */
+  }
+}
+
+/* Reset margin on the last child to avoid extra space inside the card */
+.editorial-body > *:last-child {
+  margin-bottom: 0;
+}
+

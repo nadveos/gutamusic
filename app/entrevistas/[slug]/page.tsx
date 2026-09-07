@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { MusicDataService } from '../../../lib/api';
 import { Radio, User, Calendar, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { ShareButton } from '../../../components/ShareButton';
+import { EditorialRenderer } from '../../../components/EditorialRenderer';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -56,9 +57,16 @@ export default async function InterviewDetailPage({
     notFound();
   }
 
-  const artist = interview.artistSlug
-    ? await MusicDataService.getArtistBySlug(interview.artistSlug)
-    : null;
+  // Fetch artist profile + full artist catalog in parallel (for auto-linking)
+  const [artist, allArtists] = await Promise.all([
+    interview.artistSlug
+      ? MusicDataService.getArtistBySlug(interview.artistSlug)
+      : Promise.resolve(null),
+    MusicDataService.getArtists(),
+  ]);
+
+  // Build minimal ArtistRef list for the editorial auto-linker
+  const artistRefs = allArtists.map((a) => ({ stageName: a.stageName, slug: a.slug }));
 
   const embedUrl = getEmbedVideoUrl(interview.videoUrl);
   const heroImage = interview.thumbnailUrl || interview.artistPhoto || artist?.photoUrl || '';
@@ -183,9 +191,9 @@ export default async function InterviewDetailPage({
       )}
 
       {/* Editorial Article Body */}
-      <div className="natural-card p-6 sm:p-8 rounded-2xl space-y-4 text-[#aba79e] leading-relaxed text-xs sm:text-sm whitespace-pre-line">
-        <h2 className="text-xl font-bold text-[#f3f1ec]">Crónica & Reseña Periodística</h2>
-        {interview.editorialText}
+      <div className="natural-card p-6 sm:p-8 rounded-2xl space-y-2">
+        <h2 className="text-xl font-bold text-[#f3f1ec] mb-4">Crónica & Reseña Periodística</h2>
+        <EditorialRenderer text={interview.editorialText} artists={artistRefs} />
       </div>
     </article>
   );
