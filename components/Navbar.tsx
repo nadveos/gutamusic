@@ -86,25 +86,14 @@ export const Navbar: React.FC = () => {
             {/* Brand Logo */}
             <Link
               href="/"
-              className="flex items-center gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] rounded-lg p-1"
+              className="flex items-center group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] rounded-lg p-1 transition-opacity hover:opacity-95"
               aria-label="GUTA MÚSICA - Inicio"
             >
-              <div className="w-9 h-9 rounded-lg bg-[#d97d64] flex items-center justify-center text-[#151618] transition-transform group-hover:scale-105" aria-hidden="true">
-                <Music2 className="w-5 h-5 font-bold" />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-black text-lg tracking-tight text-[#f3f1ec] group-hover:text-[#e6cca0] transition-colors">
-                    GUTA
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2a2c35] text-[#e6cca0] font-medium tracking-wider">
-                    MÚSICA
-                  </span>
-                </div>
-                <p className="text-[10px] text-[#a09c93] font-normal">
-                  Cultura & Artistas Emergentes
-                </p>
-              </div>
+              <img
+                src="/brand/guta-musica-logo.svg"
+                alt="GUTA MÚSICA"
+                className="h-9 sm:h-10 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+              />
             </Link>
 
             {/* Desktop Navigation */}

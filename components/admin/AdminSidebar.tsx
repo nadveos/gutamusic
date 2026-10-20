@@ -61,11 +61,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile, onLog
           <Link
             href="/admin"
             onClick={onCloseMobile}
-            className="flex items-center gap-2.5"
+            className="flex items-center gap-2.5 group"
           >
-            <div className="w-8 h-8 rounded-lg bg-[#d97d64] flex items-center justify-center text-[#151618]">
-              <Music2 className="w-4 h-4 font-bold" />
-            </div>
+            <img
+              src="/brand/guta-musica-favicon.svg"
+              alt="GUTA"
+              className="w-8 h-8 rounded-lg object-contain transition-transform group-hover:scale-105"
+            />
             <div>
               <span className="font-black text-base text-[#f3f1ec] tracking-tight">
                 GUTA <span className="text-[#e6cca0] text-[10px] px-1 py-0.5 rounded bg-[#24252c] border border-[#353844]">CMS</span>

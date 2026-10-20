@@ -41,9 +41,11 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen bg-[#151618] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#d97d64] flex items-center justify-center animate-pulse text-[#151618]">
-            <Music2 className="w-5 h-5 font-bold" />
-          </div>
+          <img
+            src="/brand/guta-musica-favicon.svg"
+            alt="GUTA CMS"
+            className="w-10 h-10 rounded-xl animate-pulse object-contain shadow-lg shadow-[#d97d64]/10"
+          />
           <span className="text-xs text-[#aba79e] font-medium">Cargando panel GUTA CMS...</span>
         </div>
       </div>

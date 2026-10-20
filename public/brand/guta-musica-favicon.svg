@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>GUTA Música favicon</title>
+  <rect width="512" height="512" rx="112" fill="#151618"/>
+  <path fill="#d97d64" d="M235 72
+    C145 72 72 145 72 235
+    C72 325 145 398 235 398
+    C325 398 390 339 390 253
+    L390 228 L264 228 L264 278 L327 278
+    C312 315 279 342 235 342
+    C176 342 128 294 128 235
+    C128 176 176 128 235 128
+    C261 128 285 138 304 155
+    L343 115 C315 88 277 72 235 72 Z"/>
+  <path fill="#151618" d="M221 250 H309 V294 H265 V315
+    C265 340 245 360 220 360 C197 360 179 342 179 319
+    C179 296 198 278 221 278 Z"/>
+  <circle fill="#d97d64" cx="218" cy="319" r="28"/>
+  <rect fill="#e6cca0" x="345" y="112" width="25" height="78" rx="12.5"/>
+  <rect fill="#e6cca0" x="381" y="78" width="26" height="113" rx="13"/>
+  <rect fill="#e6cca0" x="418" y="105" width="25" height="86" rx="12.5"/>
+</svg>

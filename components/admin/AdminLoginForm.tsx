@@ -140,9 +140,11 @@ export const AdminLoginForm: React.FC<AdminLoginFormProps> = ({ onLoginSuccess }
       <div className="w-full max-w-md natural-card p-6 sm:p-8 rounded-3xl border border-[#2d2f38] shadow-2xl space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-[#d97d64] flex items-center justify-center mx-auto shadow-lg shadow-[#d97d64]/20 text-[#151618]">
-            <Music2 className="w-6 h-6 font-black" />
-          </div>
+          <img
+            src="/brand/guta-musica-favicon.svg"
+            alt="GUTA MÚSICA"
+            className="w-14 h-14 rounded-2xl mx-auto shadow-lg shadow-[#d97d64]/15 object-contain"
+          />
           <div className="flex items-center justify-center gap-1.5">
             <h1 className="text-2xl font-black text-[#f3f1ec] tracking-tight">GUTA</h1>
             <span className="text-xs px-2 py-0.5 rounded bg-[#24252c] text-[#e6cca0] font-semibold border border-[#353844]">

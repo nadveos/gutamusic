@@ -37,14 +37,13 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-[#24262f]">
           {/* Col 1: Brand & Mission */}
           <div className="space-y-3.5 md:col-span-1">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#d97d64] flex items-center justify-center text-[#151618]">
-                <Music2 className="w-4 h-4 font-bold" />
-              </div>
-              <span className="font-bold text-lg tracking-tight text-[#f3f1ec]">
-                GUTA <span className="text-[#e6cca0] text-xs font-semibold">MÚSICA</span>
-              </span>
-            </div>
+            <Link href="/" className="inline-block group" aria-label="GUTA MÚSICA - Inicio">
+              <img
+                src="/brand/guta-musica-logo.svg"
+                alt="GUTA MÚSICA"
+                className="h-10 w-auto object-contain transition-opacity group-hover:opacity-90"
+              />
+            </Link>
             <p className="text-xs text-[#8c887f] leading-relaxed">
               Medio digital musical, agenda cultural y videoteca dedicada a descubrir, amplificar y visibilizar a artistas y bandas emergentes argentinas y latinoamericanas.
             </p>

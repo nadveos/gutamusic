@@ -39,7 +39,9 @@ export class MusicDataService {
       });
 
       if (records && records.length > 0) {
-        let artists: Artist[] = records.map((r) => ({
+        // Invertir lista para mostrar primero los artistas más recientes
+        const orderedRecords = [...records].reverse();
+        let artists: Artist[] = orderedRecords.map((r) => ({
           id: r.id,
           slug: r.slug,
           stageName: r.stageName,
@@ -267,7 +269,8 @@ export class MusicDataService {
       });
 
       if (records && records.length > 0) {
-        let featuredRecords = records.filter(
+        const orderedRecords = [...records].reverse();
+        let featuredRecords = orderedRecords.filter(
           (r) => Boolean(r.featuredOfWeek) || Boolean(r.featured)
         );
 
@@ -278,9 +281,9 @@ export class MusicDataService {
           return 0;
         });
 
-        // Fallback al primer artista si ninguno está tildado como destacado
+        // Fallback al artista más reciente si ninguno está tildado como destacado
         if (featuredRecords.length === 0) {
-          featuredRecords = [records[0]];
+          featuredRecords = [orderedRecords[0]];
         }
 
         const results = await Promise.all(

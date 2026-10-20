@@ -29,6 +29,19 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/',
   },
+  icons: {
+    icon: [
+      { url: '/brand/guta-musica-favicon.svg', type: 'image/svg+xml' },
+      { url: '/brand/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/brand/favicon-16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/brand/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    other: [
+      { rel: 'icon', url: '/brand/guta-musica-favicon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+  },
   openGraph: {
     title: 'GUTA MÚSICA | Plataforma de Artistas Emergentes',
     description: 'Medio musical federal: entrevistas exclusivas, videoteca multiformato, efemérides históricas y agenda cultural.',
@@ -36,11 +49,20 @@ export const metadata: Metadata = {
     siteName: 'GUTA MÚSICA',
     locale: 'es_AR',
     type: 'website',
+    images: [
+      {
+        url: '/brand/guta-musica-logo.png',
+        width: 1400,
+        height: 420,
+        alt: 'GUTA MÚSICA — Medio Digital de Artistas Emergentes',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'GUTA MÚSICA | Artistas Emergentes',
     description: 'Difusión de bandas y solistas independientes de Argentina y Latinoamérica.',
+    images: ['/brand/guta-musica-logo.png'],
   },
   robots: {
     index: true,
