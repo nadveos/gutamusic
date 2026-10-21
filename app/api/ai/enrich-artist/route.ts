@@ -83,7 +83,15 @@ async function callGeminiWithGrounding(prompt: string, apiKey: string) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { stageName, genres = [], city = '', province = '', country = 'Argentina', spotifyUrl = '' } = body;
+    const {
+      stageName,
+      genres = [],
+      city = '',
+      province = '',
+      country = 'Argentina',
+      spotifyUrl = '',
+      mode = 'all', // 'all' | 'discography' | 'shows'
+    } = body;
 
     if (!stageName || !stageName.trim()) {
       return NextResponse.json({ success: false, error: 'stageName es obligatorio.' }, { status: 400 });
@@ -93,48 +101,52 @@ export async function POST(req: NextRequest) {
     const locStr = [city, province, country].filter(Boolean).join(', ');
     const genresStr = Array.isArray(genres) ? genres.join(', ') : genres || 'Música Popular / Rock / Folklore';
 
-    // 1. Consulta oficial a Spotify Web API (Máxima prioridad y fidelidad)
+    // 1. Consulta oficial a Spotify Web API (si mode es 'all' o 'discography')
     let spotifyAlbums: any[] = [];
     let detectedSpotifyUrl = spotifyUrl.trim();
     let spotifyArtistId = extractSpotifyArtistId(detectedSpotifyUrl);
 
-    if (!spotifyArtistId) {
-      try {
-        const spSearch = await searchSpotifyArtist(artistQuery);
-        if (spSearch?.id) {
-          spotifyArtistId = spSearch.id;
-          if (!detectedSpotifyUrl) detectedSpotifyUrl = spSearch.url;
+    if (mode !== 'shows') {
+      if (!spotifyArtistId) {
+        try {
+          const spSearch = await searchSpotifyArtist(artistQuery);
+          if (spSearch?.id) {
+            spotifyArtistId = spSearch.id;
+            if (!detectedSpotifyUrl) detectedSpotifyUrl = spSearch.url;
+          }
+        } catch (spSearchErr) {
+          console.warn('Spotify search warning:', spSearchErr);
         }
-      } catch (spSearchErr) {
-        console.warn('Spotify search warning:', spSearchErr);
+      }
+
+      if (spotifyArtistId) {
+        try {
+          spotifyAlbums = await getSpotifyArtistDiscography(spotifyArtistId);
+        } catch (spAlbumErr) {
+          console.warn('Spotify albums fetch warning:', spAlbumErr);
+        }
       }
     }
 
-    if (spotifyArtistId) {
-      try {
-        spotifyAlbums = await getSpotifyArtistDiscography(spotifyArtistId);
-      } catch (spAlbumErr) {
-        console.warn('Spotify albums fetch warning:', spAlbumErr);
-      }
-    }
-
-    // 2. Consulta a MusicBrainz (complementaria)
+    // 2. Consulta a MusicBrainz (si mode es 'all' o 'discography')
     let mbReleases: any[] = [];
-    try {
-      const countryCode = country.toLowerCase().includes('bolivia') ? 'BO' : 'AR';
-      const mbArtist = await searchArtistMusicBrainz(artistQuery, countryCode);
-      if (mbArtist?.id) {
-        mbReleases = await getArtistReleasesMusicBrainz(mbArtist.id);
+    if (mode !== 'shows') {
+      try {
+        const countryCode = country.toLowerCase().includes('bolivia') ? 'BO' : 'AR';
+        const mbArtist = await searchArtistMusicBrainz(artistQuery, countryCode);
+        if (mbArtist?.id) {
+          mbReleases = await getArtistReleasesMusicBrainz(mbArtist.id);
+        }
+      } catch (mbErr) {
+        console.warn('MusicBrainz query warning:', mbErr);
       }
-    } catch (mbErr) {
-      console.warn('MusicBrainz query warning:', mbErr);
     }
 
-    // 3. Consulta a Google Gemini con Google Search Grounding en tiempo real para Shows y Fechas
+    // 3. Consulta a Google Gemini con Google Search Grounding en tiempo real para Shows y Fechas (si mode es 'all' o 'shows')
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
     let geminiData: any = { discography: [], agenda: [], summary: '' };
 
-    if (geminiKey) {
+    if (geminiKey && mode !== 'discography') {
       const spotifyContext = detectedSpotifyUrl
         ? `Perfil oficial de Spotify: ${detectedSpotifyUrl}`
         : '';

@@ -24,7 +24,7 @@ import {
   Disc3,
 } from 'lucide-react';
 import { AITokenBadge } from '../../../../components/admin/AITokenBadge';
-import { EnrichArtistModal } from '../../../../components/admin/EnrichArtistModal';
+import { EnrichArtistModal, EnrichMode } from '../../../../components/admin/EnrichArtistModal';
 
 export const ArtistFormClient: React.FC = () => {
   const router = useRouter();
@@ -99,6 +99,7 @@ export const ArtistFormClient: React.FC = () => {
   const [aiModelName, setAiModelName] = useState<string>('gemini-2.5-flash');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isEnrichModalOpen, setIsEnrichModalOpen] = useState(false);
+  const [enrichModalMode, setEnrichModalMode] = useState<EnrichMode>('all');
 
   const handleApplyEnrichment = async (
     newDiscography: DiscographyItem[],
@@ -588,13 +589,14 @@ export const ArtistFormClient: React.FC = () => {
                 setErrorMessage('Por favor ingresá primero el nombre del artista para rastrear su discografía y shows.');
                 return;
               }
+              setEnrichModalMode('all');
               setIsEnrichModalOpen(true);
             }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] font-bold text-xs shadow-md transition-all cursor-pointer"
             title="Buscar automáticamente discografía y shows en la web"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Rastrear Discografía & Shows (Web)</span>
+            <span>Rastrear Todo (Discografía & Shows)</span>
           </button>
 
           <button
@@ -968,23 +970,42 @@ export const ArtistFormClient: React.FC = () => {
             <p className="text-[11px] text-[#8c887f]">Cargá las fechas en vivo del artista para que aparezcan en su perfil público</p>
           </div>
 
-          {!showEventForm && (
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => {
-                setNewEvent((prev) => ({
-                  ...prev,
-                  city: formData.city || prev.city,
-                  province: formData.province || prev.province,
-                }));
-                setShowEventForm(true);
+                if (!formData.stageName) {
+                  setErrorMessage('Por favor ingresá primero el nombre del artista para rastrear fechas.');
+                  return;
+                }
+                setEnrichModalMode('shows');
+                setIsEnrichModalOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 text-[#e6cca0] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] text-xs font-bold transition-all cursor-pointer shadow-xs"
+              title="Rastrear únicamente shows y fechas en vivo en la web con IA"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Agregar Nueva Fecha</span>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>🪄 Rastrear Shows en Vivo (Web)</span>
             </button>
-          )}
+
+            {!showEventForm && (
+              <button
+                type="button"
+                onClick={() => {
+                  setNewEvent((prev) => ({
+                    ...prev,
+                    city: formData.city || prev.city,
+                    province: formData.province || prev.province,
+                  }));
+                  setShowEventForm(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 text-[#e6cca0] transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Agregar Manualmente</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Formulario desplegable para agregar fecha */}
@@ -1200,13 +1221,14 @@ export const ArtistFormClient: React.FC = () => {
                   setErrorMessage('Por favor ingresá primero el nombre del artista.');
                   return;
                 }
+                setEnrichModalMode('discography');
                 setIsEnrichModalOpen(true);
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] text-xs font-bold transition-all cursor-pointer shadow-xs"
-              title="Rastrear discografía y fechas en la web"
+              title="Rastrear únicamente discografía en Spotify y fuentes oficiales"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>🪄 Rastrear en la Web</span>
+              <span>🪄 Rastrear Discografía (Spotify)</span>
             </button>
 
             {!showReleaseForm && (
@@ -1408,6 +1430,7 @@ export const ArtistFormClient: React.FC = () => {
         province={formData.province}
         country={formData.country}
         spotifyUrl={formData.spotify}
+        initialMode={enrichModalMode}
         onApply={handleApplyEnrichment}
       />
     </form>
