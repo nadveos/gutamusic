@@ -30,9 +30,10 @@ function extractJson(text: string): any {
 }
 
 const SEARCH_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.5-pro',
-  'gemini-1.5-flash',
+  'gemini-3.8-flash',
+  'gemini-3.7-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
 ];
 
 async function callGeminiWithGrounding(prompt: string, apiKey: string) {
