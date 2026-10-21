@@ -163,7 +163,7 @@ export const ArtistFormClient: React.FC = () => {
     loadArtist();
   }, [editId]);
 
-  const handleAddRelease = (e: React.FormEvent) => {
+  const handleAddRelease = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRelease.title.trim()) {
       setErrorMessage('Por favor completá el título del álbum o sencillo.');
@@ -180,9 +180,11 @@ export const ArtistFormClient: React.FC = () => {
       tracksCount: newRelease.tracksCount ? parseInt(newRelease.tracksCount, 10) : undefined,
     };
 
+    const updatedDiscography = [...formData.discography, createdRelease];
+
     setFormData((prev) => ({
       ...prev,
-      discography: [...prev.discography, createdRelease],
+      discography: updatedDiscography,
     }));
 
     setNewRelease({
@@ -194,13 +196,34 @@ export const ArtistFormClient: React.FC = () => {
       tracksCount: '',
     });
     setShowReleaseForm(false);
+
+    // Guardado inmediato en PocketBase para no depender de hacer scroll y tocar Actualizar
+    if (editId) {
+      try {
+        await pb.collection('artists').update(editId, { discography: updatedDiscography });
+        setSuccessMessage(`¡Lanzamiento "${createdRelease.title}" guardado en PocketBase exitosamente!`);
+      } catch (err: any) {
+        console.error('Error al persistir lanzamiento:', err);
+        setErrorMessage(`Lanzamiento añadido al formulario. Recordá presionar "Actualizar Artista" para guardar.`);
+      }
+    }
   };
 
-  const handleRemoveRelease = (id: string) => {
+  const handleRemoveRelease = async (id: string) => {
+    const updated = formData.discography.filter((d) => d.id !== id);
     setFormData((prev) => ({
       ...prev,
-      discography: prev.discography.filter((d) => d.id !== id),
+      discography: updated,
     }));
+
+    if (editId) {
+      try {
+        await pb.collection('artists').update(editId, { discography: updated });
+        setSuccessMessage('Lanzamiento eliminado y actualizado en PocketBase.');
+      } catch (err: any) {
+        console.error('Error al eliminar lanzamiento en PocketBase:', err);
+      }
+    }
   };
 
   const handleAddGalleryPhoto = (url: string) => {
@@ -229,7 +252,7 @@ export const ArtistFormClient: React.FC = () => {
     }));
   };
 
-  const handleAddEvent = (e: React.FormEvent) => {
+  const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEvent.title.trim() || !newEvent.date.trim() || !newEvent.venue.trim()) {
       setErrorMessage('Por favor completá el título, fecha y lugar del show.');
@@ -250,9 +273,11 @@ export const ArtistFormClient: React.FC = () => {
       ticketUrl: newEvent.ticketUrl.trim() || undefined,
     };
 
+    const updatedAgenda = [...formData.agenda, createdEvent];
+
     setFormData((prev) => ({
       ...prev,
-      agenda: [...prev.agenda, createdEvent],
+      agenda: updatedAgenda,
     }));
 
     setNewEvent({
@@ -267,13 +292,32 @@ export const ArtistFormClient: React.FC = () => {
       ticketUrl: '',
     });
     setShowEventForm(false);
+
+    if (editId) {
+      try {
+        await pb.collection('artists').update(editId, { agenda: updatedAgenda });
+        setSuccessMessage(`¡Fecha de show "${createdEvent.title}" guardada en PocketBase!`);
+      } catch (err: any) {
+        console.error('Error al persistir fecha de show:', err);
+      }
+    }
   };
 
-  const handleRemoveEvent = (id: string) => {
+  const handleRemoveEvent = async (id: string) => {
+    const updated = formData.agenda.filter((ev) => ev.id !== id);
     setFormData((prev) => ({
       ...prev,
-      agenda: prev.agenda.filter((ev) => ev.id !== id),
+      agenda: updated,
     }));
+
+    if (editId) {
+      try {
+        await pb.collection('artists').update(editId, { agenda: updated });
+        setSuccessMessage('Fecha eliminada de la base de datos.');
+      } catch (err: any) {
+        console.error('Error al actualizar fechas en PocketBase:', err);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -306,6 +350,38 @@ export const ArtistFormClient: React.FC = () => {
       return;
     }
 
+    // Si el usuario escribió un lanzamiento y tocó "Actualizar Artista" directamente sin hacer clic en "+ Agregar a la Discografía"
+    const finalDiscography = [...formData.discography];
+    if (newRelease.title && newRelease.title.trim()) {
+      finalDiscography.push({
+        id: `disc-${Date.now()}`,
+        title: newRelease.title.trim(),
+        type: newRelease.type,
+        year: Number(newRelease.year) || new Date().getFullYear(),
+        coverUrl: newRelease.coverUrl.trim() || cleanPhotoUrl || '',
+        spotifyUrl: newRelease.spotifyUrl.trim() || undefined,
+        tracksCount: newRelease.tracksCount ? parseInt(newRelease.tracksCount, 10) : undefined,
+      });
+    }
+
+    // Si el usuario escribió un show y tocó "Actualizar Artista" directamente
+    const finalAgenda = [...formData.agenda];
+    if (newEvent.title && newEvent.title.trim() && newEvent.venue && newEvent.venue.trim()) {
+      finalAgenda.push({
+        id: `ev-${Date.now()}`,
+        title: newEvent.title.trim(),
+        date: newEvent.date.trim() || new Date().toISOString().split('T')[0],
+        venue: newEvent.venue.trim(),
+        city: (newEvent.city || formData.city || 'Ciudad').trim(),
+        province: (newEvent.province || formData.province || 'Provincia').trim(),
+        country: 'Argentina',
+        type: newEvent.type,
+        isFree: newEvent.isFree,
+        ticketPrice: newEvent.isFree ? 'Entrada Libre y Gratuita' : (newEvent.ticketPrice || 'Entradas en boletería'),
+        ticketUrl: newEvent.ticketUrl.trim() || undefined,
+      });
+    }
+
     const payload = {
       stageName: formData.stageName.trim(),
       slug,
@@ -327,9 +403,9 @@ export const ArtistFormClient: React.FC = () => {
         instagram: formData.instagram.trim(),
         tiktok: formData.tiktok.trim(),
       },
-      agenda: formData.agenda,
+      agenda: finalAgenda,
       gallery: formData.gallery.filter((url) => Boolean(url && url.trim())),
-      discography: formData.discography,
+      discography: finalDiscography,
     };
 
     try {

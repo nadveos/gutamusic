@@ -98,6 +98,17 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                 text={`Descubrí la música, videos y discografía de ${artist.stageName} en GUTA MÚSICA.`}
               />
 
+              {artist.discography.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('discografia')}
+                  className="px-2.5 py-1.5 rounded-xl bg-[#e6cca0]/10 hover:bg-[#e6cca0]/20 text-[#e6cca0] border border-[#e6cca0]/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Disc3 className="w-3.5 h-3.5 text-[#d97d64]" />
+                  <span>Discografía ({artist.discography.length})</span>
+                </button>
+              )}
+
               {artist.socials?.spotify && artist.socials.spotify.trim() && !['https://spotify.com', 'https://spotify.com/'].includes(artist.socials.spotify.trim()) && (
                 <a
                   href={artist.socials.spotify}
@@ -226,6 +237,67 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                 </div>
               </div>
             </div>
+
+            {/* Latest Release / Último Lanzamiento */}
+            {artist.discography.length > 0 && (
+              <div className="natural-card p-5 rounded-2xl border border-[#3d3835] space-y-3 bg-[#1e1f25]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-sand-soft uppercase tracking-wide flex items-center gap-1.5 text-[#e6cca0]">
+                    <Disc3 className="w-3 h-3 text-[#d97d64]" />
+                    Último Lanzamiento
+                  </span>
+                  <button
+                    onClick={() => setActiveTab('discografia')}
+                    className="text-[11px] font-semibold text-[#d97d64] hover:underline cursor-pointer"
+                  >
+                    Ver todos ({artist.discography.length})
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3.5 pt-1">
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-[#151618] border border-[#31333d] flex-shrink-0">
+                    {artist.discography[0].coverUrl ? (
+                      <Image
+                        src={artist.discography[0].coverUrl}
+                        alt={artist.discography[0].title}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[#d97d64] bg-[#22242c]">
+                        <Disc3 className="w-7 h-7 opacity-70" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <span className="text-[10px] text-[#aba79e] font-mono block uppercase">
+                      {artist.discography[0].type} • {artist.discography[0].year}
+                    </span>
+                    <h4 className="text-sm font-bold text-[#f3f1ec] truncate">
+                      {artist.discography[0].title}
+                    </h4>
+                    {artist.discography[0].tracksCount && (
+                      <p className="text-[11px] text-[#8c887f]">
+                        {artist.discography[0].tracksCount} temas
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {artist.discography[0].spotifyUrl && (
+                  <a
+                    href={artist.discography[0].spotifyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#93a887] text-xs font-semibold border border-[#31333d] transition-colors"
+                  >
+                    <span>Escuchar en Spotify</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            )}
 
             {/* Next Date Preview */}
             {artist.agenda.length > 0 && (
