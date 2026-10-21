@@ -27,6 +27,7 @@ export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
   spotifyUrl = '',
   onApply,
 }) => {
+  const [currentSpotifyUrl, setCurrentSpotifyUrl] = useState(spotifyUrl || '');
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -35,6 +36,11 @@ export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
   const [selectedDiscIds, setSelectedDiscIds] = useState<string[]>([]);
   const [selectedAgendaIds, setSelectedAgendaIds] = useState<string[]>([]);
   const [summary, setSummary] = useState('');
+  const [sourcesInfo, setSourcesInfo] = useState<{ spotifyAlbumsFound?: number; musicBrainzFound?: number }>({});
+
+  React.useEffect(() => {
+    if (spotifyUrl) setCurrentSpotifyUrl(spotifyUrl);
+  }, [spotifyUrl]);
 
   if (!isOpen) return null;
 
@@ -53,7 +59,7 @@ export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
           city,
           province,
           country,
-          spotifyUrl,
+          spotifyUrl: currentSpotifyUrl,
         }),
       });
 
@@ -67,6 +73,7 @@ export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
       setSelectedDiscIds((data.discography || []).map((d: any) => d.id));
       setSelectedAgendaIds((data.agenda || []).map((a: any) => a.id));
       setSummary(data.summary || '');
+      setSourcesInfo(data.sources || {});
       setHasSearched(true);
     } catch (err: any) {
       setErrorMessage(err.message || 'Error al conectar con el servicio de IA y búsqueda.');
@@ -148,16 +155,33 @@ export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
               <div className="max-w-md mx-auto space-y-1.5">
                 <h3 className="text-sm font-bold text-[#f3f1ec]">¿Querés autocompletar la información del artista?</h3>
                 <p className="text-xs text-[#aba79e]">
-                  Nuestro asistente consultará en tiempo real bases discográficas mundiales y eventos en vivo confirmados para <strong>{stageName}</strong>.
+                  Nuestro asistente consultará en tiempo real la <strong>API oficial de Spotify</strong>, bases discográficas y eventos en vivo confirmados para <strong>{stageName}</strong>.
                 </p>
               </div>
+
+              <div className="max-w-md mx-auto text-left space-y-1.5 p-3 rounded-xl bg-[#191a21] border border-[#2b2d39]">
+                <label className="text-[11px] font-semibold text-[#e6cca0] block">
+                  Enlace o ID de Spotify del artista:
+                </label>
+                <input
+                  type="text"
+                  placeholder="https://open.spotify.com/artist/..."
+                  value={currentSpotifyUrl}
+                  onChange={(e) => setCurrentSpotifyUrl(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#20222a] border border-[#373a48] text-xs text-[#f3f1ec] focus:outline-none focus:border-[#d97d64]"
+                />
+                <p className="text-[10px] text-[#78746c]">
+                  Si ya tenés el link directo a su perfil o discografía en Spotify, pegalo aquí para una precisión del 100%.
+                </p>
+              </div>
+
               <button
                 type="button"
                 onClick={handleStartSearch}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] font-bold text-xs shadow-lg transition-all transform hover:scale-[1.02] cursor-pointer"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Iniciar Rastreo Web Inteligente</span>
+                <span>Iniciar Rastreo Oficial con Spotify</span>
               </button>
             </div>
           )}
@@ -189,6 +213,15 @@ export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
                 <div className="p-3 rounded-xl bg-[#20222a] border border-[#2d2f38] text-xs text-[#aba79e] flex items-center gap-2">
                   <span className="text-base">💡</span>
                   <span>{summary}</span>
+                </div>
+              )}
+
+              {sourcesInfo.spotifyAlbumsFound !== undefined && sourcesInfo.spotifyAlbumsFound > 0 && (
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>
+                    Conectado con <strong>Spotify Web API</strong>: {sourcesInfo.spotifyAlbumsFound} producciones oficiales obtenidas con carátulas en alta resolución.
+                  </span>
                 </div>
               )}
 

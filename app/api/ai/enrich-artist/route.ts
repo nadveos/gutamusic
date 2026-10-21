@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchArtistMusicBrainz, getArtistReleasesMusicBrainz } from '@/lib/services/musicbrainzService';
+import {
+  extractSpotifyArtistId,
+  searchSpotifyArtist,
+  getSpotifyArtistDiscography,
+} from '@/lib/services/spotifyService';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -87,7 +92,32 @@ export async function POST(req: NextRequest) {
     const locStr = [city, province, country].filter(Boolean).join(', ');
     const genresStr = Array.isArray(genres) ? genres.join(', ') : genres || 'Música Popular / Rock / Folklore';
 
-    // 1. Consulta paralela a MusicBrainz
+    // 1. Consulta oficial a Spotify Web API (Máxima prioridad y fidelidad)
+    let spotifyAlbums: any[] = [];
+    let detectedSpotifyUrl = spotifyUrl.trim();
+    let spotifyArtistId = extractSpotifyArtistId(detectedSpotifyUrl);
+
+    if (!spotifyArtistId) {
+      try {
+        const spSearch = await searchSpotifyArtist(artistQuery);
+        if (spSearch?.id) {
+          spotifyArtistId = spSearch.id;
+          if (!detectedSpotifyUrl) detectedSpotifyUrl = spSearch.url;
+        }
+      } catch (spSearchErr) {
+        console.warn('Spotify search warning:', spSearchErr);
+      }
+    }
+
+    if (spotifyArtistId) {
+      try {
+        spotifyAlbums = await getSpotifyArtistDiscography(spotifyArtistId);
+      } catch (spAlbumErr) {
+        console.warn('Spotify albums fetch warning:', spAlbumErr);
+      }
+    }
+
+    // 2. Consulta a MusicBrainz (complementaria)
     let mbReleases: any[] = [];
     try {
       const countryCode = country.toLowerCase().includes('bolivia') ? 'BO' : 'AR';
@@ -99,17 +129,29 @@ export async function POST(req: NextRequest) {
       console.warn('MusicBrainz query warning:', mbErr);
     }
 
-    // 2. Consulta a Google Gemini con Google Search Grounding en tiempo real
+    // 3. Consulta a Google Gemini con Google Search Grounding en tiempo real para Shows y Fechas
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
     let geminiData: any = { discography: [], agenda: [], summary: '' };
 
     if (geminiKey) {
-      const prompt = `Sos un investigador musical experto para GUTA MÚSICA (Argentina/LATAM).
-Tu misión es investigar en la web en TIEMPO REAL la información oficial del artista o banda "${artistQuery}" (${locStr}, Géneros: ${genresStr}).
+      const spotifyContext = detectedSpotifyUrl
+        ? `Perfil oficial de Spotify: ${detectedSpotifyUrl}`
+        : '';
 
-Buscá en Google, Spotify, Instagram, Passline, EntradaUno, Plateanet, AllAccess, Ticketek, YouTube y prensa cultural:
-1. DISCOGRAFÍA: Lista de sus álbumes de estudio, sencillos y EPs más importantes o recientes con su año de lanzamiento, tipo ('album' | 'single' | 'ep' | 'live_album'), cantidad aproximada de temas y enlace a Spotify o YouTube si está disponible.
-2. SHOWS & FECHAS EN VIVO: Próximos conciertos, presentaciones, peñas o festivales confirmados para los años 2024, 2025, 2026 o 2027. Incluí fecha en formato YYYY-MM-DD (o con hora), sala/teatro/espacio, ciudad, provincia y link a venta de tickets si existe (Passline, etc.).
+      const prompt = `Sos un investigador musical experto para GUTA MÚSICA (Argentina/LATAM).
+Tu misión es investigar en la web en TIEMPO REAL la información del artista o banda "${artistQuery}" (${locStr}, Géneros: ${genresStr}).
+${spotifyContext}
+
+Instrucciones específicas:
+1. PRÓXIMOS SHOWS, RECITALES Y GIRAS (PRIORIDAD ALTA):
+Buscá las fechas de conciertos y giras oficiales confirmadas en:
+- El perfil de Spotify del artista (sección "De gira" / "Conciertos" / "On Tour").
+- Carteleras y plataformas de tickets: Passline, EntradaUno, Plateanet, AllAccess, Songkick, Bandsintown, Eventim, Ticketmaster, Queen's Disco, Instagram oficial.
+- Extraé todas las fechas confirmadas (tanto en Argentina, Bolivia, España, Alemania o giras internacionales).
+- Incluí: fecha (formato YYYY-MM-DD o con hora si está disponible), nombre del recinto o sala (ej: "Queen's Disco", "Staufenstraße 1", "Teatro Ópera"), ciudad, provincia/país, precio o tipo de entrada y enlace a tickets si existe.
+
+2. DISCOGRAFÍA ADICIONAL:
+Si hay sencillos o producciones muy recientes de 2024, 2025 o 2026 que puedan complementar el catálogo.
 
 Devolvé exclusivamente un JSON válido con esta estructura:
 {
@@ -117,7 +159,7 @@ Devolvé exclusivamente un JSON válido con esta estructura:
     {
       "title": "Nombre del álbum o sencillo",
       "type": "album",
-      "year": 2024,
+      "year": 2026,
       "coverUrl": "",
       "spotifyUrl": "",
       "tracksCount": 10
@@ -125,18 +167,18 @@ Devolvé exclusivamente un JSON válido con esta estructura:
   ],
   "agenda": [
     {
-      "title": "Gira / Presentación oficial",
-      "date": "2026-11-20 21:00",
-      "venue": "Nombre del teatro o espacio",
-      "city": "Ciudad",
-      "province": "Provincia",
-      "country": "Argentina",
+      "title": "Gira o presentación en vivo",
+      "date": "2026-11-06 23:00",
+      "venue": "Queen's Disco...",
+      "city": "Cornellà de Llobregat",
+      "province": "Barcelona",
+      "country": "España",
       "isFree": false,
-      "ticketPrice": "Entradas en boletería o Passline",
+      "ticketPrice": "Entradas en venta",
       "ticketUrl": ""
     }
   ],
-  "summary": "Resumen conciso de 1 oración sobre los hallazgos encontrados."
+  "summary": "Resumen conciso de 1 oración sobre los hallazgos."
 }`;
 
       const geminiResult = await callGeminiWithGrounding(prompt, geminiKey);
@@ -145,14 +187,24 @@ Devolvé exclusivamente un JSON válido con esta estructura:
       }
     }
 
-    // 3. Consolidar discografía (MusicBrainz + Gemini) evitando duplicados
+    // 4. Consolidar discografía con Spotify a la cabeza
     const consolidatedDiscography: any[] = [];
     const seenTitles = new Set<string>();
 
     const normalizeTitle = (t: string) =>
       t.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 
-    // Primero los de Gemini (que suelen tener links de spotify o ser más modernos)
+    // Primero: Discografía oficial directa de Spotify
+    for (const sp of spotifyAlbums) {
+      if (!sp.title) continue;
+      const norm = normalizeTitle(sp.title);
+      if (!seenTitles.has(norm)) {
+        seenTitles.add(norm);
+        consolidatedDiscography.push(sp);
+      }
+    }
+
+    // Segundo: Incorporar de Gemini lo que no estuviera ya en Spotify
     if (Array.isArray(geminiData.discography)) {
       for (const d of geminiData.discography) {
         if (!d.title) continue;
@@ -165,14 +217,14 @@ Devolvé exclusivamente un JSON válido con esta estructura:
             type: ['album', 'single', 'ep', 'live_album'].includes(d.type) ? d.type : 'album',
             year: Number(d.year) || new Date().getFullYear(),
             coverUrl: d.coverUrl || '',
-            spotifyUrl: d.spotifyUrl || spotifyUrl || '',
+            spotifyUrl: d.spotifyUrl || detectedSpotifyUrl || '',
             tracksCount: d.tracksCount ? Number(d.tracksCount) : undefined,
           });
         }
       }
     }
 
-    // Luego complementar con MusicBrainz si hay lanzamientos no detectados
+    // Tercero: Complementar con MusicBrainz si hubiera algún disco histórico faltante
     for (const mb of mbReleases) {
       if (!mb.title) continue;
       const norm = normalizeTitle(mb.title);
@@ -184,39 +236,50 @@ Devolvé exclusivamente un JSON válido con esta estructura:
           type: mb.type || 'album',
           year: Number(mb.year) || new Date().getFullYear(),
           coverUrl: mb.coverUrl || '',
-          spotifyUrl: spotifyUrl || '',
+          spotifyUrl: detectedSpotifyUrl || '',
         });
       }
     }
 
-    // 4. Consolidar agenda
+    // 5. Consolidar agenda de shows y giras
     const consolidatedAgenda: any[] = [];
+    const seenShowKeys = new Set<string>();
+
     if (Array.isArray(geminiData.agenda)) {
       for (const ev of geminiData.agenda) {
-        if (!ev.title || !ev.venue) continue;
-        consolidatedAgenda.push({
-          id: `ev-ai-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          title: ev.title.trim(),
-          date: ev.date ? String(ev.date).trim() : new Date().toISOString().split('T')[0],
-          venue: ev.venue.trim(),
-          city: (ev.city || city || 'Ciudad').trim(),
-          province: (ev.province || province || 'Provincia').trim(),
-          country: ev.country || country || 'Argentina',
-          type: ev.type || 'recital',
-          isFree: Boolean(ev.isFree),
-          ticketPrice: ev.ticketPrice || (ev.isFree ? 'Entrada Libre y Gratuita' : 'Entradas en venta'),
-          ticketUrl: ev.ticketUrl || '',
-        });
+        if (!ev.title && !ev.venue) continue;
+        const eventTitle = ev.title || `${artistQuery} en Vivo`;
+        const venueName = ev.venue || 'Teatro / Espacio';
+        const key = `${normalizeTitle(eventTitle)}_${ev.date}_${normalizeTitle(venueName)}`;
+
+        if (!seenShowKeys.has(key)) {
+          seenShowKeys.add(key);
+          consolidatedAgenda.push({
+            id: `ev-ai-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            title: eventTitle.trim(),
+            date: ev.date ? String(ev.date).trim() : new Date().toISOString().split('T')[0],
+            venue: venueName.trim(),
+            city: (ev.city || city || 'Ciudad').trim(),
+            province: (ev.province || province || 'Provincia').trim(),
+            country: ev.country || country || 'Argentina',
+            type: ev.type || 'recital',
+            isFree: Boolean(ev.isFree),
+            ticketPrice: ev.ticketPrice || (ev.isFree ? 'Entrada Libre y Gratuita' : 'Entradas en venta'),
+            ticketUrl: ev.ticketUrl || '',
+          });
+        }
       }
     }
 
     return NextResponse.json({
       success: true,
       artist: artistQuery,
+      spotifyArtistId: spotifyArtistId || null,
       discography: consolidatedDiscography,
       agenda: consolidatedAgenda,
-      summary: geminiData.summary || `Se encontraron ${consolidatedDiscography.length} lanzamientos y ${consolidatedAgenda.length} fechas en vivo.`,
+      summary: geminiData.summary || `Se encontraron ${consolidatedDiscography.length} lanzamientos en Spotify/MusicBrainz y ${consolidatedAgenda.length} fechas en vivo.`,
       sources: {
+        spotifyAlbumsFound: spotifyAlbums.length,
         musicBrainzFound: mbReleases.length,
         geminiSearchUsed: Boolean(geminiKey),
       },
