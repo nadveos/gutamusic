@@ -296,3 +296,51 @@ export async function fetchLatamMusicEphemeridesFromWikidata(day: number, month:
 export function getCoverArtArchiveUrl(releaseMbid: string, size: '250' | '500' | '1200' = '500'): string {
   return `https://coverartarchive.org/release/${releaseMbid}/front-${size}`;
 }
+
+export function getReleaseGroupCoverArtUrl(rgMbid: string, size: '250' | '500' = '500'): string {
+  return `https://coverartarchive.org/release-group/${rgMbid}/front-${size}`;
+}
+
+/**
+ * Obtiene los lanzamientos y discografía oficial de un artista desde MusicBrainz
+ */
+export async function getArtistReleasesMusicBrainz(mbid: string): Promise<Array<{
+  title: string;
+  type: 'album' | 'single' | 'ep' | 'live_album';
+  year: number;
+  coverUrl?: string;
+}>> {
+  const data = await fetchMusicBrainz<any>('release-group', {
+    artist: mbid,
+    limit: '30',
+  });
+
+  if (!data || !data['release-groups'] || !Array.isArray(data['release-groups'])) {
+    return [];
+  }
+
+  const typeMap: Record<string, 'album' | 'single' | 'ep' | 'live_album'> = {
+    'Album': 'album',
+    'Single': 'single',
+    'EP': 'ep',
+    'Live': 'live_album',
+  };
+
+  const releases = data['release-groups'].map((rg: any) => {
+    const rawType = rg['primary-type'] || 'Album';
+    const releaseDate = rg['first-release-date'] || '';
+    const year = parseInt(releaseDate.split('-')[0], 10) || new Date().getFullYear();
+    const type = typeMap[rawType] || 'album';
+    const coverUrl = getReleaseGroupCoverArtUrl(rg.id, '500');
+
+    return {
+      title: rg.title,
+      type,
+      year,
+      coverUrl,
+    };
+  });
+
+  // Ordenar del más reciente al más antiguo
+  return releases.sort((a, b) => b.year - a.year);
+}

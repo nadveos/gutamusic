@@ -24,6 +24,7 @@ import {
   Disc3,
 } from 'lucide-react';
 import { AITokenBadge } from '../../../../components/admin/AITokenBadge';
+import { EnrichArtistModal } from '../../../../components/admin/EnrichArtistModal';
 
 export const ArtistFormClient: React.FC = () => {
   const router = useRouter();
@@ -95,8 +96,57 @@ export const ArtistFormClient: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [aiTokenUsage, setAiTokenUsage] = useState<any>(null);
-  const [aiModelName, setAiModelName] = useState<string>('gemini-3.6-flash');
+  const [aiModelName, setAiModelName] = useState<string>('gemini-2.5-flash');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isEnrichModalOpen, setIsEnrichModalOpen] = useState(false);
+
+  const handleApplyEnrichment = async (
+    newDiscography: DiscographyItem[],
+    newAgenda: AgendaEvent[]
+  ) => {
+    // 1. Integrar discografía evitando duplicar por título
+    const existingDiscTitles = new Set(
+      formData.discography.map((d) => d.title.toLowerCase().trim())
+    );
+    const addedDisc = newDiscography.filter(
+      (d) => !existingDiscTitles.has(d.title.toLowerCase().trim())
+    );
+    const updatedDiscography = [...formData.discography, ...addedDisc];
+
+    // 2. Integrar agenda evitando duplicar fecha y sala
+    const existingShowKeys = new Set(
+      formData.agenda.map((a) => `${a.title.toLowerCase().trim()}_${a.date}`)
+    );
+    const addedAgenda = newAgenda.filter(
+      (a) => !existingShowKeys.has(`${a.title.toLowerCase().trim()}_${a.date}`)
+    );
+    const updatedAgenda = [...formData.agenda, ...addedAgenda];
+
+    setFormData((prev) => ({
+      ...prev,
+      discography: updatedDiscography,
+      agenda: updatedAgenda,
+    }));
+
+    setSuccessMessage(
+      `¡Se asociaron exitosamente ${addedDisc.length} lanzamientos y ${addedAgenda.length} fechas en vivo!`
+    );
+
+    // Si ya estamos editando un artista existente en PocketBase, persistirlo directamente
+    if (editId) {
+      try {
+        await pb.collection('artists').update(editId, {
+          discography: updatedDiscography,
+          agenda: updatedAgenda,
+        });
+        setSuccessMessage(
+          `¡Éxito! Se guardaron en PocketBase ${addedDisc.length} lanzamientos y ${addedAgenda.length} shows.`
+        );
+      } catch (err: any) {
+        console.error('Error al guardar datos enriquecidos en PocketBase:', err);
+      }
+    }
+  };
 
   // Load existing artist if in edit mode or load AI draft if coming from AI Studio
   useEffect(() => {
@@ -529,6 +579,22 @@ export const ArtistFormClient: React.FC = () => {
               ? <span className="w-3.5 h-3.5 border border-[#e6cca0] border-t-transparent rounded-full animate-spin" />
               : <Sparkles className="w-3.5 h-3.5" />}
             <span>{isAiLoading ? 'Generando...' : 'Autocompletar Bio con IA'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!formData.stageName) {
+                setErrorMessage('Por favor ingresá primero el nombre del artista para rastrear su discografía y shows.');
+                return;
+              }
+              setIsEnrichModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] font-bold text-xs shadow-md transition-all cursor-pointer"
+            title="Buscar automáticamente discografía y shows en la web"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Rastrear Discografía & Shows (Web)</span>
           </button>
 
           <button
@@ -1126,16 +1192,34 @@ export const ArtistFormClient: React.FC = () => {
             </p>
           </div>
 
-          {!showReleaseForm && (
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setShowReleaseForm(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 text-[#e6cca0] transition-colors cursor-pointer"
+              onClick={() => {
+                if (!formData.stageName) {
+                  setErrorMessage('Por favor ingresá primero el nombre del artista.');
+                  return;
+                }
+                setIsEnrichModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] text-xs font-bold transition-all cursor-pointer shadow-xs"
+              title="Rastrear discografía y fechas en la web"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Agregar Lanzamiento</span>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>🪄 Rastrear en la Web</span>
             </button>
-          )}
+
+            {!showReleaseForm && (
+              <button
+                type="button"
+                onClick={() => setShowReleaseForm(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 text-[#e6cca0] transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Agregar Manualmente</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Formulario para nuevo lanzamiento */}
@@ -1313,6 +1397,19 @@ export const ArtistFormClient: React.FC = () => {
           {isSaved ? 'Guardando en DB...' : (editId ? 'Actualizar Artista' : 'Guardar y Publicar Artista')}
         </button>
       </div>
+
+      {/* Modal Mágico de Enriquecimiento Web */}
+      <EnrichArtistModal
+        isOpen={isEnrichModalOpen}
+        onClose={() => setIsEnrichModalOpen(false)}
+        stageName={formData.stageName}
+        genres={formData.genres}
+        city={formData.city}
+        province={formData.province}
+        country={formData.country}
+        spotifyUrl={formData.spotify}
+        onApply={handleApplyEnrichment}
+      />
     </form>
   );
 };
