@@ -115,21 +115,37 @@ export async function getSpotifyArtistDiscography(artistId: string): Promise<Spo
   if (!token) return [];
 
   try {
-    // Pedir álbumes y sencillos (Spotify permite hasta 50 por página)
-    const res = await fetch(
-      `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&limit=50&market=AR`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const allItems: any[] = [];
+    const limit = 10;
 
-    if (!res.ok) {
-      console.error('Error fetching artist albums from Spotify:', res.status);
-      return [];
+    // Consultar tanto álbumes como sencillos oficiales con paginación
+    for (const group of ['album', 'single']) {
+      let offset = 0;
+      while (offset < 40) {
+        const res = await fetch(
+          `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=${group}&limit=${limit}&offset=${offset}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (!res.ok) {
+          console.error(`Error fetching ${group} page from Spotify:`, res.status);
+          break;
+        }
+
+        const data = await res.json();
+        const items = data.items || [];
+        allItems.push(...items);
+
+        if (items.length < limit || offset + items.length >= (data.total || 0)) {
+          break;
+        }
+        offset += limit;
+      }
     }
 
-    const data = await res.json();
-    const items = data.items || [];
+    const items = allItems;
 
     const seenTitles = new Set<string>();
     const results: SpotifyAlbumItem[] = [];
