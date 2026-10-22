@@ -142,72 +142,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Consulta a Google Gemini con Google Search Grounding en tiempo real para Shows y Fechas (si mode es 'all' o 'shows')
-    const geminiKey = process.env.GEMINI_API_KEY?.trim();
-    let geminiData: any = { discography: [], agenda: [], summary: '' };
-
-    if (geminiKey && mode !== 'discography') {
-      const spotifyContext = detectedSpotifyUrl
-        ? `Perfil oficial de Spotify: ${detectedSpotifyUrl}`
-        : '';
-
-      const prompt = `Sos un investigador musical experto para GUTA MÚSICA (Argentina/LATAM).
-Tu misión es investigar en la web en TIEMPO REAL la información del artista o banda "${artistQuery}" (${locStr}, Géneros: ${genresStr}).
-${spotifyContext}
-
-Instrucciones específicas:
-1. PRÓXIMOS SHOWS, RECITALES Y GIRAS (PRIORIDAD ALTA):
-Buscá las fechas de conciertos y giras oficiales confirmadas en:
-- El perfil de Spotify del artista (sección "De gira" / "Conciertos" / "On Tour").
-- Carteleras y plataformas de tickets: Passline, EntradaUno, Plateanet, AllAccess, Songkick, Bandsintown, Eventim, Ticketmaster, Queen's Disco, Instagram oficial.
-- Extraé todas las fechas confirmadas (tanto en Argentina, Bolivia, España, Alemania o giras internacionales).
-- Incluí: fecha (formato YYYY-MM-DD o con hora si está disponible), nombre del recinto o sala (ej: "Queen's Disco", "Staufenstraße 1", "Teatro Ópera"), ciudad, provincia/país, precio o tipo de entrada y enlace a tickets si existe.
-
-2. DISCOGRAFÍA ADICIONAL:
-Si hay sencillos o producciones muy recientes de 2024, 2025 o 2026 que puedan complementar el catálogo.
-
-Devolvé exclusivamente un JSON válido con esta estructura:
-{
-  "discography": [
-    {
-      "title": "Nombre del álbum o sencillo",
-      "type": "album",
-      "year": 2026,
-      "coverUrl": "",
-      "spotifyUrl": "",
-      "tracksCount": 10
-    }
-  ],
-  "agenda": [
-    {
-      "title": "Gira o presentación en vivo",
-      "date": "2026-11-06 23:00",
-      "venue": "Queen's Disco...",
-      "city": "Cornellà de Llobregat",
-      "province": "Barcelona",
-      "country": "España",
-      "isFree": false,
-      "ticketPrice": "Entradas en venta",
-      "ticketUrl": ""
-    }
-  ],
-  "summary": "Resumen conciso de 1 oración sobre los hallazgos."
-}`;
-
-      const geminiResult = await callGeminiWithGrounding(prompt, geminiKey);
-      if (geminiResult?.data) {
-        geminiData = geminiResult.data;
-      }
-    }
-
-    // 4. Consolidar discografía con Spotify a la cabeza
+    // 3. Consolidar discografía con Spotify oficial a la cabeza
     const consolidatedDiscography: any[] = [];
     const seenTitles = new Set<string>();
 
     const normalizeTitle = (t: string) =>
       t.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 
-    // Primero: Discografía oficial directa de Spotify
     for (const sp of spotifyAlbums) {
       if (!sp.title) continue;
       const norm = normalizeTitle(sp.title);
@@ -217,27 +158,6 @@ Devolvé exclusivamente un JSON válido con esta estructura:
       }
     }
 
-    // Segundo: Incorporar de Gemini lo que no estuviera ya en Spotify
-    if (Array.isArray(geminiData.discography)) {
-      for (const d of geminiData.discography) {
-        if (!d.title) continue;
-        const norm = normalizeTitle(d.title);
-        if (!seenTitles.has(norm)) {
-          seenTitles.add(norm);
-          consolidatedDiscography.push({
-            id: `disc-ai-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            title: d.title.trim(),
-            type: ['album', 'single', 'ep', 'live_album'].includes(d.type) ? d.type : 'album',
-            year: Number(d.year) || new Date().getFullYear(),
-            coverUrl: d.coverUrl || '',
-            spotifyUrl: d.spotifyUrl || detectedSpotifyUrl || '',
-            tracksCount: d.tracksCount ? Number(d.tracksCount) : undefined,
-          });
-        }
-      }
-    }
-
-    // Tercero: Complementar con MusicBrainz si hubiera algún disco histórico faltante
     for (const mb of mbReleases) {
       if (!mb.title) continue;
       const norm = normalizeTitle(mb.title);
@@ -254,47 +174,16 @@ Devolvé exclusivamente un JSON válido con esta estructura:
       }
     }
 
-    // 5. Consolidar agenda de shows y giras
-    const consolidatedAgenda: any[] = [];
-    const seenShowKeys = new Set<string>();
-
-    if (Array.isArray(geminiData.agenda)) {
-      for (const ev of geminiData.agenda) {
-        if (!ev.title && !ev.venue) continue;
-        const eventTitle = ev.title || `${artistQuery} en Vivo`;
-        const venueName = ev.venue || 'Teatro / Espacio';
-        const key = `${normalizeTitle(eventTitle)}_${ev.date}_${normalizeTitle(venueName)}`;
-
-        if (!seenShowKeys.has(key)) {
-          seenShowKeys.add(key);
-          consolidatedAgenda.push({
-            id: `ev-ai-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            title: eventTitle.trim(),
-            date: ev.date ? String(ev.date).trim() : new Date().toISOString().split('T')[0],
-            venue: venueName.trim(),
-            city: (ev.city || city || 'Ciudad').trim(),
-            province: (ev.province || province || 'Provincia').trim(),
-            country: ev.country || country || 'Argentina',
-            type: ev.type || 'recital',
-            isFree: Boolean(ev.isFree),
-            ticketPrice: ev.ticketPrice || (ev.isFree ? 'Entrada Libre y Gratuita' : 'Entradas en venta'),
-            ticketUrl: ev.ticketUrl || '',
-          });
-        }
-      }
-    }
-
     return NextResponse.json({
       success: true,
       artist: artistQuery,
       spotifyArtistId: spotifyArtistId || null,
       discography: consolidatedDiscography,
-      agenda: consolidatedAgenda,
-      summary: geminiData.summary || `Se encontraron ${consolidatedDiscography.length} lanzamientos en Spotify/MusicBrainz y ${consolidatedAgenda.length} fechas en vivo.`,
+      agenda: [],
+      summary: `Se encontraron ${consolidatedDiscography.length} lanzamientos oficiales en Spotify (${spotifyAlbums.length} de Spotify Web API).`,
       sources: {
         spotifyAlbumsFound: spotifyAlbums.length,
         musicBrainzFound: mbReleases.length,
-        geminiSearchUsed: Boolean(geminiKey),
       },
     });
   } catch (error: any) {

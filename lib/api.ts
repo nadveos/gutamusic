@@ -252,6 +252,7 @@ export class MusicDataService {
           quotes: record.quotes || '',
           createdDate: record.createdDate || record.created?.split(' ')[0] || '',
           likesCount: typeof record.likesCount === 'number' ? record.likesCount : (parseInt(record.likesCount, 10) || 0),
+          monthlyListeners: record.monthlyListeners || '',
         };
       }
     } catch (e) {

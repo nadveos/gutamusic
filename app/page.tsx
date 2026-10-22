@@ -87,10 +87,10 @@ export default async function HomePage() {
             Sumar Mi Proyecto Musical
           </Link>
           <Link
-            href="/agenda"
+            href="/entrevistas"
             className="px-5 py-2.5 rounded-xl font-medium text-xs bg-[#25272f] hover:bg-[#2e303b] text-[#f3f1ec] border border-[#393c49] transition-colors"
           >
-            Consultar Cartelera de Fechas
+            Ver Entrevistas & Sesiones
           </Link>
         </div>
       </section>

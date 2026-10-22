@@ -51,6 +51,7 @@ export const ArtistFormClient: React.FC = () => {
     youtube: '',
     instagram: '',
     tiktok: '',
+    monthlyListeners: '',
     agenda: [] as AgendaEvent[],
     gallery: [] as string[],
     discography: [] as DiscographyItem[],
@@ -199,6 +200,7 @@ export const ArtistFormClient: React.FC = () => {
             youtube: record.socials?.youtube || '',
             instagram: record.socials?.instagram || '',
             tiktok: record.socials?.tiktok || '',
+            monthlyListeners: record.monthlyListeners || '',
             agenda: Array.isArray(record.agenda) ? record.agenda : [],
             gallery: Array.isArray(record.gallery) ? record.gallery : (typeof record.gallery === 'string' && record.gallery ? [record.gallery] : []),
             discography: Array.isArray(record.discography) ? record.discography : [],
@@ -454,6 +456,7 @@ export const ArtistFormClient: React.FC = () => {
         instagram: formData.instagram.trim(),
         tiktok: formData.tiktok.trim(),
       },
+      monthlyListeners: formData.monthlyListeners.trim(),
       agenda: finalAgenda,
       gallery: formData.gallery.filter((url) => Boolean(url && url.trim())),
       discography: finalDiscography,
@@ -586,17 +589,16 @@ export const ArtistFormClient: React.FC = () => {
             type="button"
             onClick={() => {
               if (!formData.stageName) {
-                setErrorMessage('Por favor ingresá primero el nombre del artista para rastrear su discografía y shows.');
+                setErrorMessage('Por favor ingresá primero el nombre del artista para rastrear su discografía.');
                 return;
               }
-              setEnrichModalMode('all');
               setIsEnrichModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] font-bold text-xs shadow-md transition-all cursor-pointer"
-            title="Buscar automáticamente discografía y shows en la web"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1db954] to-[#e6cca0] hover:opacity-95 text-[#151618] font-bold text-xs shadow-md transition-all cursor-pointer"
+            title="Sincronizar discografía oficial desde Spotify"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Rastrear Todo (Discografía & Shows)</span>
+            <Sparkles className="w-3.5 h-3.5 text-[#151618]" />
+            <span>Rastrear Discografía (Spotify)</span>
           </button>
 
           <button
@@ -957,10 +959,26 @@ export const ArtistFormClient: React.FC = () => {
               className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
             />
           </div>
+          <div className="sm:col-span-2">
+            <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
+              Oyentes Mensuales en Spotify (Opcional)
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: 145.000 oyentes mensuales"
+              value={formData.monthlyListeners}
+              onChange={(e) => setFormData({ ...formData, monthlyListeners: e.target.value })}
+              className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#1db954]"
+            />
+            <p className="text-[10px] text-[#78746c] mt-1">
+              Este dato destacará en el recuadro oficial de Spotify en el perfil público del artista.
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* 5. Agenda & Próximos Shows */}
+      {/* 5. Agenda & Próximos Shows (Oculto temporalmente) */}
+      {false && (
       <div className="natural-card p-5 sm:p-6 rounded-2xl space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#2d2f38]">
           <div>
@@ -970,42 +988,23 @@ export const ArtistFormClient: React.FC = () => {
             <p className="text-[11px] text-[#8c887f]">Cargá las fechas en vivo del artista para que aparezcan en su perfil público</p>
           </div>
 
-          <div className="flex items-center gap-2">
+          {!showEventForm && (
             <button
               type="button"
               onClick={() => {
-                if (!formData.stageName) {
-                  setErrorMessage('Por favor ingresá primero el nombre del artista para rastrear fechas.');
-                  return;
-                }
-                setEnrichModalMode('shows');
-                setIsEnrichModalOpen(true);
+                setNewEvent((prev) => ({
+                  ...prev,
+                  city: formData.city || prev.city,
+                  province: formData.province || prev.province,
+                }));
+                setShowEventForm(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] text-xs font-bold transition-all cursor-pointer shadow-xs"
-              title="Rastrear únicamente shows y fechas en vivo en la web con IA"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 text-[#e6cca0] transition-colors cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>🪄 Rastrear Shows en Vivo (Web)</span>
+              <Plus className="w-3.5 h-3.5" />
+              <span>Agregar Nueva Fecha</span>
             </button>
-
-            {!showEventForm && (
-              <button
-                type="button"
-                onClick={() => {
-                  setNewEvent((prev) => ({
-                    ...prev,
-                    city: formData.city || prev.city,
-                    province: formData.province || prev.province,
-                  }));
-                  setShowEventForm(true);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-soft text-xs font-semibold hover:bg-[#e6cca0]/20 text-[#e6cca0] transition-colors cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Agregar Manualmente</span>
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Formulario desplegable para agregar fecha */}
@@ -1200,13 +1199,14 @@ export const ArtistFormClient: React.FC = () => {
           )
         )}
       </div>
+      )}
 
-      {/* 6. Discografía & Lanzamientos */}
+      {/* 5. Discografía & Lanzamientos */}
       <div className="natural-card p-5 sm:p-6 rounded-2xl space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#2d2f38]">
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
-              <Disc3 className="w-3.5 h-3.5" /> 6. Discografía & Lanzamientos ({formData.discography.length})
+              <Disc3 className="w-3.5 h-3.5" /> 5. Discografía & Lanzamientos ({formData.discography.length})
             </h2>
             <p className="text-[11px] text-[#8c887f]">
               Álbumes, EPs, sencillos y producciones discográficas del artista
@@ -1221,13 +1221,12 @@ export const ArtistFormClient: React.FC = () => {
                   setErrorMessage('Por favor ingresá primero el nombre del artista.');
                   return;
                 }
-                setEnrichModalMode('discography');
                 setIsEnrichModalOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] text-xs font-bold transition-all cursor-pointer shadow-xs"
-              title="Rastrear únicamente discografía en Spotify y fuentes oficiales"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#1db954] to-[#e6cca0] hover:opacity-95 text-[#151618] text-xs font-bold transition-all cursor-pointer shadow-xs"
+              title="Rastrear discografía oficial en Spotify"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 text-[#151618]" />
               <span>🪄 Rastrear Discografía (Spotify)</span>
             </button>
 

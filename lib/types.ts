@@ -133,6 +133,7 @@ export interface Artist {
   quotes?: string;
   createdDate: string;
   likesCount?: number;
+  monthlyListeners?: string;
 }
 
 export interface Interview {

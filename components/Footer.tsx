@@ -69,9 +69,6 @@ export const Footer: React.FC = () => {
                 <Link href="/efemerides" className="hover:text-[#e6cca0] transition-colors">Efemérides Musicales Históricas</Link>
               </li>
               <li>
-                <Link href="/agenda" className="hover:text-[#e6cca0] transition-colors">Agenda de Recitales y Festivales</Link>
-              </li>
-              <li>
                 <Link href="/contacto" className="text-[#d97d64] hover:text-[#e6cca0] font-semibold transition-colors">+ Sumá tu Banda (Convocatoria)</Link>
               </li>
             </ul>

@@ -24,12 +24,28 @@ interface ArtistProfileClientProps {
 }
 
 export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist }) => {
-  const [activeTab, setActiveTab] = useState<'bio' | 'videos' | 'discografia' | 'agenda' | 'prensa'>('bio');
+  const [activeTab, setActiveTab] = useState<'bio' | 'videos' | 'discografia' | 'prensa'>('bio');
   const [activeVideoEmbed, setActiveVideoEmbed] = useState<string | null>(
     artist.videos.length > 0
       ? getVideoEmbedUrl(artist.videos[0].embedUrl || artist.videos[0].url, artist.videos[0].platform)
       : null
   );
+
+  const spotifyArtistId = React.useMemo(() => {
+    if (artist.socials?.spotify) {
+      const match = artist.socials.spotify.match(/artist\/([a-zA-Z0-9]{22})/);
+      if (match) return match[1];
+      const uriMatch = artist.socials.spotify.match(/spotify:artist:([a-zA-Z0-9]{22})/);
+      if (uriMatch) return uriMatch[1];
+    }
+    for (const d of artist.discography) {
+      if (d.spotifyUrl) {
+        const match = d.spotifyUrl.match(/artist\/([a-zA-Z0-9]{22})/);
+        if (match) return match[1];
+      }
+    }
+    return null;
+  }, [artist.socials?.spotify, artist.discography]);
 
   return (
     <div className="space-y-8">
@@ -164,7 +180,6 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
           { key: 'bio', label: 'Biografía & Reseña', icon: Music },
           { key: 'videos', label: `Videos & Lives (${artist.videos.length})`, icon: Video },
           { key: 'discografia', label: `Discografía (${artist.discography.length})`, icon: Disc3 },
-          { key: 'agenda', label: `Agenda & Fechas (${artist.agenda.length})`, icon: Calendar },
           { key: 'prensa', label: `Notas & Prensa (${artist.press.length})`, icon: Newspaper },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -299,29 +314,64 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
               </div>
             )}
 
-            {/* Next Date Preview */}
-            {artist.agenda.length > 0 && (
-              <div className="natural-card p-5 rounded-2xl border border-[#3d3835] space-y-2.5">
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-terracotta-soft uppercase tracking-wide">
-                  Próxima Fecha en Vivo
-                </span>
-                <h4 className="text-sm font-bold text-[#f3f1ec] leading-snug">
-                  {artist.agenda[0].title}
-                </h4>
-                <p className="text-xs text-[#aba79e]">
-                  {artist.agenda[0].venue} • {artist.agenda[0].city}
-                </p>
-                <div className="pt-1 flex items-center justify-between text-xs">
-                  <span className="text-[#e6cca0] font-medium">{artist.agenda[0].date}</span>
-                  <button
-                    onClick={() => setActiveTab('agenda')}
-                    className="text-xs font-semibold text-[#d97d64] hover:underline"
+            {/* Recuadro Oficial de Spotify: Top Canciones & Oyentes Mensuales */}
+            {spotifyArtistId ? (
+              <div className="natural-card p-4 sm:p-5 rounded-2xl border border-[#2e3039] space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-[#1db954]/15 border border-[#1db954]/30 flex items-center justify-center text-[#1db954] shadow-xs">
+                      <Disc3 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#f3f1ec]">Top Canciones en Spotify</h4>
+                      <p className="text-[10px] text-[#8c887f]">Las más escuchadas de {artist.stageName}</p>
+                    </div>
+                  </div>
+
+                  <a
+                    href={`https://open.spotify.com/artist/${spotifyArtistId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2 py-0.5 rounded-lg bg-[#1db954]/10 hover:bg-[#1db954]/20 border border-[#1db954]/30 text-[#1db954] text-[10px] font-bold flex items-center gap-1 transition-colors"
                   >
-                    Ver detalles
-                  </button>
+                    <span>Perfil</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+
+                {artist.monthlyListeners && (
+                  <div className="p-2.5 rounded-xl bg-[#1db954]/10 border border-[#1db954]/25 flex items-center justify-between text-xs">
+                    <span className="text-[11px] text-[#aba79e] font-medium flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#1db954] animate-pulse" />
+                      <span>Oyentes Mensuales:</span>
+                    </span>
+                    <span className="text-xs font-bold text-[#1db954]">
+                      {artist.monthlyListeners}
+                    </span>
+                  </div>
+                )}
+
+                <div className="rounded-xl overflow-hidden bg-black/60 border border-[#2b2d38] shadow-inner">
+                  <iframe
+                    src={`https://open.spotify.com/embed/artist/${spotifyArtistId}?utm_source=generator&theme=0`}
+                    width="100%"
+                    height="352"
+                    frameBorder="0"
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    loading="lazy"
+                    title={`Spotify Player - ${artist.stageName}`}
+                    className="w-full border-0"
+                  />
                 </div>
               </div>
-            )}
+            ) : artist.monthlyListeners ? (
+              <div className="natural-card p-4 rounded-2xl border border-[#2e3039] space-y-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#1db954] block">
+                  Audiencia en Spotify
+                </span>
+                <p className="text-sm font-bold text-[#f3f1ec]">{artist.monthlyListeners}</p>
+              </div>
+            ) : null}
           </div>
         </div>
       )}
@@ -437,53 +487,6 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
         </div>
       )}
 
-      {/* Tab: AGENDA */}
-      {activeTab === 'agenda' && (
-        <div className="space-y-3 max-w-3xl">
-          {artist.agenda.length > 0 ? (
-            artist.agenda.map((event) => (
-              <div
-                key={event.id}
-                className="natural-card p-5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-              >
-                <div className="space-y-1">
-                  <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-sand-soft">
-                    {event.type}
-                  </span>
-                  <h4 className="text-base font-bold text-[#f3f1ec]">{event.title}</h4>
-                  <p className="text-xs text-[#aba79e] flex items-center gap-1.5">
-                    <MapPin className="w-3 h-3 text-[#d97d64]" />
-                    {event.venue} — {event.city}, {event.province}
-                  </p>
-                  <p className="text-xs font-semibold text-[#e6cca0] flex items-center gap-1.5 pt-0.5">
-                    <Calendar className="w-3 h-3" />
-                    {event.date}
-                  </p>
-                </div>
-
-                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 border-t sm:border-t-0 border-[#2a2c35] pt-2 sm:pt-0">
-                  <span className="text-xs font-semibold text-[#f3f1ec]">
-                    {event.isFree ? 'Entrada Libre y Gratuita' : event.ticketPrice || 'Entradas en boletería'}
-                  </span>
-                  {event.ticketUrl && (
-                    <a
-                      href={event.ticketUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-xs"
-                    >
-                      <Ticket className="w-3 h-3" />
-                      <span>Comprar Entrada</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-[#8c887f] text-xs">No hay fechas programadas próximamente.</p>
-          )}
-        </div>
-      )}
 
       {/* Tab: PRENSA */}
       {activeTab === 'prensa' && (

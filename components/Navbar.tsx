@@ -38,7 +38,6 @@ export const Navbar: React.FC = () => {
     { href: '/artistas', label: 'Artistas', icon: Mic2 },
     { href: '/entrevistas', label: 'Entrevistas & Lives', icon: Radio },
     { href: '/efemerides', label: 'Efemérides', icon: BookOpen },
-    { href: '/agenda', label: 'Agenda Cultural', icon: Calendar },
     { href: '/contacto', label: 'Sumá tu Banda', icon: Sparkles },
   ];
 

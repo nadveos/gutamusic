@@ -40,7 +40,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile, onLog
     { href: '/admin/ia', label: 'IA Editorial & SEO', icon: Sparkles },
     { href: '/admin/videos', label: 'Cargar Videos', icon: Video },
     { href: '/admin/efemerides', label: 'Efemérides', icon: BookOpen },
-    { href: '/admin/agenda', label: 'Agenda & Eventos', icon: Calendar },
     { href: '/admin/seguridad', label: 'Seguridad & 2FA', icon: ShieldCheck },
   ];
 
