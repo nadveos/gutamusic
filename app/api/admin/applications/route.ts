@@ -64,7 +64,8 @@ export async function GET() {
 
 /**
  * PATCH /api/admin/applications
- * Actualiza el estado de una postulación (approved | rejected).
+ * Actualiza el estado de una postulación (approved | rejected | needs_revision),
+ * sincroniza la colección artists y envía correo de notificación mediante Resend.
  */
 export async function PATCH(req: NextRequest) {
   try {
@@ -79,15 +80,52 @@ export async function PATCH(req: NextRequest) {
 
     await ensureServerSuperUserAuth();
 
-    const { id, status } = await req.json();
+    const { id, status, reason = '' } = await req.json();
 
     if (!id || !status) {
       return NextResponse.json({ success: false, error: 'Faltan parámetros id o status' }, { status: 400 });
     }
 
-    await pb.collection('applications').update(id, { status });
+    const appRecord = await pb.collection('applications').update(id, { status });
 
-    return NextResponse.json({ success: true });
+    // Sincronizar con el perfil del artista en artists si existe
+    let artistRecord: any = null;
+    if (appRecord.email || appRecord.stageName) {
+      try {
+        const query = [
+          appRecord.email ? `contactEmail = "${appRecord.email}"` : null,
+          appRecord.stageName ? `stageName = "${appRecord.stageName}"` : null,
+        ].filter(Boolean).join(' || ');
+
+        artistRecord = await pb.collection('artists').getFirstListItem(query);
+        if (artistRecord) {
+          await pb.collection('artists').update(artistRecord.id, {
+            status,
+            adminNotes: reason || '',
+          });
+        }
+      } catch (findErr) {
+        // Si no existe perfil en artists, se crea si es approved
+      }
+    }
+
+    // Enviar correo de notificación al artista mediante Resend
+    if (appRecord.email) {
+      try {
+        const { sendArtistStatusEmail } = await import('@/lib/services/emailService');
+        await sendArtistStatusEmail({
+          to: appRecord.email,
+          stageName: appRecord.stageName,
+          status,
+          reason,
+          artistSlug: artistRecord?.slug,
+        });
+      } catch (emailErr) {
+        console.warn('⚠️ No se pudo enviar el correo de notificación al artista:', emailErr);
+      }
+    }
+
+    return NextResponse.json({ success: true, status });
   } catch (err: any) {
     console.error('❌ Error updating application:', err);
     return NextResponse.json(

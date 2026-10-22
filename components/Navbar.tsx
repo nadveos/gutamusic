@@ -118,7 +118,7 @@ export const Navbar: React.FC = () => {
             </nav>
 
             {/* CTA & Search Action */}
-            <div className="hidden lg:flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-2.5">
               <ShareButton
                 title="GUTA MÚSICA — Plataforma Federal de Difusión"
                 text="Descubrí la plataforma federal para artistas independientes y emergentes en GUTA MÚSICA."
@@ -129,13 +129,19 @@ export const Navbar: React.FC = () => {
                 className="flex items-center gap-1.5 text-xs text-[#aba79e] hover:text-[#f3f1ec] px-3 py-1.5 rounded-lg bg-[#222329] border border-[#31333d] hover:border-[#464957] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
               >
                 <Search className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Explorar Artistas</span>
+                <span>Explorar</span>
               </Link>
               <Link
-                href="/contacto"
-                className="text-xs font-semibold px-3.5 py-2 rounded-lg bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
+                href="/login"
+                className="text-xs text-[#aba79e] hover:text-[#f3f1ec] px-2.5 py-1.5 rounded-lg hover:bg-[#23252c] transition-colors font-medium"
               >
-                + Postular Mi Banda
+                Acceso Artistas
+              </Link>
+              <Link
+                href="/registro"
+                className="text-xs font-bold px-3.5 py-2 rounded-lg bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] shadow-sm shadow-[#d97d64]/20"
+              >
+                + Sumar Mi Banda
               </Link>
             </div>
 
@@ -184,16 +190,25 @@ export const Navbar: React.FC = () => {
                 </Link>
               );
             })}
-            <div className="pt-3 border-t border-[#2d2f38] space-y-3">
+            <div className="pt-3 border-t border-[#2d2f38] space-y-2.5">
               <OfficialSocialsBar settings={socials} variant="drawer" />
 
-              <Link
-                href="/contacto"
-                onClick={() => setIsOpen(false)}
-                className="w-full flex items-center justify-center text-center font-bold text-xs py-2.5 rounded-lg bg-[#d97d64] text-[#151618] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
-              >
-                + Sumar mi Banda / Proyecto
-              </Link>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Link
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center justify-center text-center font-semibold text-xs py-2 rounded-lg bg-[#222329] border border-[#31333d] text-[#f3f1ec]"
+                >
+                  Acceso Artistas
+                </Link>
+                <Link
+                  href="/registro"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center justify-center text-center font-bold text-xs py-2 rounded-lg bg-[#d97d64] text-[#151618]"
+                >
+                  + Registrar Banda
+                </Link>
+              </div>
             </div>
           </nav>
         )}

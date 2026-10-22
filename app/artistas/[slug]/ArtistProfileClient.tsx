@@ -32,20 +32,32 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
   );
 
   const spotifyArtistId = React.useMemo(() => {
-    if (artist.socials?.spotify) {
-      const match = artist.socials.spotify.match(/artist\/([a-zA-Z0-9]{22})/);
-      if (match) return match[1];
-      const uriMatch = artist.socials.spotify.match(/spotify:artist:([a-zA-Z0-9]{22})/);
-      if (uriMatch) return uriMatch[1];
+    const raw = artist.socials?.spotify?.trim();
+    if (!raw) return null;
+
+    // Descartar URLs genéricas sin identificador de artista
+    if (
+      raw === 'https://spotify.com' ||
+      raw === 'https://spotify.com/' ||
+      raw === 'https://open.spotify.com' ||
+      raw === 'https://open.spotify.com/'
+    ) {
+      return null;
     }
-    for (const d of artist.discography) {
-      if (d.spotifyUrl) {
-        const match = d.spotifyUrl.match(/artist\/([a-zA-Z0-9]{22})/);
-        if (match) return match[1];
-      }
-    }
+
+    // Extraer de enlaces web estándar: open.spotify.com/artist/XXXXXXXXXXXXXXXXXXXXXX
+    const match = raw.match(/artist\/([a-zA-Z0-9]{22})/);
+    if (match) return match[1];
+
+    // Extraer de URIs de Spotify: spotify:artist:XXXXXXXXXXXXXXXXXXXXXX
+    const uriMatch = raw.match(/spotify:artist:([a-zA-Z0-9]{22})/);
+    if (uriMatch) return uriMatch[1];
+
+    // Si directamente se guardó el ID de 22 caracteres
+    if (/^[a-zA-Z0-9]{22}$/.test(raw)) return raw;
+
     return null;
-  }, [artist.socials?.spotify, artist.discography]);
+  }, [artist.socials?.spotify]);
 
   return (
     <div className="space-y-8">
@@ -314,7 +326,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
               </div>
             )}
 
-            {/* Recuadro Oficial de Spotify: Top Canciones & Oyentes Mensuales */}
+            {/* Recuadro Oficial de Spotify: Top Canciones & Oyentes Mensuales (solo si el artista tiene link a su perfil) */}
             {spotifyArtistId ? (
               <div className="natural-card p-4 sm:p-5 rounded-2xl border border-[#2e3039] space-y-3">
                 <div className="flex items-center justify-between">
@@ -339,17 +351,19 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                   </a>
                 </div>
 
-                {artist.monthlyListeners && (
-                  <div className="p-2.5 rounded-xl bg-[#1db954]/10 border border-[#1db954]/25 flex items-center justify-between text-xs">
-                    <span className="text-[11px] text-[#aba79e] font-medium flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#1db954] animate-pulse" />
-                      <span>Oyentes Mensuales:</span>
-                    </span>
-                    <span className="text-xs font-bold text-[#1db954]">
-                      {artist.monthlyListeners}
-                    </span>
-                  </div>
-                )}
+                {artist.monthlyListeners &&
+                  artist.monthlyListeners.trim() !== '0' &&
+                  !artist.monthlyListeners.trim().startsWith('0 ') && (
+                    <div className="p-2.5 rounded-xl bg-[#1db954]/10 border border-[#1db954]/25 flex items-center justify-between text-xs">
+                      <span className="text-[11px] text-[#aba79e] font-medium flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#1db954] animate-pulse" />
+                        <span>Oyentes Mensuales:</span>
+                      </span>
+                      <span className="text-xs font-bold text-[#1db954]">
+                        {artist.monthlyListeners}
+                      </span>
+                    </div>
+                  )}
 
                 <div className="rounded-xl overflow-hidden bg-black/60 border border-[#2b2d38] shadow-inner">
                   <iframe
@@ -363,13 +377,6 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                     className="w-full border-0"
                   />
                 </div>
-              </div>
-            ) : artist.monthlyListeners ? (
-              <div className="natural-card p-4 rounded-2xl border border-[#2e3039] space-y-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#1db954] block">
-                  Audiencia en Spotify
-                </span>
-                <p className="text-sm font-bold text-[#f3f1ec]">{artist.monthlyListeners}</p>
               </div>
             ) : null}
           </div>
