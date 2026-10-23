@@ -270,7 +270,7 @@ export function ArtistRegisterClient() {
           <p className="text-xs sm:text-sm text-[#aba79e]">
             {step === 'form'
               ? 'Sumá tu banda, grupo o solista a la plataforma federal.'
-              : `Enviamos un código de 6 dígitos a ${email}`}
+              : `Enviamos un código de 6 dígitos a ${email}. (Revisá también tu carpeta de Spam).`}
           </p>
         </div>
 
@@ -403,15 +403,28 @@ export function ArtistRegisterClient() {
           {/* PASO 2: Verificación OTP */}
           {step === 'otp' && (
             <form onSubmit={handleVerifyOtp} className="space-y-6">
-              <div className="text-center space-y-1">
+              <div className="text-center space-y-2">
                 <div className="w-12 h-12 rounded-2xl bg-[#d97d64]/10 border border-[#d97d64]/30 text-[#d97d64] flex items-center justify-center mx-auto mb-2">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <h3 className="text-base font-bold text-[#f3f1ec]">Ingresá el Código OTP</h3>
                 <p className="text-xs text-[#aba79e]">
-                  Revisá tu bandeja de entrada o spam en{' '}
+                  Enviamos el código de 6 dígitos a{' '}
                   <span className="font-semibold text-[#f3f1ec]">{email}</span>
                 </p>
+
+                {/* Aviso Destacado de Correo No Deseado / Spam */}
+                <div className="p-3 rounded-xl bg-[#e6cca0]/10 border border-[#e6cca0]/30 text-left text-xs flex items-start gap-2.5 mt-2">
+                  <AlertCircle className="w-4 h-4 text-[#e6cca0] shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-[#e6cca0] block">
+                      ¿No lo encontrás en tu bandeja de entrada?
+                    </span>
+                    <p className="text-[11px] text-[#aba79e] leading-relaxed">
+                      Por favor revisá tu carpeta de <strong>Spam</strong> o <strong>Correo no deseado</strong>. Algunos proveedores de correo pueden derivarlo allí inicialmente.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* 6 Casilleros para OTP */}
