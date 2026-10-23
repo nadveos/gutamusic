@@ -4,9 +4,9 @@ const resendApiKey = process.env.RESEND_API_KEY;
 
 export const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
-// Remitente: usa el configurado en .env.local o fallback a onboarding@resend.dev para pruebas
+// Remitente: usa el configurado en .env.local o el dominio verificado en Resend (guta.meapp.com.ar)
 const FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL || 'GUTA MÚSICA <onboarding@resend.dev>';
+  process.env.RESEND_FROM_EMAIL || 'GUTA MÚSICA <no-reply@guta.meapp.com.ar>';
 
 /**
  * Plantilla base con estética dark mode de GUTA MÚSICA
@@ -113,12 +113,19 @@ export async function sendOtpEmail({
   `);
 
   try {
-    const data = await resend.emails.send({
+    console.log(`📬 [GUTA EMAIL] Enviando OTP a: ${to} (código: ${code}) desde: ${FROM_EMAIL}`);
+    const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject: `${code} es tu código de verificación | GUTA MÚSICA`,
       html,
     });
+
+    if (error) {
+      console.error('❌ Resend API Error al enviar OTP:', error);
+      return { success: false, error: error.message };
+    }
+
     return { success: true, data };
   } catch (err: any) {
     console.error('❌ Error enviando email con Resend:', err);
@@ -201,12 +208,18 @@ export async function sendArtistStatusEmail({
   `);
 
   try {
-    const data = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject: `${title} | GUTA MÚSICA`,
       html,
     });
+
+    if (error) {
+      console.error('❌ Resend API Error al enviar status email:', error);
+      return { success: false, error: error.message };
+    }
+
     return { success: true, data };
   } catch (err: any) {
     return { success: false, error: err?.message };
