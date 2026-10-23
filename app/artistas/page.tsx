@@ -20,9 +20,19 @@ export default async function ArtistasPage({
   const artists = await MusicDataService.getArtists();
   const genres = MusicDataService.getGenresList();
 
+  // Orden prioritario para el directorio de artistas:
+  // 1. Solo los marcados como Artista Destacado (featured && !featuredOfWeek)
+  // 2. Artistas destacados de la semana (featuredOfWeek)
+  // 3. Orden respectivo habitual (más recientes primero)
+  const sortedArtists = [...artists].sort((a, b) => {
+    const priorityA = a.featured && !a.featuredOfWeek ? 1 : a.featuredOfWeek ? 2 : 3;
+    const priorityB = b.featured && !b.featuredOfWeek ? 1 : b.featuredOfWeek ? 2 : 3;
+    return priorityA - priorityB;
+  });
+
   return (
     <ArtistsDirectoryClient
-      initialArtists={artists}
+      initialArtists={sortedArtists}
       genres={genres}
       initialGenre={params?.genre}
     />

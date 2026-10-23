@@ -20,13 +20,21 @@ export const ArtistsDirectoryClient: React.FC<ArtistsDirectoryClientProps> = ({
   const [selectedGenre, setSelectedGenre] = useState<string>(initialGenre || 'Todos');
   const [selectedProvince, setSelectedProvince] = useState<string>('Todas');
 
-  const provinces = useMemo(() => {
-    const list = Array.from(new Set(initialArtists.map((a) => a.province))).filter(Boolean);
-    return ['Todas', ...list];
+  const sortedArtists = useMemo(() => {
+    return [...initialArtists].sort((a, b) => {
+      const priorityA = a.featured && !a.featuredOfWeek ? 1 : a.featuredOfWeek ? 2 : 3;
+      const priorityB = b.featured && !b.featuredOfWeek ? 1 : b.featuredOfWeek ? 2 : 3;
+      return priorityA - priorityB;
+    });
   }, [initialArtists]);
 
+  const provinces = useMemo(() => {
+    const list = Array.from(new Set(sortedArtists.map((a) => a.province))).filter(Boolean);
+    return ['Todas', ...list];
+  }, [sortedArtists]);
+
   const filteredArtists = useMemo(() => {
-    return initialArtists.filter((artist) => {
+    return sortedArtists.filter((artist) => {
       const matchesGenre =
         selectedGenre === 'Todos' ||
         artist.genres.some((g) => g.toLowerCase() === selectedGenre.toLowerCase());
@@ -45,7 +53,7 @@ export const ArtistsDirectoryClient: React.FC<ArtistsDirectoryClientProps> = ({
 
       return matchesGenre && matchesProvince && matchesQuery;
     });
-  }, [initialArtists, selectedGenre, selectedProvince, searchQuery]);
+  }, [sortedArtists, selectedGenre, selectedProvince, searchQuery]);
 
   return (
     <div className="space-y-6">
