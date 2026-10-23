@@ -46,9 +46,9 @@ export async function GET(req: NextRequest) {
 
     let artistRecord: any = null;
     try {
-      // Buscar por campo owner o email
+      // Buscar por campo owner o contactEmail
       artistRecord = await pb.collection('artists').getFirstListItem(
-        `owner = "${user.id}" || contactEmail = "${user.email}" || email = "${user.email}"`
+        `owner = "${user.id}" || contactEmail = "${user.email}"`
       );
     } catch (e: any) {
       // No existe todavía perfil de artista

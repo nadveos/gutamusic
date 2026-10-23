@@ -24,7 +24,6 @@ export function ArtistRegisterClient() {
   const router = useRouter();
 
   // Estados del formulario paso 1
-  const [stageName, setStageName] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,7 +66,7 @@ export function ArtistRegisterClient() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!stageName.trim() || !name.trim() || !email.trim() || !password) {
+    if (!name.trim() || !email.trim() || !password) {
       setErrorMessage('Por favor completá todos los campos.');
       return;
     }
@@ -88,7 +87,6 @@ export function ArtistRegisterClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          stageName: stageName.trim(),
           name: name.trim(),
           email: email.trim(),
           password,
@@ -183,7 +181,6 @@ export function ArtistRegisterClient() {
           token: otpToken,
           password,
           name: name.trim(),
-          stageName: stageName.trim(),
         }),
       });
 
@@ -231,7 +228,6 @@ export function ArtistRegisterClient() {
         body: JSON.stringify({
           email: email.trim(),
           name: name.trim(),
-          stageName: stageName.trim(),
         }),
       });
 
@@ -301,24 +297,6 @@ export function ArtistRegisterClient() {
           {/* PASO 1: Formulario de Registro */}
           {step === 'form' && (
             <form onSubmit={handleRegisterSubmit} className="space-y-4">
-              {/* Nombre Artístico / Proyecto */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-[#aba79e] block">
-                  Nombre de tu Banda / Proyecto Musical *
-                </label>
-                <div className="relative">
-                  <Music2 className="w-4 h-4 text-[#8c887f] absolute left-3 top-3 pointer-events-none" />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej. Serenata Gaucha, La Renga, etc."
-                    value={stageName}
-                    onChange={(e) => setStageName(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs placeholder:text-[#5a5751] focus:outline-none focus:border-[#d97d64] transition-colors"
-                  />
-                </div>
-              </div>
-
               {/* Nombre de Contacto */}
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold text-[#aba79e] block">

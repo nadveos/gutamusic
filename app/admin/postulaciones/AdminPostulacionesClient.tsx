@@ -147,54 +147,19 @@ export const AdminPostulacionesClient: React.FC = () => {
   const handleApprove = async (app: ApplicationItem) => {
     setActionLoadingId(app.id);
     try {
-      // 1. Generate slug
-      const slug = app.stageName
-        .toLowerCase()
-        .trim()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-
-      // 2. Create the new Artist directly into PocketBase collection 'artists'
-      const newArtistPayload = {
-        stageName: app.stageName,
-        slug,
-        realName: app.contactName || app.stageName,
-        genres: app.genres,
-        city: app.city,
-        province: app.province,
-        country: app.country || 'Argentina',
-        shortBio: app.bio.substring(0, 140) + '...',
-        bio: app.bio,
-        photoUrl: app.photoUrl || '',
-        bannerUrl: '',
-        quotes: '',
-        featured: false,
-        featuredOfWeek: false,
-        socials: app.socials || {},
-        videos: [],
-        discography: [],
-        agenda: [],
-        press: [],
-        gallery: app.photoUrl ? [app.photoUrl] : [],
-        createdDate: new Date().toISOString().split('T')[0],
-      };
-
-      try {
-        await pb.collection('artists').create(newArtistPayload);
-      } catch (pbErr) {
-        console.warn('PocketBase artist creation fallback:', pbErr);
-      }
-
-      // 3. Update application status via API route
-      await fetch('/api/admin/applications', {
+      // 1. Delegar la aprobación y vinculación segura al endpoint del servidor
+      const res = await fetch('/api/admin/applications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: app.id, status: 'approved' }),
       });
 
-      // 4. Update local state
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al aprobar postulación');
+      }
+
+      // 2. Actualizar estado local en la tabla
       const updated = applications.map((a) => (a.id === app.id ? { ...a, status: 'approved' as const } : a));
       setApplications(updated);
       if (selectedApp?.id === app.id) {
@@ -205,6 +170,8 @@ export const AdminPostulacionesClient: React.FC = () => {
       setTimeout(() => setToastMessage(''), 4000);
     } catch (err: any) {
       console.error('Error approving application:', err);
+      setToastMessage(`Error al aprobar: ${err.message}`);
+      setTimeout(() => setToastMessage(''), 4000);
     } finally {
       setActionLoadingId(null);
     }

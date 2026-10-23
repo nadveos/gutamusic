@@ -7,9 +7,9 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, stageName, email, password } = body;
+    const { name, stageName = '', email, password } = body;
 
-    if (!email || !password || !name || !stageName) {
+    if (!email || !password || !name) {
       return NextResponse.json(
         { success: false, error: 'Completá todos los campos obligatorios.' },
         { status: 400 }

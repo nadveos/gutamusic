@@ -40,8 +40,12 @@ export class MusicDataService {
 
       if (records && records.length > 0) {
         // Invertir lista para mostrar primero los artistas más recientes
-        const orderedRecords = [...records].reverse();
-        let artists: Artist[] = orderedRecords.map((r) => ({
+        // y excluir perfiles que se encuentren en revisión o rechazados
+        const visibleRecords = records
+          .filter((r) => !r.status || r.status === 'approved')
+          .reverse();
+
+        let artists: Artist[] = visibleRecords.map((r) => ({
           id: r.id,
           slug: r.slug,
           stageName: r.stageName,
