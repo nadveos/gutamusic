@@ -768,15 +768,33 @@ export class MusicDataService {
   static getGenresList(): GenreType[] {
     return [
       'Folklore',
+      'Pop',
       'Rock',
-      'Hip Hop',
+      'EDM',
+      'Dance',
+      'Electrónica',
       'Música Urbana',
+      'Trap',
+      'Hip Hop',
+      'Cumbia',
+      'Cuarteto',
+      'Cumbia / Cuarteto',
+      'Indie',
       'Tango',
       'Música Popular',
-      'Indie',
       'Fusión Latinoamericana',
-      'Cumbia / Cuarteto',
-      'Jazz / Instrumental'
+      'House / Techno',
+      'Synthpop',
+      'Reggaeton',
+      'R&B / Soul',
+      'Jazz / Instrumental',
+      'Blues / Funk',
+      'Reggae / Ska',
+      'Chamamé',
+      'Acústico / Cantautor',
+      'Metal / Punk',
+      'Salsa / Bachata',
+      'Música Clásica',
     ];
   }
 }

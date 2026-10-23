@@ -30,15 +30,33 @@ import { GenreType, DiscographyType, VideoPlatform } from '@/lib/types';
 
 const GENRE_OPTIONS: GenreType[] = [
   'Folklore',
+  'Pop',
   'Rock',
-  'Hip Hop',
+  'EDM',
+  'Dance',
+  'Electrónica',
   'Música Urbana',
+  'Trap',
+  'Hip Hop',
+  'Cumbia',
+  'Cuarteto',
+  'Cumbia / Cuarteto',
+  'Indie',
   'Tango',
   'Música Popular',
-  'Indie',
   'Fusión Latinoamericana',
-  'Cumbia / Cuarteto',
+  'House / Techno',
+  'Synthpop',
+  'Reggaeton',
+  'R&B / Soul',
   'Jazz / Instrumental',
+  'Blues / Funk',
+  'Reggae / Ska',
+  'Chamamé',
+  'Acústico / Cantautor',
+  'Metal / Punk',
+  'Salsa / Bachata',
+  'Música Clásica',
 ];
 
 export function ArtistDashboardClient() {
@@ -52,6 +70,19 @@ export function ArtistDashboardClient() {
   const [activeTab, setActiveTab] = useState<'bio' | 'spotify' | 'discografia' | 'agenda' | 'videos'>('bio');
 
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [customGenreInput, setCustomGenreInput] = useState('');
+
+  const handleAddCustomGenre = () => {
+    const trimmed = customGenreInput.trim();
+    if (!trimmed) return;
+    if (!formData.genres.some((g) => g.toLowerCase() === trimmed.toLowerCase())) {
+      setFormData((prev) => ({
+        ...prev,
+        genres: [...prev.genres, trimmed as GenreType],
+      }));
+    }
+    setCustomGenreInput('');
+  };
 
   // Form State
   const [formData, setFormData] = useState({
@@ -676,33 +707,84 @@ export function ArtistDashboardClient() {
             </div>
 
             {/* Géneros */}
-            <div className="space-y-1.5 pt-2">
-              <label className="text-[11px] font-semibold text-[#aba79e] block">
-                Géneros Musicales (seleccioná los que apliquen)
-              </label>
-              <div className="flex flex-wrap gap-1.5">
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-semibold text-[#aba79e] block">
+                  Géneros Musicales (seleccioná los que apliquen)
+                </label>
+                <span className="text-[10px] text-[#e6cca0]">
+                  {formData.genres.length} seleccionado{formData.genres.length === 1 ? '' : 's'}
+                </span>
+              </div>
+
+              {/* Botones de Géneros Principales */}
+              <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-2 rounded-xl bg-[#141518] border border-[#262830]">
                 {GENRE_OPTIONS.map((genre) => {
-                  const selected = formData.genres.includes(genre);
+                  const selected = formData.genres.some((g) => g.toLowerCase() === genre.toLowerCase());
                   return (
                     <button
                       key={genre}
                       type="button"
                       onClick={() => {
                         const newGenres = selected
-                          ? formData.genres.filter((g) => g !== genre)
+                          ? formData.genres.filter((g) => g.toLowerCase() !== genre.toLowerCase())
                           : [...formData.genres, genre];
                         setFormData({ ...formData, genres: newGenres });
                       }}
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
                         selected
                           ? 'bg-[#d97d64] text-[#151618] border-[#d97d64] font-bold'
-                          : 'bg-[#18191e] text-[#aba79e] border-[#2e3039] hover:border-[#464957]'
+                          : 'bg-[#18191e] text-[#aba79e] border-[#2e3039] hover:border-[#464957] hover:text-[#f3f1ec]'
                       }`}
                     >
                       {genre}
                     </button>
                   );
                 })}
+
+                {/* Mostrar géneros personalizados que el usuario haya agregado */}
+                {formData.genres
+                  .filter((g) => !GENRE_OPTIONS.some((opt) => opt.toLowerCase() === g.toLowerCase()))
+                  .map((customGenre) => (
+                    <button
+                      key={customGenre}
+                      type="button"
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          genres: formData.genres.filter((g) => g !== customGenre),
+                        });
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer border bg-[#e6cca0] text-[#151618] border-[#e6cca0] flex items-center gap-1"
+                    >
+                      <span>{customGenre}</span>
+                      <span className="text-[10px] opacity-70">✕</span>
+                    </button>
+                  ))}
+              </div>
+
+              {/* Input para agregar otro género no listado */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="text"
+                  placeholder="+ ¿Otro género o estilo específico? Escribilo acá..."
+                  value={customGenreInput}
+                  onChange={(e) => setCustomGenreInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomGenre();
+                    }
+                  }}
+                  className="flex-1 px-3 py-1.5 rounded-lg bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs placeholder:text-[#5a5751] focus:outline-none focus:border-[#d97d64]"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomGenre}
+                  className="px-3 py-1.5 rounded-lg bg-[#24252c] hover:bg-[#2e303b] text-[#e6cca0] border border-[#31333d] text-xs font-semibold shrink-0 cursor-pointer transition-colors"
+                >
+                  + Agregar
+                </button>
               </div>
             </div>
 

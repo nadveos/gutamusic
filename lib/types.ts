@@ -2,16 +2,41 @@
 // Designed to map 1:1 with PocketBase collections / Prisma schema
 
 export type GenreType =
+  // Folklore & Raíz
   | 'Folklore'
-  | 'Rock'
-  | 'Hip Hop'
-  | 'Música Urbana'
+  | 'Fusión Latinoamericana'
   | 'Tango'
   | 'Música Popular'
+  | 'Chamamé'
+  // Pop, Rock & Alternativo
+  | 'Pop'
+  | 'Rock'
   | 'Indie'
-  | 'Fusión Latinoamericana'
+  | 'Metal / Punk'
+  | 'Acústico / Cantautor'
+  // Electrónica, EDM & Pista
+  | 'EDM'
+  | 'Dance'
+  | 'Electrónica'
+  | 'House / Techno'
+  | 'Synthpop'
+  // Urbana & Hip Hop
+  | 'Música Urbana'
+  | 'Trap'
+  | 'Hip Hop'
+  | 'Reggaeton'
+  | 'R&B / Soul'
+  // Tropical & Bailable
+  | 'Cumbia'
+  | 'Cuarteto'
   | 'Cumbia / Cuarteto'
-  | 'Jazz / Instrumental';
+  | 'Salsa / Bachata'
+  // Instrumental & Fusión
+  | 'Jazz / Instrumental'
+  | 'Blues / Funk'
+  | 'Reggae / Ska'
+  | 'Música Clásica'
+  | (string & {});
 
 export type VideoPlatform = 'youtube' | 'tiktok' | 'facebook';
 
