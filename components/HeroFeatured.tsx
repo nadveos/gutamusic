@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Artist } from '../lib/types';
-import { MapPin, ArrowRight, Radio, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { MapPin, ArrowRight, Radio, Sparkles } from 'lucide-react';
 
 interface HeroFeaturedProps {
   artist?: Artist;
@@ -28,11 +28,6 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist, artists: raw
   const handleNext = useCallback(() => {
     if (total <= 1) return;
     setCurrentIndex((prev) => (prev + 1) % total);
-  }, [total]);
-
-  const handlePrev = useCallback(() => {
-    if (total <= 1) return;
-    setCurrentIndex((prev) => (prev - 1 + total) % total);
   }, [total]);
 
   // Autoplay con pausa en hover
@@ -148,46 +143,25 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist, artists: raw
         </div>
       </div>
 
-      {/* Slider Controls (if multiple featured artists) */}
+      {/* Slider Indicators (if multiple featured artists) */}
       {isMultiple && (
-        <>
-          {/* Arrow Left */}
-          <button
-            onClick={handlePrev}
-            aria-label="Artista anterior"
-            className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#18191d]/80 hover:bg-[#d97d64] hover:text-[#151618] text-[#f3f1ec] border border-[#393c49] flex items-center justify-center backdrop-blur-md transition-all opacity-80 group-hover:opacity-100 active:scale-90"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          {/* Arrow Right */}
-          <button
-            onClick={handleNext}
-            aria-label="Siguiente artista"
-            className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[#18191d]/80 hover:bg-[#d97d64] hover:text-[#151618] text-[#f3f1ec] border border-[#393c49] flex items-center justify-center backdrop-blur-md transition-all opacity-80 group-hover:opacity-100 active:scale-90"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-
-          {/* Dots Indicator at the bottom */}
-          <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#151618]/70 backdrop-blur-md border border-[#31333d]">
-            {artists.map((item, idx) => {
-              const isActive = idx === currentIndex;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setCurrentIndex(idx)}
-                  aria-label={`Ir al artista ${idx + 1}: ${item.stageName}`}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    isActive
-                      ? 'w-6 bg-[#d97d64]'
-                      : 'w-2 bg-[#4b4e5c] hover:bg-[#aba79e]'
-                  }`}
-                />
-              );
-            })}
-          </div>
-        </>
+        <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#151618]/70 backdrop-blur-md border border-[#31333d]">
+          {artists.map((item, idx) => {
+            const isActive = idx === currentIndex;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setCurrentIndex(idx)}
+                aria-label={`Ir al artista ${idx + 1}: ${item.stageName}`}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  isActive
+                    ? 'w-6 bg-[#d97d64]'
+                    : 'w-2 bg-[#4b4e5c] hover:bg-[#aba79e]'
+                }`}
+              />
+            );
+          })}
+        </div>
       )}
     </section>
   );

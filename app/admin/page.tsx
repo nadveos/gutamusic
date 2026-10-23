@@ -2,10 +2,12 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MusicDataService } from '../../lib/api';
+import { pb } from '../../lib/pocketbase';
 import { AdminHeader } from '../../components/admin/AdminHeader';
 import { SeedPocketBaseButton } from '../../components/admin/SeedPocketBaseButton';
 import {
   Mic2,
+  Users,
   Video,
   BookOpen,
   Calendar,
@@ -32,13 +34,26 @@ export default async function AdminDashboardPage() {
     (k) => (socials as any)[k]?.active && (socials as any)[k]?.handle
   ).length;
 
+  let userCount = 0;
+  try {
+    const userRes = await pb.collection('users').getList(1, 1, { requestKey: null });
+    userCount = userRes.totalItems;
+  } catch {}
+
   const stats = [
     {
-      label: 'Artistas Registrados',
+      label: 'Artistas en Catálogo',
       value: artists.length,
       icon: Mic2,
       badgeColor: 'bg-terracotta-soft text-[#d97d64]',
       href: '/admin/artistas',
+    },
+    {
+      label: 'Cuentas de Usuarios',
+      value: userCount,
+      icon: Users,
+      badgeColor: 'bg-sage-soft text-[#93a887]',
+      href: '/admin/usuarios',
     },
     {
       label: 'Entrevistas & Lives',

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Mic2,
+  Users,
   Video,
   BookOpen,
   Calendar,
@@ -33,6 +34,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile, onLog
   const menuItems = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/artistas', label: 'Gestión de Artistas', icon: Mic2 },
+    { href: '/admin/usuarios', label: 'Usuarios & Cuentas', icon: Users },
     { href: '/admin/entrevistas', label: 'Entrevistas & Lives', icon: Radio },
     { href: '/admin/redes', label: 'Redes @sesionesrg', icon: Share2 },
     { href: '/admin/aliados', label: 'Auspiciantes & Alianzas', icon: HeartHandshake },
