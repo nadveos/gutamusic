@@ -5,29 +5,29 @@ import { MusicDataService } from '../lib/api';
 export const dynamic = 'force-dynamic';
 import { HeroFeatured } from '../components/HeroFeatured';
 import { ArtistCard } from '../components/ArtistCard';
-import { EphemeridesWidget } from '../components/EphemeridesWidget';
+import { SpotifyPlaylistSection } from '../components/SpotifyPlaylistSection';
 import { VideoEmbedGrid } from '../components/VideoEmbedGrid';
 import { FeaturedInterviewCard } from '../components/FeaturedInterviewCard';
+import { getSpotifyPlaylist } from '../lib/services/spotifyService';
 import { Mic2, ArrowRight } from 'lucide-react';
 
 export default async function HomePage() {
-  const now = new Date();
-  const currentDay = now.getDate();
-  const currentMonth = now.getMonth() + 1;
-
   const featuredArtists = await MusicDataService.getFeaturedArtists();
   const latestArtists = await MusicDataService.getArtists();
   const videos = await MusicDataService.getVideos(4);
   const featuredInterview = await MusicDataService.getFeaturedInterview();
-  const ephemerides = await MusicDataService.getTodayEphemerides(currentDay, currentMonth);
+
+  // Playlist oficial de Spotify
+  const playlistId = process.env.NEXT_PUBLIC_SPOTIFY_PLAYLIST_ID || '5eprX7q6HoedI2nnnHEE2H';
+  const spotifyPlaylist = await getSpotifyPlaylist(playlistId);
 
   return (
     <div className="space-y-10">
       {/* 1. Hero Principal - Artistas Destacados (Slider) */}
       {featuredArtists.length > 0 && <HeroFeatured artists={featuredArtists} />}
 
-      {/* 2. Efemérides Musicales del Día */}
-      <EphemeridesWidget items={ephemerides.slice(0, 5)} day={currentDay} month={currentMonth} />
+      {/* 2. Playlist Oficial de Spotify - Top Artistas Emergentes by Guta 1 */}
+      <SpotifyPlaylistSection playlist={spotifyPlaylist} playlistId={playlistId} />
 
       {/* 3. Últimos Artistas Incorporados */}
       <section className="space-y-5">

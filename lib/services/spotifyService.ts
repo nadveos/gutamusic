@@ -69,6 +69,72 @@ export function extractSpotifyArtistId(urlOrId: string): string | null {
   return null;
 }
 
+export function extractSpotifyPlaylistId(urlOrId: string): string | null {
+  if (!urlOrId) return null;
+  const trimmed = urlOrId.trim();
+
+  // Si ya es un ID de Spotify de 22 caracteres
+  if (/^[a-zA-Z0-9]{22}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // Capturar de URLs de playlist:
+  // https://open.spotify.com/playlist/5eprX7q6HoedI2nnnHEE2H?si=...
+  // https://open.spotify.com/intl-es/playlist/5eprX7q6HoedI2nnnHEE2H
+  // spotify:playlist:5eprX7q6HoedI2nnnHEE2H
+  const match = trimmed.match(/(?:playlist\/|spotify:playlist:)([a-zA-Z0-9]{22})/);
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  return null;
+}
+
+export interface SpotifyPlaylistData {
+  id: string;
+  name: string;
+  description: string;
+  externalUrl: string;
+  imageUrl?: string;
+  followers?: number;
+  ownerName?: string;
+}
+
+export async function getSpotifyPlaylist(playlistIdOrUrl: string): Promise<SpotifyPlaylistData | null> {
+  const id = extractSpotifyPlaylistId(playlistIdOrUrl);
+  if (!id) return null;
+
+  const token = await getSpotifyAccessToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/playlists/${id}?fields=id,name,description,external_urls,images,followers,owner`, {
+      headers: { Authorization: `Bearer ${token}` },
+      next: { revalidate: 3600 }
+    });
+
+    if (!res.ok) {
+      console.warn(`Error al consultar playlist ${id} en Spotify:`, res.status);
+      return null;
+    }
+
+    const data = await res.json();
+    return {
+      id: data.id,
+      name: data.name || 'Top Artistas Emergentes by Guta 1',
+      description: data.description || '',
+      externalUrl: data.external_urls?.spotify || `https://open.spotify.com/playlist/${data.id}`,
+      imageUrl: data.images?.[0]?.url,
+      followers: data.followers?.total || 0,
+      ownerName: data.owner?.display_name || 'Guta Música',
+    };
+  } catch (err: any) {
+    console.error('Excepción al consultar playlist de Spotify:', err?.message);
+    return null;
+  }
+}
+
+
 export async function searchSpotifyArtist(artistName: string): Promise<{ id: string; name: string; url: string; photoUrl?: string } | null> {
   const token = await getSpotifyAccessToken();
   if (!token) return null;
