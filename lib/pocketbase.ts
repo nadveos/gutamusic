@@ -56,7 +56,12 @@ export function isSuperUserAuthenticated(): boolean {
   if (typeof document !== 'undefined' && !pb.authStore.isValid) {
     pb.authStore.loadFromCookie(document.cookie);
   }
-  return pb.authStore.isValid;
+  return (
+    pb.authStore.isValid &&
+    (pb.authStore.isSuperuser ||
+      pb.authStore.isAdmin ||
+      pb.authStore.record?.collectionName === '_superusers')
+  );
 }
 
 export function logoutSuperUser() {
@@ -71,12 +76,49 @@ export function logoutSuperUser() {
 }
 
 /**
+ * Crea y autentica una instancia dedicada y limpia de PocketBase como SuperUser en el servidor.
+ * Esto previene la contaminación del singleton global pb cuando se procesan cookies de usuarios normales.
+ */
+export async function getServerAdminPb(): Promise<PocketBase> {
+  const adminPb = new PocketBase(POCKETBASE_URL);
+  adminPb.autoCancellation(false);
+
+  const email = process.env.PB_EMAIL || process.env.POCKETBASE_ADMIN_EMAIL || 'guflo32@gmail.com';
+  const password = process.env.PB_PASSWORD || process.env.POCKETBASE_ADMIN_PASSWORD || '1982Gut@**';
+
+  if (email && password) {
+    try {
+      await adminPb.collection('_superusers').authWithPassword(email, password);
+    } catch {
+      try {
+        await (adminPb as any).admins.authWithPassword(email, password);
+      } catch (e: any) {
+        console.warn('⚠️ Falló autenticación en servidor con credenciales superuser:', e?.message);
+      }
+    }
+  }
+
+  return adminPb;
+}
+
+/**
  * Autentica automáticamente en el servidor (Node.js / Next.js SSR)
  * utilizando las variables de entorno PB_EMAIL y PB_PASSWORD de CapRover/.env.local
  */
 export async function ensureServerSuperUserAuth(): Promise<boolean> {
   if (typeof window === 'undefined') {
-    if (pb.authStore.isValid) return true;
+    const isSuper =
+      pb.authStore.isValid &&
+      (pb.authStore.isSuperuser ||
+        pb.authStore.isAdmin ||
+        pb.authStore.record?.collectionName === '_superusers');
+
+    if (isSuper) return true;
+
+    // Si tiene un token que no es de superusuario, limpiamos la instancia compartida
+    if (pb.authStore.isValid) {
+      pb.authStore.clear();
+    }
 
     const email = process.env.PB_EMAIL || process.env.POCKETBASE_ADMIN_EMAIL || 'guflo32@gmail.com';
     const password = process.env.PB_PASSWORD || process.env.POCKETBASE_ADMIN_PASSWORD || '1982Gut@**';
@@ -95,5 +137,11 @@ export async function ensureServerSuperUserAuth(): Promise<boolean> {
       }
     }
   }
-  return pb.authStore.isValid;
+  return (
+    pb.authStore.isValid &&
+    (pb.authStore.isSuperuser ||
+      pb.authStore.isAdmin ||
+      pb.authStore.record?.collectionName === '_superusers')
+  );
 }
+

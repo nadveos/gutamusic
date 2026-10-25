@@ -73,6 +73,7 @@ export function AdminUsuariosClient() {
 
   // Modal Nuevo Usuario
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createModalError, setCreateModalError] = useState<string | null>(null);
   const [newUserForm, setNewUserForm] = useState({
     name: '',
     email: '',
@@ -286,10 +287,22 @@ export function AdminUsuariosClient() {
   // Acciones: Crear Usuario
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateModalError(null);
+
     if (!newUserForm.email || !newUserForm.password) {
-      showToast('error', 'Completá email y contraseña.');
+      const err = 'Completá email y contraseña.';
+      setCreateModalError(err);
+      showToast('error', err);
       return;
     }
+
+    if (newUserForm.password.length < 8) {
+      const err = 'La contraseña debe contener al menos 8 caracteres.';
+      setCreateModalError(err);
+      showToast('error', err);
+      return;
+    }
+
     setActionLoadingId('create_modal');
     try {
       const res = await fetch('/api/admin/users', {
@@ -304,6 +317,7 @@ export function AdminUsuariosClient() {
       if (data.success) {
         showToast('success', data.message);
         setShowCreateModal(false);
+        setCreateModalError(null);
         setNewUserForm({
           name: '',
           email: '',
@@ -313,10 +327,14 @@ export function AdminUsuariosClient() {
         });
         loadData();
       } else {
-        showToast('error', data.error || 'Error creando usuario.');
+        const errorMsg = data.error || 'Error creando usuario.';
+        setCreateModalError(errorMsg);
+        showToast('error', errorMsg);
       }
     } catch (err: any) {
-      showToast('error', 'Error de red.');
+      const errorMsg = 'Error de red o conexión al servidor.';
+      setCreateModalError(errorMsg);
+      showToast('error', errorMsg);
     } finally {
       setActionLoadingId(null);
     }
@@ -327,12 +345,12 @@ export function AdminUsuariosClient() {
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl backdrop-blur-md transition-all ${
+          className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl backdrop-blur-md transition-all ${
             toast.type === 'success'
-              ? 'bg-[#18231c]/90 border-[#3a5840] text-[#93a887]'
+              ? 'bg-[#18231c]/95 border-[#3a5840] text-[#93a887]'
               : toast.type === 'error'
-              ? 'bg-[#291819]/90 border-[#632f34] text-[#e06c75]'
-              : 'bg-[#1a1b22]/90 border-[#333644] text-[#aba79e]'
+              ? 'bg-[#291819]/95 border-[#632f34] text-[#e06c75]'
+              : 'bg-[#1a1b22]/95 border-[#333644] text-[#aba79e]'
           }`}
         >
           {toast.type === 'success' ? (
@@ -355,7 +373,10 @@ export function AdminUsuariosClient() {
         title="Gestión de Cuentas & Usuarios"
         subtitle="Administrá las cuentas de artistas registradas, verificación OTP, restablecimiento de accesos y vinculación con fichas del catálogo."
         actionText="Nuevo Usuario"
-        onActionClick={() => setShowCreateModal(true)}
+        onActionClick={() => {
+          setCreateModalError(null);
+          setShowCreateModal(true);
+        }}
       />
 
       {/* Ribbon de Métricas */}
@@ -752,6 +773,13 @@ export function AdminUsuariosClient() {
             </div>
 
             <form onSubmit={handleCreateUser} className="p-5 space-y-4">
+              {createModalError && (
+                <div className="p-3 rounded-xl bg-[#291819] border border-[#632f34] text-[#e06c75] text-xs flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{createModalError}</span>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-[#aba79e] mb-1.5">
                   Nombre o Identificador

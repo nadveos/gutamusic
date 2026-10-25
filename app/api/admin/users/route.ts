@@ -1,22 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pb, ensureServerSuperUserAuth } from '../../../../lib/pocketbase';
+import PocketBase from 'pocketbase';
+import { POCKETBASE_URL, getServerAdminPb } from '../../../../lib/pocketbase';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Helper para validar sesión de SuperUser
+ * Obtiene una instancia autenticada con permisos de superusuario.
+ * Primero intenta validar el token del admin que viene en la cookie de la petición.
+ * Si no es válido o no está, recurre a las credenciales superuser del servidor (PB_EMAIL / PB_PASSWORD).
  */
-async function authenticateSuperUser() {
+async function getAuthenticatedAdminPb(): Promise<PocketBase | null> {
+  // 1. Intentar validar la cookie del cliente en una instancia aislada
   try {
     const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
     const cookieHeader = cookieStore.toString();
     if (cookieHeader) {
-      pb.authStore.loadFromCookie(cookieHeader);
+      const clientPb = new PocketBase(POCKETBASE_URL);
+      clientPb.autoCancellation(false);
+      clientPb.authStore.loadFromCookie(cookieHeader);
+
+      if (
+        clientPb.authStore.isValid &&
+        (clientPb.authStore.isSuperuser ||
+          clientPb.authStore.isAdmin ||
+          clientPb.authStore.record?.collectionName === '_superusers')
+      ) {
+        return clientPb;
+      }
     }
   } catch {}
 
-  return await ensureServerSuperUserAuth();
+  // 2. Si no hay cookie de superuser en la request, usar la instancia autenticada del servidor
+  try {
+    const serverPb = await getServerAdminPb();
+    if (
+      serverPb.authStore.isValid &&
+      (serverPb.authStore.isSuperuser ||
+        serverPb.authStore.isAdmin ||
+        serverPb.authStore.record?.collectionName === '_superusers')
+    ) {
+      return serverPb;
+    }
+  } catch (err) {
+    console.warn('⚠️ Error al obtener server admin pb:', err);
+  }
+
+  return null;
+}
+
+/**
+ * Extrae mensaje legible de error de PocketBase (incluyendo validaciones por campo)
+ */
+function formatPocketBaseError(err: any): string {
+  let message = err?.message || 'Error procesando solicitud';
+  if (err?.data?.data && typeof err.data.data === 'object') {
+    const details = Object.entries(err.data.data)
+      .map(([k, v]: [string, any]) => `${k}: ${v?.message || v?.code || v}`)
+      .join(', ');
+    if (details) message = `${message} (${details})`;
+  } else if (err?.data?.message) {
+    message = err.data.message;
+  }
+  return message;
 }
 
 /**
@@ -25,8 +71,8 @@ async function authenticateSuperUser() {
  */
 export async function GET() {
   try {
-    const isAuthed = await authenticateSuperUser();
-    if (!isAuthed) {
+    const adminPb = await getAuthenticatedAdminPb();
+    if (!adminPb) {
       return NextResponse.json(
         { success: false, error: 'No autorizado como superusuario' },
         { status: 401 }
@@ -36,7 +82,7 @@ export async function GET() {
     // 1. Obtener lista de usuarios
     let usersList: any[] = [];
     try {
-      usersList = await pb.collection('users').getFullList({
+      usersList = await adminPb.collection('users').getFullList({
         sort: '-created',
         requestKey: null,
       });
@@ -48,7 +94,7 @@ export async function GET() {
     // 2. Obtener lista de artistas para cruzar relación
     let artistList: any[] = [];
     try {
-      artistList = await pb.collection('artists').getFullList({
+      artistList = await adminPb.collection('artists').getFullList({
         requestKey: null,
       });
     } catch (aErr: any) {
@@ -101,7 +147,7 @@ export async function GET() {
   } catch (err: any) {
     console.error('❌ Error en GET /api/admin/users:', err);
     return NextResponse.json(
-      { success: false, error: err?.message || 'Error al obtener usuarios' },
+      { success: false, error: formatPocketBaseError(err) },
       { status: 500 }
     );
   }
@@ -113,8 +159,8 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
-    const isAuthed = await authenticateSuperUser();
-    if (!isAuthed) {
+    const adminPb = await getAuthenticatedAdminPb();
+    if (!adminPb) {
       return NextResponse.json(
         { success: false, error: 'No autorizado como superusuario' },
         { status: 401 }
@@ -138,7 +184,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Falta userId' }, { status: 400 });
       }
 
-      const updated = await pb.collection('users').update(userId, {
+      const updated = await adminPb.collection('users').update(userId, {
         verified: Boolean(verified),
       });
 
@@ -157,7 +203,7 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        await pb.collection('users').requestPasswordReset(email.trim().toLowerCase());
+        await adminPb.collection('users').requestPasswordReset(email.trim().toLowerCase());
         return NextResponse.json({
           success: true,
           message: `Correo de restablecimiento enviado exitosamente a ${email}.`,
@@ -165,7 +211,7 @@ export async function POST(req: NextRequest) {
       } catch (resetErr: any) {
         return NextResponse.json({
           success: false,
-          error: resetErr?.message || 'No se pudo enviar el correo de restablecimiento.',
+          error: formatPocketBaseError(resetErr),
         });
       }
     }
@@ -180,7 +226,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      await pb.collection('artists').update(artistId, {
+      await adminPb.collection('artists').update(artistId, {
         owner: userId,
       });
 
@@ -197,7 +243,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Falta artistId' }, { status: 400 });
       }
 
-      await pb.collection('artists').update(artistId, {
+      await adminPb.collection('artists').update(artistId, {
         owner: '',
       });
 
@@ -218,7 +264,33 @@ export async function POST(req: NextRequest) {
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      const newUser = await pb.collection('users').create({
+
+      if (password.length < 8) {
+        return NextResponse.json(
+          { success: false, error: 'La contraseña debe tener al menos 8 caracteres' },
+          { status: 400 }
+        );
+      }
+
+      // Verificar de antemano si el email ya está en uso
+      try {
+        const existing = await adminPb
+          .collection('users')
+          .getFirstListItem(`email = "${cleanEmail}"`);
+        if (existing) {
+          return NextResponse.json(
+            { success: false, error: `Ya existe una cuenta con el correo ${cleanEmail}.` },
+            { status: 400 }
+          );
+        }
+      } catch (checkErr: any) {
+        // 404 es lo esperado si no existe
+        if (checkErr?.status && checkErr.status !== 404) {
+          console.warn('Error al verificar duplicidad de email:', checkErr?.message);
+        }
+      }
+
+      const newUser = await adminPb.collection('users').create({
         email: cleanEmail,
         password,
         passwordConfirm: password,
@@ -228,7 +300,7 @@ export async function POST(req: NextRequest) {
 
       if (artistId) {
         try {
-          await pb.collection('artists').update(artistId, {
+          await adminPb.collection('artists').update(artistId, {
             owner: newUser.id,
           });
         } catch (linkErr) {
@@ -252,16 +324,16 @@ export async function POST(req: NextRequest) {
 
       // Desvincular cualquier artista que tuviese a este usuario como owner
       try {
-        const owned = await pb.collection('artists').getFullList({
+        const owned = await adminPb.collection('artists').getFullList({
           filter: `owner = "${userId}"`,
           requestKey: null,
         });
         for (const art of owned) {
-          await pb.collection('artists').update(art.id, { owner: '' });
+          await adminPb.collection('artists').update(art.id, { owner: '' });
         }
       } catch {}
 
-      await pb.collection('users').delete(userId);
+      await adminPb.collection('users').delete(userId);
 
       return NextResponse.json({
         success: true,
@@ -276,8 +348,8 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     console.error('❌ Error en POST /api/admin/users:', err);
     return NextResponse.json(
-      { success: false, error: err?.message || 'Error procesando solicitud' },
-      { status: 500 }
+      { success: false, error: formatPocketBaseError(err) },
+      { status: err?.status || 500 }
     );
   }
 }
