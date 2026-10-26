@@ -223,13 +223,15 @@ export const BrandAllianceShowcase: React.FC<BrandAllianceShowcaseProps> = ({
           </p>
         </div>
 
-        <Link
-          href="/contacto"
+        <a
+          href="https://www.instagram.com/sesionesrg"
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#e6cca0] hover:text-[#f3f1ec] transition-colors self-start sm:self-auto py-1 px-2.5 rounded-lg bg-[#202228] border border-[#2d2f38] hover:border-[#424552]"
         >
           <span>+ Sumar mi Auspicio / Marca</span>
           <ExternalLink className="w-3 h-3" />
-        </Link>
+        </a>
       </div>
 
       {/* Grid of Alliances / Sponsors */}

@@ -6,14 +6,28 @@ import { usePathname } from 'next/navigation';
 import { Radio, Music2, Calendar, Mic2, BookOpen, Menu, X, Search, Sparkles } from 'lucide-react';
 import { ShareButton } from './ShareButton';
 import { OfficialSocialsBar } from './OfficialSocialsBar';
+import { SearchModal } from './SearchModal';
 import { MusicDataService } from '../lib/api';
 import { DEFAULT_OFFICIAL_SOCIALS } from '../lib/socialUtils';
 import { OfficialSocialsSettings } from '../lib/types';
 
 export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [socials, setSocials] = useState<OfficialSocialsSettings>(DEFAULT_OFFICIAL_SOCIALS);
   const pathname = usePathname();
+
+  // Atajo global Ctrl+K / Cmd+K para abrir el buscador modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -38,7 +52,7 @@ export const Navbar: React.FC = () => {
     { href: '/artistas', label: 'Artistas', icon: Mic2 },
     { href: '/entrevistas', label: 'Entrevistas & Lives', icon: Radio },
     { href: '/efemerides', label: 'Efemérides', icon: BookOpen },
-    { href: '/contacto', label: 'Sumá tu Banda', icon: Sparkles },
+    { href: '/registro', label: 'Sumá tu Banda', icon: Sparkles },
   ];
 
   const monthNames = [
@@ -124,29 +138,42 @@ export const Navbar: React.FC = () => {
                 text="Descubrí la plataforma federal para artistas independientes y emergentes en GUTA MÚSICA."
                 variant="icon"
               />
-              <Link
-                href="/artistas"
-                className="flex items-center gap-1.5 text-xs text-[#aba79e] hover:text-[#f3f1ec] px-3 py-1.5 rounded-lg bg-[#222329] border border-[#31333d] hover:border-[#464957] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(true)}
+                className="flex items-center gap-2 text-xs text-[#aba79e] hover:text-[#f3f1ec] px-3 py-1.5 rounded-lg bg-[#222329] border border-[#31333d] hover:border-[#464957] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] cursor-pointer"
+                aria-label="Abrir buscador rápido (Ctrl+K)"
               >
-                <Search className="w-3.5 h-3.5" aria-hidden="true" />
+                <Search className="w-3.5 h-3.5 text-[#e6cca0]" aria-hidden="true" />
                 <span>Explorar</span>
-              </Link>
+                <kbd className="hidden xl:inline-block text-[10px] text-[#7d7970] font-mono bg-[#18191e] px-1.5 py-0.5 rounded border border-[#2d2f38]">
+                  ⌘K
+                </kbd>
+              </button>
               <Link
                 href="/login"
-                className="text-xs text-[#aba79e] hover:text-[#f3f1ec] px-2.5 py-1.5 rounded-lg hover:bg-[#23252c] transition-colors font-medium"
+                className="text-xs font-bold px-3.5 py-2 rounded-lg bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] shadow-sm shadow-[#d97d64]/20"
               >
                 Acceso Artistas
               </Link>
               <Link
                 href="/registro"
-                className="text-xs font-bold px-3.5 py-2 rounded-lg bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] shadow-sm shadow-[#d97d64]/20"
+                className="text-xs font-bold px-3.5 py-2 rounded-lg border border-[#d97d64] bg-[#222329]/80 hover:bg-[#d97d64]/10 text-[#d97d64] hover:text-[#f3f1ec] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] shadow-sm"
               >
                 + Sumar Mi Banda
               </Link>
             </div>
 
-            {/* Mobile menu button */}
-            <div className="flex md:hidden items-center gap-2">
+            {/* Mobile menu and search buttons */}
+            <div className="flex md:hidden items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(true)}
+                className="p-2 rounded-lg bg-[#222329] text-[#aba79e] hover:text-[#f3f1ec] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] cursor-pointer"
+                aria-label="Abrir buscador"
+              >
+                <Search className="w-4 h-4 text-[#e6cca0]" aria-hidden="true" />
+              </button>
               <ShareButton
                 title="GUTA MÚSICA — Plataforma Federal de Difusión"
                 text="Descubrí la plataforma federal para artistas independientes y emergentes en GUTA MÚSICA."
@@ -197,14 +224,14 @@ export const Navbar: React.FC = () => {
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="w-full flex items-center justify-center text-center font-semibold text-xs py-2 rounded-lg bg-[#222329] border border-[#31333d] text-[#f3f1ec]"
+                  className="w-full flex items-center justify-center text-center font-bold text-xs py-2 rounded-lg bg-[#d97d64] text-[#151618]"
                 >
                   Acceso Artistas
                 </Link>
                 <Link
                   href="/registro"
                   onClick={() => setIsOpen(false)}
-                  className="w-full flex items-center justify-center text-center font-bold text-xs py-2 rounded-lg bg-[#d97d64] text-[#151618]"
+                  className="w-full flex items-center justify-center text-center font-bold text-xs py-2 rounded-lg border border-[#d97d64] text-[#d97d64] bg-[#222329]"
                 >
                   + Registrar Banda
                 </Link>
@@ -213,6 +240,12 @@ export const Navbar: React.FC = () => {
           </nav>
         )}
       </header>
+
+      {/* Buscador Modal Global */}
+      <SearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </>
   );
 };

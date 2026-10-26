@@ -227,8 +227,8 @@ export const AdminPostulacionesClient: React.FC = () => {
       <AdminHeader
         title="Postulaciones / Convocatorias"
         subtitle="Revisión y aprobación de solistas y bandas emergentes postulados desde la web pública"
-        actionText="Ver Formulario Público"
-        actionHref="/contacto"
+        actionText="Ver Registro Público"
+        actionHref="/registro"
       />
 
       {/* Toast Notification */}

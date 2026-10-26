@@ -69,7 +69,7 @@ export const Footer: React.FC = () => {
                 <Link href="/efemerides" className="hover:text-[#e6cca0] transition-colors">Efemérides Musicales Históricas</Link>
               </li>
               <li>
-                <Link href="/contacto" className="text-[#d97d64] hover:text-[#e6cca0] font-semibold transition-colors">+ Sumá tu Banda (Convocatoria)</Link>
+                <Link href="/registro" className="text-[#d97d64] hover:text-[#e6cca0] font-semibold transition-colors">+ Sumá tu Banda (Registro)</Link>
               </li>
             </ul>
           </div>
