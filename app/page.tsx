@@ -4,6 +4,7 @@ import { MusicDataService } from '../lib/api';
 
 export const dynamic = 'force-dynamic';
 import { HeroFeatured } from '../components/HeroFeatured';
+import { VoluntaryContributionBanner } from '../components/VoluntaryContributionBanner';
 import { ArtistCard } from '../components/ArtistCard';
 import { SpotifyPlaylistSection } from '../components/SpotifyPlaylistSection';
 import { VideoEmbedGrid } from '../components/VideoEmbedGrid';
@@ -26,7 +27,10 @@ export default async function HomePage() {
       {/* 1. Hero Principal - Artistas Destacados (Slider) */}
       {featuredArtists.length > 0 && <HeroFeatured artists={featuredArtists} />}
 
-      {/* 2. Playlist Oficial de Spotify - Top Artistas Emergentes by Guta 1 */}
+      {/* 2. Colaboración Voluntaria Comunitaria con Mercado Pago */}
+      <VoluntaryContributionBanner />
+
+      {/* 3. Playlist Oficial de Spotify - Top Artistas Emergentes by Guta 1 */}
       <SpotifyPlaylistSection playlist={spotifyPlaylist} playlistId={playlistId} />
 
       {/* 3. Últimos Artistas Incorporados */}

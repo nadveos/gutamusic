@@ -145,6 +145,37 @@ export function ArtistDashboardClient() {
     url: '',
   });
 
+  // Feature Flag: habilitar compra de destaque semanal (oculto hasta lanzamiento comercial)
+  const ENABLE_WEEKLY_FEATURED_PURCHASE = false;
+  const [featuredLoading, setFeaturedLoading] = useState(false);
+
+  const handleUpgradeToFeatured = async () => {
+    if (!artist?.id) return;
+    setFeaturedLoading(true);
+    try {
+      const res = await fetch('/api/mercadopago/preference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'weekly_featured',
+          artistId: artist.id,
+          artistName: artist.stageName,
+          userEmail: user?.email,
+        }),
+      });
+      const data = await res.json();
+      if (data.initPoint) {
+        window.location.href = data.initPoint;
+      } else {
+        alert(data.error || 'Error al conectar con Mercado Pago');
+      }
+    } catch {
+      alert('Error de conexión al procesar el pago.');
+    } finally {
+      setFeaturedLoading(false);
+    }
+  };
+
   // Cargar sesión y perfil
   useEffect(() => {
     fetchProfile();
@@ -553,6 +584,34 @@ export function ArtistDashboardClient() {
             <span>Ver Ficha Pública</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </Link>
+        </div>
+      )}
+
+      {/* 2.1 Oferta de Destaque Semanal con Mercado Pago (Oculto hasta que actives el flag) */}
+      {ENABLE_WEEKLY_FEATURED_PURCHASE && isApproved && artist && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-[#d97d64]/15 via-[#e6cca0]/10 to-[#1e1f25] border border-[#d97d64]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#d97d64]" />
+              <span className="font-bold text-[#f3f1ec] text-sm">Destacar en Portada Principal (7 días)</span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#d97d64]/20 text-[#d97d64]">HERO PRO</span>
+            </div>
+            <p className="text-xs text-[#aba79e]">
+              Posicioná a tu banda en el slider principal de la Home de GUTA con alcance nacional garantizado.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleUpgradeToFeatured}
+            disabled={featuredLoading}
+            className="px-4 py-2.5 rounded-xl bg-[#009EE3] hover:bg-[#008ac7] text-[#121316] font-bold text-xs flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto shrink-0 shadow-md shadow-[#009EE3]/20"
+          >
+            {featuredLoading ? (
+              <span>Conectando...</span>
+            ) : (
+              <span>Destacar con Mercado Pago</span>
+            )}
+          </button>
         </div>
       )}
 
