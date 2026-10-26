@@ -144,11 +144,28 @@ export const ContactFormClient: React.FC = () => {
         submittedAt: new Date().toISOString(),
       };
 
-      // Try creating in PocketBase collection 'applications'
+      // Try submitting via server API (creates in PB and sends Telegram notification)
+      let savedViaApi = false;
       try {
-        await pb.collection('applications').create(applicationPayload);
-      } catch (pbErr) {
-        console.warn('PocketBase applications collection not available or rule blocked, saving to local application store:', pbErr);
+        const res = await fetch('/api/applications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(applicationPayload),
+        });
+        if (res.ok) {
+          savedViaApi = true;
+        }
+      } catch (apiErr) {
+        console.warn('API submission failed, falling back to direct PB / local:', apiErr);
+      }
+
+      if (!savedViaApi) {
+        // Fallback: direct PocketBase collection 'applications'
+        try {
+          await pb.collection('applications').create(applicationPayload);
+        } catch (pbErr) {
+          console.warn('PocketBase applications collection not available or rule blocked, saving to local application store:', pbErr);
+        }
       }
 
       // Also persist to localStorage for offline admin review demo

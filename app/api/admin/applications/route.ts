@@ -86,85 +86,15 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Faltan parámetros id o status' }, { status: 400 });
     }
 
-    const appRecord = await pb.collection('applications').update(id, { status });
+    const { updateApplicationStatus } = await import('@/lib/services/applicationService');
+    const result = await updateApplicationStatus({
+      id,
+      status,
+      reason,
+      adminName: 'Panel CMS Admin',
+    });
 
-    // Sincronizar con el perfil del artista en artists si existe
-    let artistRecord: any = null;
-    if (appRecord.email || appRecord.stageName) {
-      try {
-        const query = [
-          appRecord.email ? `contactEmail = "${appRecord.email}"` : null,
-          appRecord.stageName ? `stageName = "${appRecord.stageName}"` : null,
-        ].filter(Boolean).join(' || ');
-
-        artistRecord = await pb.collection('artists').getFirstListItem(query);
-        if (artistRecord) {
-          await pb.collection('artists').update(artistRecord.id, {
-            status,
-            adminNotes: reason || '',
-          });
-        }
-      } catch (findErr) {
-        // Si no existe perfil en artists y fue aprobado, crearlo aquí de forma centralizada
-        if (status === 'approved') {
-          const slug = appRecord.stageName
-            .toLowerCase()
-            .trim()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '');
-
-          try {
-            artistRecord = await pb.collection('artists').create({
-              stageName: appRecord.stageName,
-              slug,
-              realName: appRecord.contactName || appRecord.stageName,
-              contactEmail: appRecord.email,
-              genres: appRecord.genres || ['Folklore'],
-              city: appRecord.city || '',
-              province: appRecord.province || '',
-              country: appRecord.country || 'Argentina',
-              shortBio: (appRecord.bio || '').substring(0, 140) + '...',
-              bio: appRecord.bio || '',
-              photoUrl: appRecord.photoUrl || '',
-              bannerUrl: '',
-              quotes: '',
-              featured: false,
-              featuredOfWeek: false,
-              socials: appRecord.socials || {},
-              videos: [],
-              discography: [],
-              agenda: [],
-              press: [],
-              gallery: appRecord.photoUrl ? [appRecord.photoUrl] : [],
-              status: 'approved',
-              createdDate: new Date().toISOString().split('T')[0],
-            });
-          } catch (createErr) {
-            console.error('Error al crear artista desde postulación aprobada:', createErr);
-          }
-        }
-      }
-    }
-
-    // Enviar correo de notificación al artista mediante Resend
-    if (appRecord.email) {
-      try {
-        const { sendArtistStatusEmail } = await import('@/lib/services/emailService');
-        await sendArtistStatusEmail({
-          to: appRecord.email,
-          stageName: appRecord.stageName,
-          status,
-          reason,
-          artistSlug: artistRecord?.slug,
-        });
-      } catch (emailErr) {
-        console.warn('⚠️ No se pudo enviar el correo de notificación al artista:', emailErr);
-      }
-    }
-
-    return NextResponse.json({ success: true, status });
+    return NextResponse.json({ success: true, status, result });
   } catch (err: any) {
     console.error('❌ Error updating application:', err);
     return NextResponse.json(

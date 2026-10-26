@@ -166,9 +166,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Registrar también en applications para que aparezca en el panel de postulaciones
+    // Registrar también en applications para que aparezca en el panel de postulaciones y notifique a Telegram
     try {
-      await pb.collection('applications').create({
+      const appRecord = await pb.collection('applications').create({
         stageName: stageName.trim(),
         contactName: user.name || stageName.trim(),
         email: user.email,
@@ -184,6 +184,9 @@ export async function POST(req: NextRequest) {
         status: 'pending',
         submittedAt: new Date().toISOString(),
       });
+
+      const { notifyNewApplication } = await import('@/lib/services/telegramService');
+      await notifyNewApplication(appRecord as any);
     } catch (appErr) {
       console.warn('Nota: application sync opcional:', appErr);
     }
