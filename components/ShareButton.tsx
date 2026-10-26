@@ -21,6 +21,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [canNativeShare, setCanNativeShare] = useState(false);
+  const [shortUrl, setShortUrl] = useState<string>('');
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Determine actual URL (prop or current window location)
@@ -31,7 +32,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
       return url;
     }
     if (typeof window !== 'undefined') return window.location.href;
-    return 'https://gutamusic.meapp.com.ar';
+    return 'https://guta.meapp.com.ar';
   };
 
   useEffect(() => {
@@ -39,6 +40,30 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
       setCanNativeShare(true);
     }
   }, []);
+
+  // Generar o consultar URL corta nativa de GUTA (/g/[code])
+  useEffect(() => {
+    let isMounted = true;
+    const target = getFullUrl();
+    if (!target) return;
+
+    fetch('/api/shorten', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: target, title }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data.shortUrl) {
+          setShortUrl(data.shortUrl);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [url, title]);
 
   // Handle outside click to close dropdown menu
   useEffect(() => {
@@ -61,12 +86,14 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
     };
   }, [isOpen]);
 
+  const activeUrl = shortUrl || getFullUrl();
+  const shareText = text || title;
+
   const handleShareClick = async () => {
-    const fullUrl = getFullUrl();
     const shareData = {
       title,
-      text: text || title,
-      url: fullUrl,
+      text: shareText,
+      url: activeUrl,
     };
 
     if (canNativeShare && navigator.canShare && navigator.canShare(shareData)) {
@@ -84,13 +111,12 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
   };
 
   const handleCopyLink = async () => {
-    const fullUrl = getFullUrl();
     try {
       if (navigator.clipboard) {
-        await navigator.clipboard.writeText(fullUrl);
+        await navigator.clipboard.writeText(activeUrl);
       } else {
         const textarea = document.createElement('textarea');
-        textarea.value = fullUrl;
+        textarea.value = activeUrl;
         document.body.appendChild(textarea);
         textarea.select();
         document.execCommand('copy');
@@ -103,15 +129,12 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
     }
   };
 
-  const fullUrl = getFullUrl();
-  const shareText = text || title;
-
   const shareLinks = [
     {
       name: 'WhatsApp',
       icon: MessageCircle,
       color: 'text-[#25D366] hover:bg-[#25D366]/10',
-      href: `https://api.whatsapp.com/send?text=${encodeURIComponent(`${shareText} - ${fullUrl}`)}`,
+      href: `https://api.whatsapp.com/send?text=${encodeURIComponent(`${shareText} - ${activeUrl}`)}`,
     },
     {
       name: 'X (Twitter)',
@@ -121,19 +144,19 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
         </svg>
       ),
       color: 'text-[#f3f1ec] hover:bg-white/10',
-      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(fullUrl)}`,
+      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(activeUrl)}`,
     },
     {
       name: 'Facebook',
       icon: Globe,
       color: 'text-[#1877F2] hover:bg-[#1877F2]/10',
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(fullUrl)}`,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(activeUrl)}`,
     },
     {
       name: 'Telegram',
       icon: Send,
       color: 'text-[#229ED9] hover:bg-[#229ED9]/10',
-      href: `https://t.me/share/url?url=${encodeURIComponent(fullUrl)}&text=${encodeURIComponent(shareText)}`,
+      href: `https://t.me/share/url?url=${encodeURIComponent(activeUrl)}&text=${encodeURIComponent(shareText)}`,
     },
   ];
 
@@ -201,8 +224,18 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
             })}
           </div>
 
+          {/* Enlace corto visual */}
+          <div className="px-2.5 py-1.5 bg-[#141518] rounded-xl border border-[#292a34] my-1.5 flex items-center justify-between text-[11px] text-[#aba79e]">
+            <span className="truncate font-mono text-[#e6cca0]">
+              {activeUrl.replace(/^https?:\/\//, '')}
+            </span>
+            <span className="text-[9px] text-[#93a887] uppercase tracking-wider font-bold ml-1 flex-shrink-0 bg-[#93a887]/10 px-1.5 py-0.5 rounded">
+              Corto
+            </span>
+          </div>
+
           {/* Copy to Clipboard */}
-          <div className="pt-2 border-t border-[#2d2f38] mt-2">
+          <div className="pt-2 border-t border-[#2d2f38] mt-1.5">
             <button
               type="button"
               onClick={handleCopyLink}
