@@ -222,13 +222,21 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
                       <span className="text-[#aba79e]">{artist.discography.length} lanzamientos</span>
                     </td>
                     <td className="py-3 px-3">
-                      {artist.featured ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-sand-soft">
-                          Destacado
-                        </span>
-                      ) : (
-                        <span className="text-[#78746c]">Estándar</span>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {artist.featured && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#d97d64]/20 border border-[#d97d64]/40 text-[#d97d64] inline-block self-start">
+                            ⭐ Consagrado (Fijo)
+                          </span>
+                        )}
+                        {artist.featuredOfWeek && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#e6cca0]/20 border border-[#e6cca0]/40 text-[#e6cca0] inline-block self-start">
+                            ⏱️ Semanal (Auto 7d)
+                          </span>
+                        )}
+                        {!artist.featured && !artist.featuredOfWeek && (
+                          <span className="text-[#78746c] text-[11px]">Estándar</span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">

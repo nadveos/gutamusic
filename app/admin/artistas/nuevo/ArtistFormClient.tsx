@@ -47,6 +47,7 @@ export const ArtistFormClient: React.FC = () => {
     quotes: '',
     featured: false,
     featuredOfWeek: false,
+    featuredOfWeekDate: '',
     spotify: '',
     youtube: '',
     instagram: '',
@@ -196,6 +197,7 @@ export const ArtistFormClient: React.FC = () => {
             quotes: record.quotes || '',
             featured: Boolean(record.featured),
             featuredOfWeek: Boolean(record.featuredOfWeek),
+            featuredOfWeekDate: record.featuredOfWeekDate || '',
             spotify: record.socials?.spotify || '',
             youtube: record.socials?.youtube || '',
             instagram: record.socials?.instagram || '',
@@ -450,6 +452,9 @@ export const ArtistFormClient: React.FC = () => {
       quotes: formData.quotes.trim(),
       featured: formData.featured,
       featuredOfWeek: formData.featuredOfWeek,
+      featuredOfWeekDate: formData.featuredOfWeek
+        ? (formData.featuredOfWeekDate || new Date().toISOString().split('T')[0])
+        : '',
       socials: {
         spotify: formData.spotify.trim(),
         youtube: formData.youtube.trim(),
@@ -677,26 +682,48 @@ export const ArtistFormClient: React.FC = () => {
         </div>
 
         {/* Destacados */}
-        <div className="flex flex-wrap gap-4 pt-1 border-t border-[#2a2c35] text-xs">
-          <label className="flex items-center gap-2 cursor-pointer text-[#aba79e] hover:text-[#f3f1ec]">
-            <input
-              type="checkbox"
-              checked={formData.featured}
-              onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-              className="rounded accent-[#d97d64]"
-            />
-            <span>Marcar como Artista Destacado</span>
-          </label>
+        <div className="flex flex-col gap-2 pt-2 border-t border-[#2a2c35] text-xs">
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 cursor-pointer text-[#aba79e] hover:text-[#f3f1ec]">
+              <input
+                type="checkbox"
+                checked={formData.featured}
+                onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                className="rounded accent-[#d97d64]"
+              />
+              <span className="font-semibold">Artista Destacado (Consagrado / Fijo permanente)</span>
+            </label>
 
-          <label className="flex items-center gap-2 cursor-pointer text-[#aba79e] hover:text-[#f3f1ec]">
-            <input
-              type="checkbox"
-              checked={formData.featuredOfWeek}
-              onChange={(e) => setFormData({ ...formData, featuredOfWeek: e.target.checked })}
-              className="rounded accent-[#d97d64]"
-            />
-            <span>Artista de la Semana (Home Hero)</span>
-          </label>
+            <label className="flex items-center gap-2 cursor-pointer text-[#aba79e] hover:text-[#f3f1ec]">
+              <input
+                type="checkbox"
+                checked={formData.featuredOfWeek}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setFormData({
+                    ...formData,
+                    featuredOfWeek: checked,
+                    featuredOfWeekDate: checked
+                      ? (formData.featuredOfWeekDate || new Date().toISOString().split('T')[0])
+                      : '',
+                  });
+                }}
+                className="rounded accent-[#d97d64]"
+              />
+              <span className="font-semibold text-[#e6cca0]">Artista de la Semana (Hero Home - 7 días automáticos)</span>
+            </label>
+          </div>
+
+          {formData.featuredOfWeek && (
+            <div className="p-2.5 rounded-xl bg-[#e6cca0]/10 border border-[#e6cca0]/30 text-[#e6cca0] text-[11px] flex items-center justify-between">
+              <span>
+                ⏱️ <b>Plan Semanal Activo:</b> Marcado el <b>{formData.featuredOfWeekDate || 'Hoy'}</b>. El sistema lo desmarcará automáticamente a los 7 días de vigencia.
+              </span>
+              <span className="font-mono text-[10px] bg-[#1a1b20] px-2 py-0.5 rounded border border-[#e6cca0]/20">
+                Rotación Auto 7d
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Ubicación */}

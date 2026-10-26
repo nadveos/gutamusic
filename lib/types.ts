@@ -149,6 +149,7 @@ export interface Artist {
   bannerUrl: string;
   featured: boolean;
   featuredOfWeek?: boolean;
+  featuredOfWeekDate?: string;
   socials: SocialLinks;
   videos: VideoItem[];
   discography: DiscographyItem[];

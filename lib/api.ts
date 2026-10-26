@@ -60,6 +60,7 @@ export class MusicDataService {
           bannerUrl: r.bannerUrl || '',
           featured: Boolean(r.featured),
           featuredOfWeek: Boolean(r.featuredOfWeek),
+          featuredOfWeekDate: r.featuredOfWeekDate || '',
           socials: r.socials || {},
           videos: r.videos || [],
           discography: r.discography || [],
@@ -275,7 +276,24 @@ export class MusicDataService {
 
       if (records && records.length > 0) {
         const orderedRecords = [...records].reverse();
-        let featuredRecords = orderedRecords.filter(
+
+        // Verificar expiración de artistas de la semana
+        const { getWeeklyFeaturedStatus } = await import('./services/featuredRotationService');
+        const validRecords = orderedRecords.map((r) => {
+          if (r.featuredOfWeek) {
+            const status = getWeeklyFeaturedStatus(r.featuredOfWeekDate);
+            if (status.isExpired) {
+              // Desmarcar en PocketBase en segundo plano
+              pb.collection('artists')
+                .update(r.id, { featuredOfWeek: false, featuredOfWeekDate: '' })
+                .catch(() => {});
+              return { ...r, featuredOfWeek: false };
+            }
+          }
+          return r;
+        });
+
+        let featuredRecords = validRecords.filter(
           (r) => Boolean(r.featuredOfWeek) || Boolean(r.featured)
         );
 
