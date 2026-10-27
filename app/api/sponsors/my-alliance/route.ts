@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
         imageUrl: record.imageUrl || '',
         phone: record.phone || '',
         whatsapp: record.whatsapp || '',
+        instagramUrl: record.instagramUrl || '',
         websiteUrl: record.websiteUrl || '',
         email: record.email || '',
         sector: record.sector || 'global_footer',
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, description, imageUrl, phone, whatsapp, websiteUrl, category } = body;
+    const { id, description, imageUrl, phone, whatsapp, instagramUrl, websiteUrl, category } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'Falta ID de la alianza' }, { status: 400 });
@@ -83,6 +84,7 @@ export async function PUT(req: NextRequest) {
       imageUrl: imageUrl ?? undefined,
       phone: phone ?? undefined,
       whatsapp: whatsapp ?? undefined,
+      instagramUrl: instagramUrl ?? undefined,
       websiteUrl: websiteUrl ?? undefined,
       category: category ?? undefined,
     });

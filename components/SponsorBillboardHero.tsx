@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ExternalLink,
 } from 'lucide-react';
+import { InstagramIcon } from '../lib/socialUtils';
 
 interface SponsorBillboardHeroProps {
   initialSponsors?: AlliancePartner[];
@@ -100,7 +101,19 @@ export const SponsorBillboardHero: React.FC<SponsorBillboardHeroProps> = ({ init
     return `https://wa.me/${targetNumber}?text=${msg}`;
   };
 
+  const getCleanInstagramUrl = (rawIg?: string) => {
+    if (!rawIg) return null;
+    const clean = rawIg.trim();
+    if (!clean) return null;
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      return clean;
+    }
+    const handle = clean.replace(/^@/, '');
+    return `https://www.instagram.com/${handle}`;
+  };
+
   const waUrl = getCleanWhatsappUrl(current.whatsapp, current.phone, current.name);
+  const igUrl = getCleanInstagramUrl(current.instagramUrl);
   const rawPhone = current.phone ? `tel:${current.phone.replace(/[^\d+]/g, '')}` : null;
 
   // Si tiene un banner horizontal expreso o no
@@ -157,15 +170,27 @@ export const SponsorBillboardHero: React.FC<SponsorBillboardHeroProps> = ({ init
                     <span>Contactar por WhatsApp</span>
                   </a>
                 )}
+                {igUrl && (
+                  <a
+                    href={igUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#242732]/90 hover:bg-[#E1306C]/20 text-[#f3f1ec] hover:text-[#E1306C] border border-[#3f4354] hover:border-[#E1306C]/50 font-semibold text-xs transition-colors"
+                  >
+                    <InstagramIcon className="w-3.5 h-3.5 text-[#E1306C]" />
+                    <span>Instagram</span>
+                    <ExternalLink className="w-3 h-3 text-[#aba79e]" />
+                  </a>
+                )}
                 {current.websiteUrl && (
                   <a
-                    href={current.websiteUrl}
+                    href={current.websiteUrl.startsWith('http') ? current.websiteUrl : `https://${current.websiteUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#242732]/90 hover:bg-[#313543] text-[#f3f1ec] border border-[#3f4354] font-semibold text-xs transition-colors"
                   >
                     <Globe className="w-3.5 h-3.5 text-[#e6cca0]" />
-                    <span>Sitio Web / Redes</span>
+                    <span>Sitio Web</span>
                     <ExternalLink className="w-3 h-3 text-[#aba79e]" />
                   </a>
                 )}
@@ -230,9 +255,22 @@ export const SponsorBillboardHero: React.FC<SponsorBillboardHeroProps> = ({ init
                   </a>
                 )}
 
+                {igUrl && (
+                  <a
+                    href={igUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#252732] hover:bg-[#E1306C]/20 text-[#f3f1ec] hover:text-[#E1306C] border border-[#3b3e4e] hover:border-[#E1306C]/50 font-bold text-xs transition-colors"
+                  >
+                    <InstagramIcon className="w-4 h-4 text-[#E1306C]" />
+                    <span>Instagram</span>
+                    <ExternalLink className="w-3 h-3 text-[#aba79e]" />
+                  </a>
+                )}
+
                 {current.websiteUrl && (
                   <a
-                    href={current.websiteUrl}
+                    href={current.websiteUrl.startsWith('http') ? current.websiteUrl : `https://${current.websiteUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#252732] hover:bg-[#313543] text-[#f3f1ec] border border-[#3b3e4e] hover:border-[#e6cca0]/50 font-bold text-xs transition-colors"

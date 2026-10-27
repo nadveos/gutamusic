@@ -30,6 +30,7 @@ import {
   ArrowUpDown,
   Search,
 } from 'lucide-react';
+import { InstagramIcon } from '../../../lib/socialUtils';
 
 interface AdminAlliancesClientProps {
   initialAlliances: AlliancePartner[];
@@ -103,6 +104,7 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
     imageUrl: '',
     phone: '',
     whatsapp: '',
+    instagramUrl: '',
     websiteUrl: '',
     email: '',
     sector: 'global_footer', // Default to RECOMMENDED sector
@@ -118,6 +120,7 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
       imageUrl: '',
       phone: '',
       whatsapp: '',
+      instagramUrl: '',
       websiteUrl: '',
       email: '',
       sector: 'global_footer',
@@ -137,6 +140,7 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
       imageUrl: item.imageUrl || '',
       phone: item.phone || '',
       whatsapp: item.whatsapp || '',
+      instagramUrl: item.instagramUrl || '',
       websiteUrl: item.websiteUrl || '',
       email: item.email || '',
       sector: item.sector || 'global_footer',
@@ -169,6 +173,7 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
       imageUrl: formData.imageUrl.trim(),
       phone: formData.phone?.trim() || '',
       whatsapp: formData.whatsapp?.trim() || '',
+      instagramUrl: formData.instagramUrl?.trim() || '',
       websiteUrl: formData.websiteUrl?.trim() || '',
       email: formData.email?.trim() || '',
       sector: formData.sector,
@@ -381,7 +386,8 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
     imageUrl: formData.imageUrl || 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=800&auto=format&fit=crop',
     phone: formData.phone || '+54 9 351 123-4567',
     whatsapp: formData.whatsapp || '5493511234567',
-    websiteUrl: formData.websiteUrl || 'https://instagram.com',
+    instagramUrl: formData.instagramUrl || 'https://instagram.com/gutamusica',
+    websiteUrl: formData.websiteUrl || 'https://gutamusic.meapp.com.ar',
     sector: formData.sector,
     active: formData.active,
   };
@@ -596,35 +602,52 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
                 </div>
               </div>
 
-              {/* Web Link & Slogan */}
+              {/* Instagram & Web Link */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-[#aba79e] flex items-center gap-1">
-                    <Globe className="w-3.5 h-3.5 text-[#a7b8c8]" />
-                    <span>Sitio Web / Instagram (Opcional)</span>
+                    <InstagramIcon className="w-3.5 h-3.5 text-[#E1306C]" />
+                    <span>Instagram (Opcional)</span>
                   </label>
                   <input
-                    type="url"
-                    value={formData.websiteUrl}
-                    onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
-                    placeholder="https://instagram.com/marca"
+                    type="text"
+                    value={formData.instagramUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, instagramUrl: e.target.value })}
+                    placeholder="@marca o https://instagram.com/marca"
                     className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
                   />
+                  <p className="text-[9px] text-[#78746c]">Podés ingresar el @usuario o el enlace directo.</p>
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-[#aba79e] flex items-center gap-1">
-                    <ArrowUpDown className="w-3.5 h-3.5 text-[#e6cca0]" />
-                    <span>Prioridad de Orden</span>
+                    <Globe className="w-3.5 h-3.5 text-[#a7b8c8]" />
+                    <span>Sitio Web / Tienda (Opcional)</span>
                   </label>
                   <input
-                    type="number"
-                    min="1"
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value, 10) || 1 })}
+                    type="url"
+                    value={formData.websiteUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
+                    placeholder="https://tumarca.com.ar"
                     className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
                   />
+                  <p className="text-[9px] text-[#78746c]">Enlace a tienda o catálogo web oficial.</p>
                 </div>
+              </div>
+
+              {/* Prioridad de Orden */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-[#aba79e] flex items-center gap-1">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-[#e6cca0]" />
+                  <span>Prioridad de Orden</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.priority}
+                  onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value, 10) || 1 })}
+                  className="w-full sm:w-1/2 px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                />
               </div>
 
               {/* Description */}

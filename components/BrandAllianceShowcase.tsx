@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { AlliancePartner, AllianceSector } from '../lib/types';
 import { MusicDataService } from '../lib/api';
 import { Phone, MessageCircle, Globe, Sparkles, ExternalLink, ShieldCheck } from 'lucide-react';
+import { InstagramIcon } from '../lib/socialUtils';
 
 interface BrandAllianceShowcaseProps {
   sector?: AllianceSector;
@@ -29,7 +30,19 @@ export const AllianceCard: React.FC<{ item: AlliancePartner; isPreview?: boolean
     return `https://wa.me/${targetNumber}?text=${msg}`;
   };
 
+  const getCleanInstagramUrl = (rawIg?: string) => {
+    if (!rawIg) return null;
+    const clean = rawIg.trim();
+    if (!clean) return null;
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      return clean;
+    }
+    const handle = clean.replace(/^@/, '');
+    return `https://www.instagram.com/${handle}`;
+  };
+
   const waUrl = getCleanWhatsappUrl(item.whatsapp, item.phone, item.name);
+  const igUrl = getCleanInstagramUrl(item.instagramUrl);
   const rawPhone = item.phone ? `tel:${item.phone.replace(/[^\d+]/g, '')}` : null;
   const isPremium = item.sector === 'all_sections';
   const isHome = item.sector === 'home_mid';
@@ -105,15 +118,45 @@ export const AllianceCard: React.FC<{ item: AlliancePartner; isPreview?: boolean
         </div>
       </div>
 
-      {/* Action Buttons: WhatsApp, Call, Web Link */}
+      {/* Action Buttons: (Left: Instagram & Web, Right: WhatsApp / Phone) */}
       <div className="pt-3 mt-3 border-t border-[#262832] flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 overflow-hidden">
+        {/* Left: Social & Web Presence */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {igUrl && (
+            <a
+              href={igUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-lg bg-[#202228] hover:bg-[#E1306C]/15 text-[#aba79e] hover:text-[#E1306C] border border-[#2d2f38] hover:border-[#E1306C]/40 transition-colors flex-shrink-0"
+              title={`Instagram de ${item.name}`}
+              aria-label={`Instagram de ${item.name}`}
+            >
+              <InstagramIcon className="w-3.5 h-3.5" />
+            </a>
+          )}
+
+          {item.websiteUrl && (
+            <a
+              href={item.websiteUrl.startsWith('http') ? item.websiteUrl : `https://${item.websiteUrl}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-lg bg-[#202228] hover:bg-[#282b35] text-[#aba79e] hover:text-[#f3f1ec] border border-[#2d2f38] transition-colors flex-shrink-0"
+              title={`Sitio web de ${item.name}`}
+              aria-label={`Sitio web de ${item.name}`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+            </a>
+          )}
+        </div>
+
+        {/* Right: WhatsApp / Call Action Button */}
+        <div className="flex items-center gap-1.5 overflow-hidden ml-auto">
           {waUrl && (
             <a
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#242730] hover:bg-[#25D366]/20 text-[#a0d29f] hover:text-[#5ce487] border border-[#343846] hover:border-[#25D366]/50 text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#242730] hover:bg-[#25D366]/20 text-[#a0d29f] hover:text-[#5ce487] border border-[#343846] hover:border-[#25D366]/50 text-xs font-semibold transition-colors"
               title="Contactar por WhatsApp"
               aria-label={`WhatsApp para ${item.name}`}
             >
@@ -134,19 +177,6 @@ export const AllianceCard: React.FC<{ item: AlliancePartner; isPreview?: boolean
             </a>
           )}
         </div>
-
-        {item.websiteUrl && (
-          <a
-            href={item.websiteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 rounded-lg bg-[#202228] hover:bg-[#282b35] text-[#aba79e] hover:text-[#f3f1ec] border border-[#2d2f38] transition-colors flex-shrink-0"
-            title="Visitar sitio web / red social"
-            aria-label={`Sitio web de ${item.name}`}
-          >
-            <Globe className="w-3.5 h-3.5" />
-          </a>
-        )}
       </div>
 
       {/* Aviso editorial discreto en margen inferior derecho */}

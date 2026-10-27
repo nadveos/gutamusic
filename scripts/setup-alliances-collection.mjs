@@ -80,6 +80,11 @@ async function setupAlliancesCollection() {
             required: false,
           },
           {
+            name: 'instagramUrl',
+            type: 'text',
+            required: false,
+          },
+          {
             name: 'websiteUrl',
             type: 'text',
             required: false,

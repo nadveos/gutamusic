@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Store,
 } from 'lucide-react';
+import { InstagramIcon } from '@/lib/socialUtils';
 
 const CATEGORY_SUGGESTIONS = [
   'Luthier & Instrumentos',
@@ -54,6 +55,7 @@ export const SumarAuspicioClient: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [phone, setPhone] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
 
   // Cuenta de Usuario (Auspiciante)
@@ -77,6 +79,7 @@ export const SumarAuspicioClient: React.FC = () => {
     imageUrl: imageUrl.trim() || '',
     phone: phone.trim() || '',
     whatsapp: whatsapp.trim() || phone.trim() || '',
+    instagramUrl: instagramUrl.trim() || '',
     websiteUrl: websiteUrl.trim() || '',
     sector: selectedSector,
     active: true,
@@ -96,8 +99,8 @@ export const SumarAuspicioClient: React.FC = () => {
       return;
     }
 
-    if (!whatsapp.trim() && !phone.trim() && !websiteUrl.trim()) {
-      setErrorMessage('Ingresá al menos una vía de contacto comercial (WhatsApp, Teléfono o Sitio Web).');
+    if (!whatsapp.trim() && !phone.trim() && !websiteUrl.trim() && !instagramUrl.trim()) {
+      setErrorMessage('Ingresá al menos una vía de contacto comercial (WhatsApp, Instagram, Teléfono o Sitio Web).');
       return;
     }
 
@@ -120,6 +123,7 @@ export const SumarAuspicioClient: React.FC = () => {
           imageUrl: imageUrl.trim(),
           phone: phone.trim(),
           whatsapp: whatsapp.trim(),
+          instagramUrl: instagramUrl.trim(),
           websiteUrl: websiteUrl.trim(),
           email: email.trim().toLowerCase(),
           password,
@@ -367,19 +371,37 @@ export const SumarAuspicioClient: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-[#aba79e] mb-1">
-                    Sitio Web o Instagram
-                  </label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-3 w-4 h-4 text-[#aba79e]" />
-                    <input
-                      type="url"
-                      value={websiteUrl}
-                      onChange={(e) => setWebsiteUrl(e.target.value)}
-                      placeholder="https://instagram.com/tu_marca"
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#17181d] border border-[#2c2e39] text-sm text-[#f3f1ec] placeholder-[#605d56] focus:outline-none focus:border-[#e6cca0]"
-                    />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#aba79e] mb-1">
+                      Instagram (Opcional)
+                    </label>
+                    <div className="relative">
+                      <InstagramIcon className="absolute left-3 top-3 w-4 h-4 text-[#E1306C]" />
+                      <input
+                        type="text"
+                        value={instagramUrl}
+                        onChange={(e) => setInstagramUrl(e.target.value)}
+                        placeholder="@tu_marca o link"
+                        className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#17181d] border border-[#2c2e39] text-sm text-[#f3f1ec] placeholder-[#605d56] focus:outline-none focus:border-[#E1306C]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#aba79e] mb-1">
+                      Sitio Web / Tienda (Opcional)
+                    </label>
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-3 w-4 h-4 text-[#aba79e]" />
+                      <input
+                        type="url"
+                        value={websiteUrl}
+                        onChange={(e) => setWebsiteUrl(e.target.value)}
+                        placeholder="https://tumarca.com.ar"
+                        className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#17181d] border border-[#2c2e39] text-sm text-[#f3f1ec] placeholder-[#605d56] focus:outline-none focus:border-[#e6cca0]"
+                      />
+                    </div>
                   </div>
                 </div>
 

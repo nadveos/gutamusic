@@ -217,7 +217,8 @@ export interface AlliancePartner {
   bannerUrl?: string;      // URL de banner horizontal panorámico de alta resolución
   phone?: string;          // Teléfono para llamadas directas
   whatsapp?: string;       // Número limpio para enlace wa.me directo
-  websiteUrl?: string;     // Sitio web o red social
+  instagramUrl?: string;   // Perfil de Instagram (@handle o link completo)
+  websiteUrl?: string;     // Sitio web o tienda online
   email?: string;          // Email de contacto
   sector: AllianceSector;  // Sector asignado en la web
   active: boolean;         // Estado de publicación (activo/pausado)

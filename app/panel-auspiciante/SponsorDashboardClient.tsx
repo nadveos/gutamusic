@@ -23,6 +23,7 @@ import {
   LogOut,
   Store,
 } from 'lucide-react';
+import { InstagramIcon } from '@/lib/socialUtils';
 
 export const SponsorDashboardClient: React.FC = () => {
   const searchParams = useSearchParams();
@@ -43,6 +44,7 @@ export const SponsorDashboardClient: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [phone, setPhone] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [category, setCategory] = useState('');
 
@@ -74,6 +76,7 @@ export const SponsorDashboardClient: React.FC = () => {
           setImageUrl(data.alliance.imageUrl || '');
           setWhatsapp(data.alliance.whatsapp || '');
           setPhone(data.alliance.phone || '');
+          setInstagramUrl(data.alliance.instagramUrl || '');
           setWebsiteUrl(data.alliance.websiteUrl || '');
           setCategory(data.alliance.category || '');
         }
@@ -106,6 +109,7 @@ export const SponsorDashboardClient: React.FC = () => {
           imageUrl,
           whatsapp,
           phone,
+          instagramUrl,
           websiteUrl,
           category,
         }),
@@ -119,6 +123,7 @@ export const SponsorDashboardClient: React.FC = () => {
           imageUrl,
           whatsapp,
           phone,
+          instagramUrl,
           websiteUrl,
           category,
         }));
@@ -404,17 +409,33 @@ export const SponsorDashboardClient: React.FC = () => {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-[#aba79e] mb-1">
-                        Sitio Web o Perfil de Instagram
-                      </label>
-                      <input
-                        type="url"
-                        value={websiteUrl}
-                        onChange={(e) => setWebsiteUrl(e.target.value)}
-                        placeholder="https://instagram.com/..."
-                        className="w-full px-3 py-2 rounded-xl bg-[#111215] border border-[#2b2d38] text-xs text-[#f3f1ec] focus:outline-none focus:border-[#e6cca0]"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold text-[#aba79e] mb-1 flex items-center gap-1.5">
+                          <InstagramIcon className="w-3.5 h-3.5 text-[#E1306C]" />
+                          <span>Instagram (Opcional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={instagramUrl}
+                          onChange={(e) => setInstagramUrl(e.target.value)}
+                          placeholder="@tu_marca o link"
+                          className="w-full px-3 py-2 rounded-xl bg-[#111215] border border-[#2b2d38] text-xs text-[#f3f1ec] focus:outline-none focus:border-[#E1306C]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#aba79e] mb-1">
+                          Sitio Web / Tienda (Opcional)
+                        </label>
+                        <input
+                          type="url"
+                          value={websiteUrl}
+                          onChange={(e) => setWebsiteUrl(e.target.value)}
+                          placeholder="https://tumarca.com.ar"
+                          className="w-full px-3 py-2 rounded-xl bg-[#111215] border border-[#2b2d38] text-xs text-[#f3f1ec] focus:outline-none focus:border-[#e6cca0]"
+                        />
+                      </div>
                     </div>
 
                     <div>
@@ -461,6 +482,7 @@ export const SponsorDashboardClient: React.FC = () => {
                       imageUrl,
                       whatsapp,
                       phone,
+                      instagramUrl,
                       websiteUrl,
                       category,
                     }}
