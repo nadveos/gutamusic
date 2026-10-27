@@ -21,7 +21,7 @@ export const SpotifyPlaylistSection: React.FC<SpotifyPlaylistSectionProps> = ({
 }) => {
   const currentId = playlist?.id || playlistId;
   const name = playlist?.name || 'Top Artistas Emergentes by Guta 1';
-  const description = playlist?.description || 'Curaduría oficial de GUTA MÚSICA con las mejores canciones y lanzamientos de artistas independientes de Argentina y Latinoamérica.';
+  const description = playlist?.description || 'Playlist oficial de GUTA MÚSICA';
   const spotifyUrl = playlist?.externalUrl || `https://open.spotify.com/playlist/${currentId}`;
   const ownerName = playlist?.ownerName || 'Guta Música';
   const imageUrl = playlist?.imageUrl;
@@ -84,7 +84,7 @@ export const SpotifyPlaylistSection: React.FC<SpotifyPlaylistSectionProps> = ({
               <div className="space-y-1.5 min-w-0">
                 <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#1DB954] bg-[#1DB954]/10 px-2 py-0.5 rounded-full border border-[#1DB954]/25">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954] animate-ping" />
-                  <span>Curaduría Activa</span>
+                  <span>Playlist Activa</span>
                 </div>
                 <h3 className="text-base sm:text-lg font-bold text-[#f3f1ec] leading-snug line-clamp-2">
                   {name}
