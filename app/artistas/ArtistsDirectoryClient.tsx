@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Artist, GenreType } from '../../lib/types';
 import { ArtistCard } from '../../components/ArtistCard';
+import { BrandAllianceShowcase } from '../../components/BrandAllianceShowcase';
 import { Search, Mic2, MapPin } from 'lucide-react';
 
 interface ArtistsDirectoryClientProps {
@@ -161,6 +162,14 @@ export const ArtistsDirectoryClient: React.FC<ArtistsDirectoryClientProps> = ({
           </p>
         </div>
       )}
+
+      {/* Auspicios específicos del catálogo de artistas (artistas_catalog & all_sections) */}
+      <BrandAllianceShowcase
+        sector="artistas_catalog"
+        title="Servicios, Equipamiento & Aliados para Músicos"
+        subtitle="Luthiers, estudios de grabación, salas de ensayo y marcas oficiales asociadas"
+        compact
+      />
     </div>
   );
 };

@@ -9,6 +9,7 @@ import { VoluntaryContributionBanner } from '../components/VoluntaryContribution
 import { SpotifyPlaylistSection } from '../components/SpotifyPlaylistSection';
 import { VideoEmbedGrid } from '../components/VideoEmbedGrid';
 import { FeaturedInterviewCard } from '../components/FeaturedInterviewCard';
+import { BrandAllianceShowcase } from '../components/BrandAllianceShowcase';
 import { getSpotifyPlaylist } from '../lib/services/spotifyService';
 
 export default async function HomePage() {
@@ -40,10 +41,17 @@ export default async function HomePage() {
       {/* 3. Colaboración Voluntaria Comunitaria con Mercado Pago */}
       <VoluntaryContributionBanner />
 
-      {/* 4. Playlist Oficial de Spotify - Top Artistas Emergentes by Guta 1 */}
+      {/* 4. Auspicios y Alianzas Oficiales en Portada (home_mid & all_sections) */}
+      <BrandAllianceShowcase
+        sector="home_mid"
+        title="Empresas & Marcas Patrocinadoras"
+        subtitle="Acompañan activamente el desarrollo y difusión del movimiento musical federal"
+      />
+
+      {/* 5. Playlist Oficial de Spotify - Top Artistas Emergentes by Guta 1 */}
       <SpotifyPlaylistSection playlist={spotifyPlaylist} playlistId={playlistId} />
 
-      {/* 4. Entrevista Destacada & Sesión Exclusiva */}
+      {/* 6. Entrevista Destacada & Sesión Exclusiva */}
       {featuredInterview && <FeaturedInterviewCard interview={featuredInterview} />}
 
       {/* 5. Últimos Videos de YouTube, TikTok y Facebook */}

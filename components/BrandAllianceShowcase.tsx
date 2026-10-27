@@ -31,12 +31,36 @@ export const AllianceCard: React.FC<{ item: AlliancePartner; isPreview?: boolean
 
   const waUrl = getCleanWhatsappUrl(item.whatsapp, item.phone, item.name);
   const rawPhone = item.phone ? `tel:${item.phone.replace(/[^\d+]/g, '')}` : null;
+  const isPremium = item.sector === 'all_sections';
+  const isHome = item.sector === 'home_mid';
 
   return (
-    <div className="group rounded-2xl bg-[#1a1b21] border border-[#2c2e39] hover:border-[#d97d64]/60 transition-all duration-200 p-4 flex flex-col justify-between hover:shadow-xl hover:shadow-[#121316]/50">
-      <div className="space-y-3">
+    <div
+      className={`group rounded-2xl transition-all duration-300 p-4 flex flex-col justify-between hover:shadow-2xl relative ${
+        isPremium
+          ? 'bg-gradient-to-b from-[#252834] via-[#1b1c23] to-[#131418] border-2 border-[#e6cca0] hover:border-[#d97d64] shadow-xl shadow-[#e6cca0]/10 ring-1 ring-[#e6cca0]/40'
+          : isHome
+          ? 'bg-[#1b1c24] border border-[#d97d64]/60 hover:border-[#d97d64] shadow-lg shadow-[#121316]/50'
+          : 'bg-[#1a1b21] border border-[#2c2e39] hover:border-[#d97d64]/60 hover:shadow-xl hover:shadow-[#121316]/50'
+      }`}
+    >
+      {/* Insignia VIP de Patrocinador Oficial */}
+      {isPremium && (
+        <div className="absolute -top-3 left-4 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-gradient-to-r from-[#e6cca0] via-[#d97d64] to-[#e6cca0] text-[#121316] shadow-md flex items-center gap-1 z-10">
+          <Sparkles className="w-3 h-3 fill-current text-[#121316]" />
+          <span>Sponsor Oficial Premium</span>
+        </div>
+      )}
+
+      <div className="space-y-3 pt-1">
         {/* Adaptive Image Container: handles ANY aspect ratio (wide, square, tall) with clean framing */}
-        <div className="relative w-full h-24 sm:h-28 rounded-xl bg-[#111215] border border-[#252731] p-3 flex items-center justify-center overflow-hidden transition-colors group-hover:border-[#383b48]">
+        <div
+          className={`relative w-full h-24 sm:h-28 rounded-xl border p-3 flex items-center justify-center overflow-hidden transition-colors ${
+            isPremium
+              ? 'bg-[#0f1013] border-[#e6cca0]/30 group-hover:border-[#e6cca0]'
+              : 'bg-[#111215] border-[#252731] group-hover:border-[#383b48]'
+          }`}
+        >
           {item.imageUrl ? (
             <div className="relative w-full h-full flex items-center justify-center">
               <Image
@@ -49,14 +73,20 @@ export const AllianceCard: React.FC<{ item: AlliancePartner; isPreview?: boolean
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-[#78746c] text-center p-2">
-              <ShieldCheck className="w-5 h-5 text-[#a09c93] mb-1" />
+              <ShieldCheck className={`w-5 h-5 mb-1 ${isPremium ? 'text-[#e6cca0]' : 'text-[#a09c93]'}`} />
               <span className="text-[11px] font-semibold text-[#aba79e]">{item.name}</span>
             </div>
           )}
 
           {/* Category Pill Overlaid at Top Right */}
           {item.category && (
-            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#1c1d24]/90 backdrop-blur-xs text-[#e6cca0] border border-[#333644] max-w-[70%] truncate">
+            <span
+              className={`absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-semibold max-w-[70%] truncate ${
+                isPremium
+                  ? 'bg-[#121316]/95 text-[#e6cca0] border border-[#e6cca0]/50'
+                  : 'bg-[#1c1d24]/90 backdrop-blur-xs text-[#e6cca0] border border-[#333644]'
+              }`}
+            >
               {item.category}
             </span>
           )}
@@ -64,9 +94,17 @@ export const AllianceCard: React.FC<{ item: AlliancePartner; isPreview?: boolean
 
         {/* Info block */}
         <div className="space-y-1">
-          <h4 className="text-sm font-bold text-[#f3f1ec] group-hover:text-[#e6cca0] transition-colors leading-snug truncate">
-            {item.name}
-          </h4>
+          <div className="flex items-center gap-1.5">
+            <h4
+              className={`text-sm font-bold leading-snug truncate transition-colors ${
+                isPremium
+                  ? 'text-[#ffffff] group-hover:text-[#e6cca0] font-black'
+                  : 'text-[#f3f1ec] group-hover:text-[#e6cca0]'
+              }`}
+            >
+              {item.name}
+            </h4>
+          </div>
           {item.description && (
             <p className="text-[11px] text-[#aba79e] line-clamp-2 leading-relaxed">
               {item.description}

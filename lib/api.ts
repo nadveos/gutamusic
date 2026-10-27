@@ -657,6 +657,13 @@ export class MusicDataService {
               return item.endDate >= todayStr;
             }
             return item.active;
+          })
+          .sort((a, b) => {
+            // Prioridad absoluta: los auspiciantes de plan transversal (all_sections) van primeros
+            const aPrem = a.sector === 'all_sections' ? 1 : 0;
+            const bPrem = b.sector === 'all_sections' ? 1 : 0;
+            if (bPrem !== aPrem) return bPrem - aPrem;
+            return (a.priority || 1) - (b.priority || 1);
           });
       }
     } catch (err) {
