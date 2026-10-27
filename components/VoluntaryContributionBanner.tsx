@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import { Heart, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 
 const PRESET_AMOUNTS = [
@@ -11,8 +11,20 @@ const PRESET_AMOUNTS = [
 ];
 
 export const VoluntaryContributionBanner: React.FC = () => {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const paymentStatus = searchParams.get('payment');
+
+  // No renderizar en páginas administrativas o paneles de gestión
+  const isExcludedRoute =
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/login') ||
+    pathname?.startsWith('/registro') ||
+    pathname?.startsWith('/panel-');
+
+  if (isExcludedRoute) {
+    return null;
+  }
 
   const [selectedAmount, setSelectedAmount] = useState<number>(3000);
   const [isCustom, setIsCustom] = useState(false);

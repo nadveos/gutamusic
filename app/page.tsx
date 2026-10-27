@@ -5,7 +5,6 @@ import { MusicDataService } from '../lib/api';
 export const dynamic = 'force-dynamic';
 import { HeroFeatured } from '../components/HeroFeatured';
 import { WeeklyFeaturedSection } from '../components/WeeklyFeaturedSection';
-import { VoluntaryContributionBanner } from '../components/VoluntaryContributionBanner';
 import { SpotifyPlaylistSection } from '../components/SpotifyPlaylistSection';
 import { VideoEmbedGrid } from '../components/VideoEmbedGrid';
 import { FeaturedInterviewCard } from '../components/FeaturedInterviewCard';
@@ -42,10 +41,7 @@ export default async function HomePage() {
         />
       )}
 
-      {/* 3. Colaboración Voluntaria Comunitaria con Mercado Pago */}
-      <VoluntaryContributionBanner />
-
-      {/* 4. Auspicios y Alianzas Oficiales en Portada (home_mid & all_sections) */}
+      {/* 3. Auspicios y Alianzas Oficiales en Portada (home_mid & all_sections) */}
       <BrandAllianceShowcase
         sector="home_mid"
         title="Empresas & Marcas Patrocinadoras"
