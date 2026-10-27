@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ExternalLink, Sparkles, MessageCircle, Phone, Globe, ShieldCheck, ArrowRight } from 'lucide-react';
+import { InstagramIcon } from '../lib/socialUtils';
 import { SpotifyPlaylistData } from '../lib/services/spotifyService';
 import { AlliancePartner } from '../lib/types';
 
@@ -33,6 +34,23 @@ export const HomeLiveSidebar: React.FC<HomeLiveSidebarProps> = ({
     if (!targetNumber) return null;
     const msg = encodeURIComponent(`Hola ${name || ''}, me contacto desde la plataforma GUTA MÚSICA.`);
     return `https://wa.me/${targetNumber}?text=${msg}`;
+  };
+
+  const isInstagramUrl = (url?: string) => {
+    if (!url) return false;
+    return url.includes('instagram.com') || url.includes('instagr.am');
+  };
+
+  const getCleanInstagramUrl = (rawIg?: string, rawWeb?: string) => {
+    const candidate = rawIg || (isInstagramUrl(rawWeb) ? rawWeb : '');
+    if (!candidate) return null;
+    const clean = candidate.trim();
+    if (!clean) return null;
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      return clean;
+    }
+    const handle = clean.replace(/^@/, '');
+    return `https://www.instagram.com/${handle}`;
   };
 
   return (
@@ -124,6 +142,8 @@ export const HomeLiveSidebar: React.FC<HomeLiveSidebarProps> = ({
 
           {sponsors.map((item) => {
             const waUrl = getCleanWhatsappUrl(item.whatsapp, item.phone, item.name);
+            const igUrl = getCleanInstagramUrl(item.instagramUrl, item.websiteUrl);
+            const showWeb = item.websiteUrl && !isInstagramUrl(item.websiteUrl) ? item.websiteUrl : null;
             const rawPhone = item.phone ? `tel:${item.phone.replace(/[^\d+]/g, '')}` : null;
             const isPremium = item.sector === 'all_sections';
 
@@ -177,19 +197,50 @@ export const HomeLiveSidebar: React.FC<HomeLiveSidebarProps> = ({
                   </div>
                 </div>
 
-                {/* Acciones de Contacto */}
+                {/* Acciones de Contacto: Izquierda IG y Web, Derecha WhatsApp */}
                 <div className="pt-3.5 mt-3.5 border-t border-[#262832] flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  {/* Left: Social & Web Presence */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {igUrl && (
+                      <a
+                        href={igUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-lg bg-[#202228] hover:bg-[#E1306C]/15 text-[#aba79e] hover:text-[#E1306C] border border-[#2d2f38] hover:border-[#E1306C]/40 transition-colors flex-shrink-0"
+                        title={`Instagram de ${item.name}`}
+                        aria-label={`Instagram de ${item.name}`}
+                      >
+                        <InstagramIcon className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+
+                    {showWeb && (
+                      <a
+                        href={showWeb.startsWith('http') ? showWeb : `https://${showWeb}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-lg bg-[#202228] hover:bg-[#282b35] text-[#aba79e] hover:text-[#f3f1ec] border border-[#2d2f38] transition-colors flex-shrink-0"
+                        title={`Sitio web de ${item.name}`}
+                        aria-label={`Sitio web de ${item.name}`}
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Right: WhatsApp / Call Action Button */}
+                  <div className="flex items-center gap-1.5 overflow-hidden ml-auto">
                     {waUrl && (
                       <a
                         href={waUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#25D366]/15 hover:bg-[#25D366] text-[#4ade80] hover:text-[#0b2812] border border-[#25D366]/40 text-xs font-bold transition-all shadow-sm"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#242730] hover:bg-[#25D366]/20 text-[#a0d29f] hover:text-[#5ce487] border border-[#343846] hover:border-[#25D366]/50 text-xs font-semibold transition-colors"
                         title="Contactar por WhatsApp"
+                        aria-label={`WhatsApp para ${item.name}`}
                       >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        <span>WhatsApp</span>
+                        <MessageCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="text-[11px]">WhatsApp</span>
                       </a>
                     )}
 
@@ -199,24 +250,11 @@ export const HomeLiveSidebar: React.FC<HomeLiveSidebarProps> = ({
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#242730] hover:bg-[#2d313d] text-[#e6cca0] border border-[#343846] text-xs font-medium transition-colors"
                         title="Llamar"
                       >
-                        <Phone className="w-3.5 h-3.5" />
-                        <span>{item.phone}</span>
+                        <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="text-[11px] truncate">{item.phone}</span>
                       </a>
                     )}
                   </div>
-
-                  {item.websiteUrl && (
-                    <a
-                      href={item.websiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 rounded-lg bg-[#202228] hover:bg-[#282b35] text-[#aba79e] hover:text-[#f3f1ec] border border-[#2d2f38] transition-colors"
-                      title="Visitar sitio web / red social"
-                      aria-label={`Sitio web de ${item.name}`}
-                    >
-                      <Globe className="w-3.5 h-3.5" />
-                    </a>
-                  )}
                 </div>
 
                 {/* Aviso discreto en margen inferior derecho */}
