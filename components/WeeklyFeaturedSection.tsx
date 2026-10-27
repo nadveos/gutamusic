@@ -8,9 +8,10 @@ import { MapPin, ArrowRight, Sparkles, Play, Music, Flame } from 'lucide-react';
 
 interface WeeklyFeaturedSectionProps {
   artists: Artist[];
+  totalArtistsCount?: number;
 }
 
-export const WeeklyFeaturedSection: React.FC<WeeklyFeaturedSectionProps> = ({ artists }) => {
+export const WeeklyFeaturedSection: React.FC<WeeklyFeaturedSectionProps> = ({ artists, totalArtistsCount }) => {
   if (!artists || artists.length === 0) {
     return null;
   }
@@ -18,7 +19,7 @@ export const WeeklyFeaturedSection: React.FC<WeeklyFeaturedSectionProps> = ({ ar
   return (
     <section className="space-y-4 sm:space-y-5" aria-label="Destacados de la Semana">
       {/* Encabezado de la sección */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2.5 pb-1 border-b border-[#242630]">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-2 border-b border-[#242630]">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#d97d64]">
             <span className="p-1 rounded-md bg-[#d97d64]/10 text-[#d97d64]">
@@ -34,9 +35,20 @@ export const WeeklyFeaturedSection: React.FC<WeeklyFeaturedSectionProps> = ({ ar
           </p>
         </div>
 
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#18191e] border border-[#2b2d38] text-[11px] font-semibold text-[#e6cca0] shrink-0">
-          <Sparkles className="w-3 h-3 text-[#d97d64]" />
-          <span>{artists.length} {artists.length === 1 ? 'banda en cartelera' : 'bandas en cartelera'}</span>
+        {/* Botón directo para ver catálogo completo */}
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <Link
+            href="/artistas"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#20222a] hover:bg-[#292c36] text-[#e6cca0] hover:text-[#f3f1ec] border border-[#2e313d] text-xs font-bold transition-all shadow-xs active:scale-95"
+          >
+            <span>Ver todos los artistas</span>
+            {typeof totalArtistsCount === 'number' && totalArtistsCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-md bg-[#d97d64]/15 text-[#d97d64] text-[11px] font-extrabold">
+                {totalArtistsCount}
+              </span>
+            )}
+            <ArrowRight className="w-3.5 h-3.5 text-[#d97d64]" />
+          </Link>
         </div>
       </div>
 
@@ -138,6 +150,17 @@ export const WeeklyFeaturedSection: React.FC<WeeklyFeaturedSectionProps> = ({ ar
             </article>
           );
         })}
+      </div>
+
+      {/* Botón inferior responsive para explorar todo el catálogo */}
+      <div className="pt-2 flex justify-center">
+        <Link
+          href="/artistas"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#1b1c23] hover:bg-[#23252f] text-[#e6cca0] hover:text-[#f3f1ec] border border-[#2b2d39] text-xs font-bold transition-all shadow-sm active:scale-98"
+        >
+          <span>Explorar el catálogo completo de artistas</span>
+          <ArrowRight className="w-3.5 h-3.5 text-[#d97d64]" />
+        </Link>
       </div>
     </section>
   );

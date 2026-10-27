@@ -6,12 +6,10 @@ export const dynamic = 'force-dynamic';
 import { HeroFeatured } from '../components/HeroFeatured';
 import { WeeklyFeaturedSection } from '../components/WeeklyFeaturedSection';
 import { VoluntaryContributionBanner } from '../components/VoluntaryContributionBanner';
-import { ArtistCard } from '../components/ArtistCard';
 import { SpotifyPlaylistSection } from '../components/SpotifyPlaylistSection';
 import { VideoEmbedGrid } from '../components/VideoEmbedGrid';
 import { FeaturedInterviewCard } from '../components/FeaturedInterviewCard';
 import { getSpotifyPlaylist } from '../lib/services/spotifyService';
-import { Mic2, ArrowRight } from 'lucide-react';
 
 export default async function HomePage() {
   const consagradosArtists = await MusicDataService.getConsagradosArtists();
@@ -31,49 +29,19 @@ export default async function HomePage() {
         <HeroFeatured artists={consagradosArtists} titleBadge="Artista Consagrado" />
       )}
 
-      {/* 2. Destacados de la Semana (Cards en rotación con hover y alta fidelidad en móvil) */}
+      {/* 2. Destacados de la Semana (Cards en rotación con hover y botón a catálogo completo) */}
       {weeklyFeaturedArtists.length > 0 && (
-        <WeeklyFeaturedSection artists={weeklyFeaturedArtists} />
+        <WeeklyFeaturedSection
+          artists={weeklyFeaturedArtists}
+          totalArtistsCount={latestArtists.length}
+        />
       )}
 
       {/* 3. Colaboración Voluntaria Comunitaria con Mercado Pago */}
       <VoluntaryContributionBanner />
 
-      {/* 3. Playlist Oficial de Spotify - Top Artistas Emergentes by Guta 1 */}
+      {/* 4. Playlist Oficial de Spotify - Top Artistas Emergentes by Guta 1 */}
       <SpotifyPlaylistSection playlist={spotifyPlaylist} playlistId={playlistId} />
-
-      {/* 3. Últimos Artistas Incorporados */}
-      <section className="space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
-              <Mic2 className="w-3.5 h-3.5" />
-              <span>Nuevos Descubrimientos</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#f3f1ec]">
-              Últimos Artistas Incorporados
-            </h2>
-            <p className="text-xs sm:text-sm text-[#aba79e]">
-              Talentos independientes de toda la Argentina y Latinoamérica
-            </p>
-          </div>
-
-          <Link
-            href="/artistas"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#e6cca0] hover:text-[#f3f1ec] transition-colors"
-          >
-            <span>Ver catálogo completo ({latestArtists.length})</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {/* Artists Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {latestArtists.map((artist) => (
-            <ArtistCard key={artist.id} artist={artist} />
-          ))}
-        </div>
-      </section>
 
       {/* 4. Entrevista Destacada & Sesión Exclusiva */}
       {featuredInterview && <FeaturedInterviewCard interview={featuredInterview} />}
