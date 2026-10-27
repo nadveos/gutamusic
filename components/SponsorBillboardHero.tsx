@@ -101,9 +101,15 @@ export const SponsorBillboardHero: React.FC<SponsorBillboardHeroProps> = ({ init
     return `https://wa.me/${targetNumber}?text=${msg}`;
   };
 
-  const getCleanInstagramUrl = (rawIg?: string) => {
-    if (!rawIg) return null;
-    const clean = rawIg.trim();
+  const isInstagramUrl = (url?: string) => {
+    if (!url) return false;
+    return url.includes('instagram.com') || url.includes('instagr.am');
+  };
+
+  const getCleanInstagramUrl = (rawIg?: string, rawWeb?: string) => {
+    const candidate = rawIg || (isInstagramUrl(rawWeb) ? rawWeb : '');
+    if (!candidate) return null;
+    const clean = candidate.trim();
     if (!clean) return null;
     if (clean.startsWith('http://') || clean.startsWith('https://')) {
       return clean;
@@ -113,7 +119,8 @@ export const SponsorBillboardHero: React.FC<SponsorBillboardHeroProps> = ({ init
   };
 
   const waUrl = getCleanWhatsappUrl(current.whatsapp, current.phone, current.name);
-  const igUrl = getCleanInstagramUrl(current.instagramUrl);
+  const igUrl = getCleanInstagramUrl(current.instagramUrl, current.websiteUrl);
+  const showWeb = current.websiteUrl && !isInstagramUrl(current.websiteUrl) ? current.websiteUrl : null;
   const rawPhone = current.phone ? `tel:${current.phone.replace(/[^\d+]/g, '')}` : null;
 
   // Si tiene un banner horizontal expreso o no
@@ -182,9 +189,9 @@ export const SponsorBillboardHero: React.FC<SponsorBillboardHeroProps> = ({ init
                     <ExternalLink className="w-3 h-3 text-[#aba79e]" />
                   </a>
                 )}
-                {current.websiteUrl && (
+                {showWeb && (
                   <a
-                    href={current.websiteUrl.startsWith('http') ? current.websiteUrl : `https://${current.websiteUrl}`}
+                    href={showWeb.startsWith('http') ? showWeb : `https://${showWeb}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#242732]/90 hover:bg-[#313543] text-[#f3f1ec] border border-[#3f4354] font-semibold text-xs transition-colors"
@@ -268,9 +275,9 @@ export const SponsorBillboardHero: React.FC<SponsorBillboardHeroProps> = ({ init
                   </a>
                 )}
 
-                {current.websiteUrl && (
+                {showWeb && (
                   <a
-                    href={current.websiteUrl.startsWith('http') ? current.websiteUrl : `https://${current.websiteUrl}`}
+                    href={showWeb.startsWith('http') ? showWeb : `https://${showWeb}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#252732] hover:bg-[#313543] text-[#f3f1ec] border border-[#3b3e4e] hover:border-[#e6cca0]/50 font-bold text-xs transition-colors"

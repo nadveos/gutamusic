@@ -30,9 +30,15 @@ export const AllianceCard: React.FC<{ item: AlliancePartner; isPreview?: boolean
     return `https://wa.me/${targetNumber}?text=${msg}`;
   };
 
-  const getCleanInstagramUrl = (rawIg?: string) => {
-    if (!rawIg) return null;
-    const clean = rawIg.trim();
+  const isInstagramUrl = (url?: string) => {
+    if (!url) return false;
+    return url.includes('instagram.com') || url.includes('instagr.am');
+  };
+
+  const getCleanInstagramUrl = (rawIg?: string, rawWeb?: string) => {
+    const candidate = rawIg || (isInstagramUrl(rawWeb) ? rawWeb : '');
+    if (!candidate) return null;
+    const clean = candidate.trim();
     if (!clean) return null;
     if (clean.startsWith('http://') || clean.startsWith('https://')) {
       return clean;
@@ -42,7 +48,8 @@ export const AllianceCard: React.FC<{ item: AlliancePartner; isPreview?: boolean
   };
 
   const waUrl = getCleanWhatsappUrl(item.whatsapp, item.phone, item.name);
-  const igUrl = getCleanInstagramUrl(item.instagramUrl);
+  const igUrl = getCleanInstagramUrl(item.instagramUrl, item.websiteUrl);
+  const showWeb = item.websiteUrl && !isInstagramUrl(item.websiteUrl) ? item.websiteUrl : null;
   const rawPhone = item.phone ? `tel:${item.phone.replace(/[^\d+]/g, '')}` : null;
   const isPremium = item.sector === 'all_sections';
   const isHome = item.sector === 'home_mid';
@@ -135,9 +142,9 @@ export const AllianceCard: React.FC<{ item: AlliancePartner; isPreview?: boolean
             </a>
           )}
 
-          {item.websiteUrl && (
+          {showWeb && (
             <a
-              href={item.websiteUrl.startsWith('http') ? item.websiteUrl : `https://${item.websiteUrl}`}
+              href={showWeb.startsWith('http') ? showWeb : `https://${showWeb}`}
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 rounded-lg bg-[#202228] hover:bg-[#282b35] text-[#aba79e] hover:text-[#f3f1ec] border border-[#2d2f38] transition-colors flex-shrink-0"
