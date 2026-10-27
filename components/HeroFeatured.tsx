@@ -9,9 +9,10 @@ import { MapPin, ArrowRight, Radio, Sparkles } from 'lucide-react';
 interface HeroFeaturedProps {
   artist?: Artist;
   artists?: Artist[];
+  titleBadge?: string;
 }
 
-export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist, artists: rawArtists }) => {
+export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist, artists: rawArtists, titleBadge }) => {
   const artists: Artist[] = rawArtists && rawArtists.length > 0 
     ? rawArtists 
     : artist 
@@ -51,6 +52,8 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist, artists: raw
   const heroImg = currentArtist.bannerUrl || currentArtist.photoUrl;
   const isImageBroken = failedImages[currentArtist.id] || !heroImg;
 
+  const currentBadgeText = titleBadge || (currentArtist.featured ? 'Artista Consagrado' : (currentArtist.featuredOfWeek ? 'Artista Destacado de la Semana' : 'Artista Consagrado'));
+
   return (
     <section
       className="relative w-full rounded-2xl overflow-hidden natural-card my-6 group h-[420px] sm:h-[460px]"
@@ -87,7 +90,7 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist, artists: raw
           <div className="flex flex-wrap items-center gap-3">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold bg-sand-soft uppercase tracking-wider">
               <Sparkles className="w-3 h-3 text-[#d97d64]" />
-              {currentArtist.featuredOfWeek ? 'Artista Destacado de la Semana' : 'Artista Destacado'}
+              <span>{currentBadgeText}</span>
               {isMultiple && (
                 <span className="ml-1 opacity-75 font-normal">
                   ({currentIndex + 1} de {total})

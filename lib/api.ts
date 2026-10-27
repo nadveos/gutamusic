@@ -267,7 +267,8 @@ export class MusicDataService {
     return null;
   }
 
-  static async getFeaturedArtists(): Promise<Artist[]> {
+  // CONSAGRADOS (Artistas destacados fijos/permanentes para el Hero Principal)
+  static async getConsagradosArtists(): Promise<Artist[]> {
     try {
       await syncServerAuth();
       const records = await pb.collection('artists').getFullList<any>({
@@ -275,55 +276,75 @@ export class MusicDataService {
       });
 
       if (records && records.length > 0) {
-        const orderedRecords = [...records].reverse();
+        const approved = records.filter((r) => !r.status || r.status === 'approved').reverse();
+        // Filtrar los que tienen featured = true (Consagrados fijos)
+        let consagrados = approved.filter((r) => Boolean(r.featured));
 
-        // Verificar expiración de artistas de la semana
-        const { getWeeklyFeaturedStatus } = await import('./services/featuredRotationService');
-        const validRecords = orderedRecords.map((r) => {
-          if (r.featuredOfWeek) {
-            const status = getWeeklyFeaturedStatus(r.featuredOfWeekDate);
-            if (status.isExpired) {
-              // Desmarcar en PocketBase en segundo plano
-              pb.collection('artists')
-                .update(r.id, { featuredOfWeek: false, featuredOfWeekDate: '' })
-                .catch(() => {});
-              return { ...r, featuredOfWeek: false };
-            }
-          }
-          return r;
-        });
-
-        let featuredRecords = validRecords.filter(
-          (r) => Boolean(r.featuredOfWeek) || Boolean(r.featured)
-        );
-
-        // Ordenar: primero featuredOfWeek, luego featured
-        featuredRecords.sort((a, b) => {
-          if (a.featuredOfWeek && !b.featuredOfWeek) return -1;
-          if (!a.featuredOfWeek && b.featuredOfWeek) return 1;
-          return 0;
-        });
-
-        // Fallback al artista más reciente si ninguno está tildado como destacado
-        if (featuredRecords.length === 0) {
-          featuredRecords = [orderedRecords[0]];
+        // Si aún no se marcaron consagrados explícitos, usar los destacados o más recientes como fallback
+        if (consagrados.length === 0) {
+          consagrados = approved.filter((r) => Boolean(r.featuredOfWeek));
+        }
+        if (consagrados.length === 0) {
+          consagrados = approved.slice(0, 3);
         }
 
         const results = await Promise.all(
-          featuredRecords.map((r) => this.getArtistBySlug(r.slug))
+          consagrados.map((r) => this.getArtistBySlug(r.slug))
         );
         return results.filter((a): a is Artist => a !== null);
       }
     } catch (e) {
-      console.error('Error fetching featured artists list:', e);
+      console.error('Error fetching consagrados artists:', e);
     }
-
     return [];
   }
 
+  // DESTACADOS DE LA SEMANA (Selección rotativa de 7 días para la sección de cards)
+  static async getWeeklyFeaturedArtists(): Promise<Artist[]> {
+    try {
+      await syncServerAuth();
+      const records = await pb.collection('artists').getFullList<any>({
+        requestKey: null,
+      });
+
+      if (records && records.length > 0) {
+        const approved = records.filter((r) => !r.status || r.status === 'approved').reverse();
+        const { getWeeklyFeaturedStatus } = await import('./services/featuredRotationService');
+
+        const weeklyRecords = approved.filter((r) => {
+          if (r.featuredOfWeek) {
+            const status = getWeeklyFeaturedStatus(r.featuredOfWeekDate);
+            if (status.isExpired) {
+              pb.collection('artists')
+                .update(r.id, { featuredOfWeek: false, featuredOfWeekDate: '' })
+                .catch(() => {});
+              return false;
+            }
+            return true;
+          }
+          return false;
+        });
+
+        const results = await Promise.all(
+          weeklyRecords.map((r) => this.getArtistBySlug(r.slug))
+        );
+        return results.filter((a): a is Artist => a !== null);
+      }
+    } catch (e) {
+      console.error('Error fetching weekly featured artists:', e);
+    }
+    return [];
+  }
+
+  static async getFeaturedArtists(): Promise<Artist[]> {
+    return this.getConsagradosArtists();
+  }
+
   static async getFeaturedArtistOfWeek(): Promise<Artist | null> {
-    const list = await this.getFeaturedArtists();
-    return list[0] || null;
+    const list = await this.getWeeklyFeaturedArtists();
+    if (list.length > 0) return list[0];
+    const consagrados = await this.getConsagradosArtists();
+    return consagrados[0] || null;
   }
 
   // VIDEOS

@@ -84,33 +84,33 @@ export const VoluntaryContributionBanner: React.FC = () => {
         </div>
       )}
 
-      {/* Cinta compacta, estilizada y no invasiva */}
-      <section className="relative rounded-2xl bg-gradient-to-r from-[#1a1b20] via-[#1f2027] to-[#18191e] border border-[#2b2d37] px-4 py-3 sm:px-6 shadow-md overflow-hidden">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+      {/* Cinta compacta, estilizada y responsive */}
+      <section className="relative rounded-2xl bg-gradient-to-r from-[#1a1b20] via-[#1f2027] to-[#18191e] border border-[#2b2d37] p-3.5 sm:px-6 sm:py-3.5 shadow-md overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           {/* Lado izquierdo: Identidad y mensaje sutil */}
-          <div className="flex items-center gap-3 min-w-0 w-full md:w-auto">
-            <div className="w-7 h-7 rounded-full bg-[#d97d64]/15 text-[#d97d64] flex items-center justify-center shrink-0">
-              <Heart className="w-3.5 h-3.5 fill-[#d97d64]" />
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#d97d64]/15 text-[#d97d64] flex items-center justify-center shrink-0">
+              <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-[#d97d64]" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-xs sm:text-sm text-[#f3f1ec] tracking-tight truncate">
                   Colaboración Voluntaria
                 </span>
-                <span className="text-[10px] text-[#e6cca0] font-semibold bg-[#e6cca0]/10 px-2 py-0.5 rounded-full border border-[#e6cca0]/20 hidden sm:inline-block">
+                <span className="text-[10px] text-[#e6cca0] font-semibold bg-[#e6cca0]/10 px-2 py-0.5 rounded-full border border-[#e6cca0]/20 inline-block">
                   Música Federal
                 </span>
               </div>
-              <p className="text-[11px] text-[#8c887f] truncate hidden lg:block">
+              <p className="text-[11px] text-[#8c887f] truncate hidden lg:block mt-0.5">
                 Difusión comunitaria y gratuita para artistas. Tu aporte nos ayuda a sostener la plataforma.
               </p>
             </div>
           </div>
 
-          {/* Lado derecho: Montos rápidos y botón Checkout Pro */}
-          <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end flex-wrap sm:flex-nowrap">
+          {/* Lado derecho: Montos y botón (adaptativo móvil / escritorio) */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
             {/* Selector de montos en píldoras */}
-            <div className="flex items-center gap-1 bg-[#131418] p-1 rounded-xl border border-[#262832]">
+            <div className="grid grid-cols-4 sm:flex items-center gap-1 bg-[#131418] p-1 rounded-xl border border-[#262832]">
               {PRESET_AMOUNTS.map((item) => {
                 const isSelected = !isCustom && selectedAmount === item.value;
                 return (
@@ -121,7 +121,7 @@ export const VoluntaryContributionBanner: React.FC = () => {
                       setIsCustom(false);
                       setSelectedAmount(item.value);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-2.5 py-1.5 sm:py-1 rounded-lg text-xs font-bold text-center transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-[#d97d64] text-[#151618] shadow-xs'
                         : 'text-[#aba79e] hover:text-[#f3f1ec] hover:bg-[#1d1f27]'
@@ -135,7 +135,7 @@ export const VoluntaryContributionBanner: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsCustom(!isCustom)}
-                className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-2 py-1.5 sm:py-1 rounded-lg text-xs font-semibold text-center transition-all cursor-pointer ${
                   isCustom
                     ? 'bg-[#e6cca0] text-[#151618] font-bold'
                     : 'text-[#8c887f] hover:text-[#f3f1ec] hover:bg-[#1d1f27]'
@@ -148,7 +148,7 @@ export const VoluntaryContributionBanner: React.FC = () => {
 
             {/* Input de monto libre si se activa */}
             {isCustom && (
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-[#aba79e] font-bold">
                   $
                 </span>
@@ -159,7 +159,7 @@ export const VoluntaryContributionBanner: React.FC = () => {
                   placeholder="2500"
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
-                  className="w-20 pl-5 pr-2 py-1 rounded-xl bg-[#131418] border border-[#d97d64] text-xs font-bold text-[#f3f1ec] focus:outline-none"
+                  className="w-full sm:w-24 pl-6 pr-2 py-1.5 sm:py-1 rounded-xl bg-[#131418] border border-[#d97d64] text-xs font-bold text-[#f3f1ec] focus:outline-none"
                 />
               </div>
             )}
@@ -169,7 +169,7 @@ export const VoluntaryContributionBanner: React.FC = () => {
               type="button"
               onClick={() => handleDonate()}
               disabled={loading || effectiveAmount < 300}
-              className="px-3.5 py-1.5 rounded-xl bg-[#009EE3] hover:bg-[#008ac7] text-[#121316] font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shadow-[#009EE3]/20 disabled:opacity-50 cursor-pointer shrink-0 ml-auto md:ml-0"
+              className="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-xl bg-[#009EE3] hover:bg-[#008ac7] text-[#121316] font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-sm shadow-[#009EE3]/20 disabled:opacity-50 cursor-pointer shrink-0"
             >
               {loading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-[#121316]" />

@@ -4,6 +4,7 @@ import { MusicDataService } from '../lib/api';
 
 export const dynamic = 'force-dynamic';
 import { HeroFeatured } from '../components/HeroFeatured';
+import { WeeklyFeaturedSection } from '../components/WeeklyFeaturedSection';
 import { VoluntaryContributionBanner } from '../components/VoluntaryContributionBanner';
 import { ArtistCard } from '../components/ArtistCard';
 import { SpotifyPlaylistSection } from '../components/SpotifyPlaylistSection';
@@ -13,7 +14,8 @@ import { getSpotifyPlaylist } from '../lib/services/spotifyService';
 import { Mic2, ArrowRight } from 'lucide-react';
 
 export default async function HomePage() {
-  const featuredArtists = await MusicDataService.getFeaturedArtists();
+  const consagradosArtists = await MusicDataService.getConsagradosArtists();
+  const weeklyFeaturedArtists = await MusicDataService.getWeeklyFeaturedArtists();
   const latestArtists = await MusicDataService.getArtists();
   const videos = await MusicDataService.getVideos(4);
   const featuredInterview = await MusicDataService.getFeaturedInterview();
@@ -24,10 +26,17 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-10">
-      {/* 1. Hero Principal - Artistas Destacados (Slider) */}
-      {featuredArtists.length > 0 && <HeroFeatured artists={featuredArtists} />}
+      {/* 1. Hero Principal - Artistas Consagrados Fijos */}
+      {consagradosArtists.length > 0 && (
+        <HeroFeatured artists={consagradosArtists} titleBadge="Artista Consagrado" />
+      )}
 
-      {/* 2. Colaboración Voluntaria Comunitaria con Mercado Pago */}
+      {/* 2. Destacados de la Semana (Cards en rotación con hover y alta fidelidad en móvil) */}
+      {weeklyFeaturedArtists.length > 0 && (
+        <WeeklyFeaturedSection artists={weeklyFeaturedArtists} />
+      )}
+
+      {/* 3. Colaboración Voluntaria Comunitaria con Mercado Pago */}
       <VoluntaryContributionBanner />
 
       {/* 3. Playlist Oficial de Spotify - Top Artistas Emergentes by Guta 1 */}
