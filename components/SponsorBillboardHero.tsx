@@ -54,21 +54,28 @@ export const SponsorBillboardHero: React.FC<SponsorBillboardHeroProps> = ({ init
 
   // Animación de scroll reveal con IntersectionObserver
   useEffect(() => {
+    // El contenedor solo existe cuando hay sponsors cargados
+    if (sponsors.length === 0 || !containerRef.current) return;
+
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
+          observer.disconnect();
         }
       },
-      { threshold: 0.15 }
+      { threshold: 0.1 }
     );
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
+    observer.observe(containerRef.current);
 
     return () => observer.disconnect();
-  }, []);
+  }, [sponsors.length]);
 
   // Rotación automática si hay más de 1 sponsor premium
   useEffect(() => {
