@@ -5,11 +5,10 @@ import { MusicDataService } from '../lib/api';
 export const dynamic = 'force-dynamic';
 import { HeroFeatured } from '../components/HeroFeatured';
 import { WeeklyFeaturedSection } from '../components/WeeklyFeaturedSection';
-import { SpotifyPlaylistSection } from '../components/SpotifyPlaylistSection';
 import { VideoEmbedGrid } from '../components/VideoEmbedGrid';
 import { FeaturedInterviewCard } from '../components/FeaturedInterviewCard';
-import { BrandAllianceShowcase } from '../components/BrandAllianceShowcase';
 import { SponsorBillboardHero } from '../components/SponsorBillboardHero';
+import { HomeLiveSidebar } from '../components/HomeLiveSidebar';
 import { getSpotifyPlaylist } from '../lib/services/spotifyService';
 
 export default async function HomePage() {
@@ -23,6 +22,9 @@ export default async function HomePage() {
   const playlistId = process.env.NEXT_PUBLIC_SPOTIFY_PLAYLIST_ID || '5eprX7q6HoedI2nnnHEE2H';
   const spotifyPlaylist = await getSpotifyPlaylist(playlistId);
 
+  // Auspiciantes para la columna lateral (home_mid & all_sections)
+  const homeSponsors = await MusicDataService.getAlliances('home_mid', true);
+
   return (
     <div className="space-y-10">
       {/* 1. Hero Principal - Artistas Consagrados Fijos */}
@@ -33,31 +35,36 @@ export default async function HomePage() {
       {/* 1.1 Billboard de Alto Impacto (Scroll-Reveal): Patrocinador Oficial Exclusivo */}
       <SponsorBillboardHero />
 
-      {/* 2. Destacados de la Semana (Cards en rotación con hover y botón a catálogo completo) */}
-      {weeklyFeaturedArtists.length > 0 && (
-        <WeeklyFeaturedSection
-          artists={weeklyFeaturedArtists}
-          totalArtistsCount={latestArtists.length}
-        />
-      )}
+      {/* 2. Grid Editorial en 2 Columnas: Contenido Principal + Sidebar Sticky */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start my-6">
+        {/* Columna Principal Izquierda (66% - 70%) */}
+        <div className="lg:col-span-8 space-y-12">
+          {/* Destacados de la Semana */}
+          {weeklyFeaturedArtists.length > 0 && (
+            <WeeklyFeaturedSection
+              artists={weeklyFeaturedArtists}
+              totalArtistsCount={latestArtists.length}
+            />
+          )}
 
-      {/* 3. Auspicios y Alianzas Oficiales en Portada (home_mid & all_sections) */}
-      <BrandAllianceShowcase
-        sector="home_mid"
-        title="Empresas & Marcas Patrocinadoras"
-        subtitle="Acompañan activamente el desarrollo y difusión del movimiento musical federal"
-      />
+          {/* Entrevista Destacada & Sesión Exclusiva */}
+          {featuredInterview && <FeaturedInterviewCard interview={featuredInterview} />}
 
-      {/* 5. Playlist Oficial de Spotify - Top Artistas Emergentes by Guta 1 */}
-      <SpotifyPlaylistSection playlist={spotifyPlaylist} playlistId={playlistId} />
+          {/* Últimos Videos de YouTube, TikTok y Facebook */}
+          <VideoEmbedGrid videos={videos} />
+        </div>
 
-      {/* 6. Entrevista Destacada & Sesión Exclusiva */}
-      {featuredInterview && <FeaturedInterviewCard interview={featuredInterview} />}
+        {/* Columna Lateral Sticky Derecha (30% - 34%) */}
+        <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-20">
+          <HomeLiveSidebar
+            playlist={spotifyPlaylist}
+            playlistId={playlistId}
+            sponsors={homeSponsors}
+          />
+        </aside>
+      </div>
 
-      {/* 5. Últimos Videos de YouTube, TikTok y Facebook */}
-      <VideoEmbedGrid videos={videos} />
-
-      {/* 6. Banner de Convocatoria Federal para Artistas */}
+      {/* 3. Banner de Convocatoria Federal para Artistas */}
       <section className="rounded-2xl natural-card p-8 sm:p-10 text-center space-y-3.5">
         <span className="inline-block px-3 py-1 rounded-md text-[11px] font-semibold bg-sand-soft uppercase tracking-wider">
           Convocatoria Abierta Permanente
@@ -86,3 +93,4 @@ export default async function HomePage() {
     </div>
   );
 }
+
