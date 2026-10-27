@@ -161,7 +161,7 @@ export const SumarAuspicioClient: React.FC = () => {
             <span>Alianzas & Publicidad Cultural</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black text-[#f3f1ec] tracking-tight leading-tight">
-            Impulsá tu Marca junto al <span className="text-[#e6cca0]">Movimiento Musical Federal</span>
+            Impulsá tu Marca junto al <span className="text-[#e6cca0]">Movimiento Musical Latinoamericano</span>
           </h1>
           <p className="text-sm sm:text-base text-[#aba79e] leading-relaxed">
             Elegí tu espacio publicitario por <b className="text-[#f3f1ec]">30 días corridos</b>. Conectá de forma directa con miles de músicos independientes, bandas, productores y amantes de la música de todo el país.
@@ -281,8 +281,8 @@ export const SumarAuspicioClient: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-[#aba79e] mb-1.5">
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-[#aba79e]">
                     Categoría de Rubro
                   </label>
                   <div className="flex flex-wrap gap-1.5">
@@ -291,7 +291,7 @@ export const SumarAuspicioClient: React.FC = () => {
                         type="button"
                         key={cat}
                         onClick={() => setCategory(cat)}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition-colors ${
+                        className={`px-2.5 py-1 rounded-lg text-xs transition-colors cursor-pointer ${
                           category === cat
                             ? 'bg-[#e6cca0] text-[#121316] font-bold'
                             : 'bg-[#1c1d24] text-[#a09c93] hover:text-[#f3f1ec] border border-[#2c2e39]'
@@ -300,6 +300,20 @@ export const SumarAuspicioClient: React.FC = () => {
                         {cat}
                       </button>
                     ))}
+                  </div>
+
+                  {/* Input para categoría personalizada */}
+                  <div className="pt-1">
+                    <input
+                      type="text"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      placeholder="O escribí tu rubro personalizado (ej: Tienda de Vinilos, Iluminación, Merchandising...)"
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#17181d] border border-[#2c2e39] text-xs text-[#f3f1ec] placeholder-[#605d56] focus:outline-none focus:border-[#e6cca0]"
+                    />
+                    <p className="text-[11px] text-[#78746c] mt-1">
+                      Podés seleccionar una sugerencia o escribir un rubro a medida para tu marca.
+                    </p>
                   </div>
                 </div>
 

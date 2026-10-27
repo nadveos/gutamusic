@@ -349,17 +349,31 @@ export const SponsorDashboardClient: React.FC = () => {
                   )}
 
                   <form onSubmit={handleSaveChanges} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#aba79e] mb-1">
-                        URL de Logo / Imagen
-                      </label>
-                      <input
-                        type="url"
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        placeholder="https://..."
-                        className="w-full px-3 py-2 rounded-xl bg-[#111215] border border-[#2b2d38] text-xs text-[#f3f1ec] focus:outline-none focus:border-[#e6cca0]"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#aba79e] mb-1">
+                          Rubro / Categoría
+                        </label>
+                        <input
+                          type="text"
+                          value={category}
+                          onChange={(e) => setCategory(e.target.value)}
+                          placeholder="Ej: Luthier, Sala de Ensayo..."
+                          className="w-full px-3 py-2 rounded-xl bg-[#111215] border border-[#2b2d38] text-xs text-[#f3f1ec] focus:outline-none focus:border-[#e6cca0]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#aba79e] mb-1">
+                          URL de Logo / Imagen
+                        </label>
+                        <input
+                          type="url"
+                          value={imageUrl}
+                          onChange={(e) => setImageUrl(e.target.value)}
+                          placeholder="https://..."
+                          className="w-full px-3 py-2 rounded-xl bg-[#111215] border border-[#2b2d38] text-xs text-[#f3f1ec] focus:outline-none focus:border-[#e6cca0]"
+                        />
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
