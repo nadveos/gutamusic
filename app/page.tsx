@@ -10,6 +10,7 @@ import { SpotifyPlaylistSection } from '../components/SpotifyPlaylistSection';
 import { VideoEmbedGrid } from '../components/VideoEmbedGrid';
 import { FeaturedInterviewCard } from '../components/FeaturedInterviewCard';
 import { BrandAllianceShowcase } from '../components/BrandAllianceShowcase';
+import { SponsorBillboardHero } from '../components/SponsorBillboardHero';
 import { getSpotifyPlaylist } from '../lib/services/spotifyService';
 
 export default async function HomePage() {
@@ -29,6 +30,9 @@ export default async function HomePage() {
       {consagradosArtists.length > 0 && (
         <HeroFeatured artists={consagradosArtists} titleBadge="Artista Consagrado" />
       )}
+
+      {/* 1.1 Billboard de Alto Impacto (Scroll-Reveal): Patrocinador Oficial Exclusivo */}
+      <SponsorBillboardHero />
 
       {/* 2. Destacados de la Semana (Cards en rotación con hover y botón a catálogo completo) */}
       {weeklyFeaturedArtists.length > 0 && (

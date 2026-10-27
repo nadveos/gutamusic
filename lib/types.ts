@@ -214,6 +214,7 @@ export interface AlliancePartner {
   name: string;
   category?: string;       // e.g. "Equipamiento de Audio", "Luthier & Instrumentos", "Estudio de Grabación"
   imageUrl: string;        // URL de imagen/logo (adaptativo a cualquier alto/ancho)
+  bannerUrl?: string;      // URL de banner horizontal panorámico de alta resolución
   phone?: string;          // Teléfono para llamadas directas
   whatsapp?: string;       // Número limpio para enlace wa.me directo
   websiteUrl?: string;     // Sitio web o red social

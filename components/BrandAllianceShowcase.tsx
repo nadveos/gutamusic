@@ -44,15 +44,7 @@ export const AllianceCard: React.FC<{ item: AlliancePartner; isPreview?: boolean
           : 'bg-[#1a1b21] border border-[#2c2e39] hover:border-[#d97d64]/60 hover:shadow-xl hover:shadow-[#121316]/50'
       }`}
     >
-      {/* Insignia VIP de Patrocinador Oficial */}
-      {isPremium && (
-        <div className="absolute -top-3 left-4 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-gradient-to-r from-[#e6cca0] via-[#d97d64] to-[#e6cca0] text-[#121316] shadow-md flex items-center gap-1 z-10">
-          <Sparkles className="w-3 h-3 fill-current text-[#121316]" />
-          <span>Sponsor Oficial Premium</span>
-        </div>
-      )}
-
-      <div className="space-y-3 pt-1">
+      <div className="space-y-3">
         {/* Adaptive Image Container: handles ANY aspect ratio (wide, square, tall) with clean framing */}
         <div
           className={`relative w-full h-24 sm:h-28 rounded-xl border p-3 flex items-center justify-center overflow-hidden transition-colors ${
@@ -156,6 +148,13 @@ export const AllianceCard: React.FC<{ item: AlliancePartner; isPreview?: boolean
           </a>
         )}
       </div>
+
+      {/* Aviso editorial discreto en margen inferior derecho */}
+      {isPremium && (
+        <span className="text-[9px] text-[#78746c] italic block text-right pt-2 select-none">
+          * Este es un auspiciante PREMIUM
+        </span>
+      )}
     </div>
   );
 };
