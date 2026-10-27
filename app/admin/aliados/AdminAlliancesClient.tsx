@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { AlliancePartner, AllianceSector } from '../../../lib/types';
 import { pb } from '../../../lib/pocketbase';
+import { getDaysRemaining, calculateExpirationDate, getPlanBySector } from '../../../lib/constants/sponsorPricing';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
 import { ImageUploadField } from '../../../components/admin/ImageUploadField';
 import { ConfirmModal } from '../../../components/admin/ConfirmModal';
@@ -34,32 +35,37 @@ interface AdminAlliancesClientProps {
   initialAlliances: AlliancePartner[];
 }
 
-const SECTOR_OPTIONS: { value: AllianceSector; label: string; recommended?: boolean; desc: string }[] = [
+const SECTOR_OPTIONS: { value: AllianceSector; label: string; recommended?: boolean; desc: string; priceText: string }[] = [
   {
     value: 'global_footer',
     label: 'Pie de Página Global (Todas las Secciones)',
     recommended: true,
+    priceText: '$36.000 / 30 días',
     desc: '🌟 Recomendado: Máxima visibilidad transversal en el 100% de las páginas del portal sin invadir el contenido editorial.',
   },
   {
     value: 'home_mid',
     label: 'Página Principal (Bloque Intermedio)',
+    priceText: '$29.500 / 30 días',
     desc: 'Se muestra en la portada entre el catálogo de artistas incorporados y la entrevista destacada.',
   },
   {
     value: 'artistas_catalog',
     label: 'Directorio de Artistas',
+    priceText: '$18.500 / 30 días',
     desc: 'Se muestra en el catálogo y buscador de músicos independientes.',
   },
   {
     value: 'agenda_events',
     label: 'Agenda Cultural & Festivales',
+    priceText: '$21.000 / 30 días',
     desc: 'Se muestra en la cartelera de fechas, peñas y recitales en vivo.',
   },
   {
     value: 'all_sections',
     label: 'Multisección Transversal',
-    desc: 'Aparece en todos los bloques específicos configurados.',
+    priceText: '$49.000 / 30 días',
+    desc: 'Aparece en todos los bloques específicos configurados con tarifa promocional.',
   },
 ];
 
@@ -292,6 +298,45 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
       });
     } catch (err: any) {
       setNotification({ type: 'error', text: 'Error al cambiar estado.' });
+    }
+  };
+
+  const handleExtend30Days = async (item: AlliancePartner) => {
+    try {
+      const todayIso = new Date().toISOString().split('T')[0];
+      const newEndDate = calculateExpirationDate(new Date());
+
+      try {
+        await pb.collection('alliances').update(item.id, {
+          active: true,
+          startDate: item.startDate || todayIso,
+          endDate: newEndDate,
+          paymentStatus: 'manual_free',
+        });
+      } catch (err: any) {
+        console.warn('PocketBase extend error:', err?.message);
+      }
+
+      setAlliances((prev) =>
+        prev.map((a) =>
+          a.id === item.id
+            ? {
+                ...a,
+                active: true,
+                startDate: item.startDate || todayIso,
+                endDate: newEndDate,
+                paymentStatus: 'manual_free',
+              }
+            : a
+        )
+      );
+
+      setNotification({
+        type: 'success',
+        text: `¡Se extendieron 30 días de vigencia a "${item.name}" (hasta ${newEndDate})!`,
+      });
+    } catch (err: any) {
+      setNotification({ type: 'error', text: 'Error al extender vigencia.' });
     }
   };
 
@@ -772,6 +817,7 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
                   <th className="py-2.5 px-3">Nombre & Rubro</th>
                   <th className="py-2.5 px-3">Sector Asignado</th>
                   <th className="py-2.5 px-3">Contacto Directo</th>
+                  <th className="py-2.5 px-3">Vigencia (30 Días)</th>
                   <th className="py-2.5 px-3">Prioridad</th>
                   <th className="py-2.5 px-3">Estado</th>
                   <th className="py-2.5 px-3 text-right">Acciones</th>
@@ -780,6 +826,7 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
               <tbody className="divide-y divide-[#24252c]">
                 {filteredAlliances.map((item) => {
                   const sectorMeta = SECTOR_OPTIONS.find((s) => s.value === item.sector);
+                  const remaining = getDaysRemaining(item.endDate);
                   return (
                     <tr key={item.id} className="hover:bg-[#202228]/50 transition-colors">
                       {/* Thumbnail Container */}
@@ -847,6 +894,41 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
                               <ExternalLink className="w-3 h-3" />
                             </a>
                           )}
+                        </div>
+                      </td>
+
+                      {/* 30-Day Expiration Status */}
+                      <td className="py-3 px-3">
+                        <div className="space-y-1">
+                          {item.paymentStatus === 'manual_free' || !item.endDate ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#e6cca0] bg-[#22242c] px-2 py-0.5 rounded-md border border-[#373a48]">
+                              <Star className="w-3 h-3 fill-current text-[#e6cca0]" />
+                              Cortesía / Permanente
+                            </span>
+                          ) : (
+                            <div className="space-y-0.5">
+                              <span
+                                className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                  remaining.isExpired
+                                    ? 'bg-[#2b2225] text-[#d97d64] border border-[#d97d64]/30'
+                                    : 'bg-[#1e2a22] text-[#5ce487] border border-[#5ce487]/30'
+                                }`}
+                              >
+                                {remaining.label}
+                              </span>
+                              <span className="block text-[9px] text-[#78746c]">
+                                Vence: {item.endDate}
+                              </span>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleExtend30Days(item)}
+                            className="text-[9px] text-[#a09c93] hover:text-[#e6cca0] underline block"
+                            title="Sumar 30 días de cortesía"
+                          >
+                            +30 días cortesía
+                          </button>
                         </div>
                       </td>
 

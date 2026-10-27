@@ -223,15 +223,14 @@ export const BrandAllianceShowcase: React.FC<BrandAllianceShowcaseProps> = ({
           </p>
         </div>
 
-        <a
-          href="https://www.instagram.com/sesionesrg"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#e6cca0] hover:text-[#f3f1ec] transition-colors self-start sm:self-auto py-1 px-2.5 rounded-lg bg-[#202228] border border-[#2d2f38] hover:border-[#424552]"
+        <Link
+          href="/sumar-auspicio"
+          className="inline-flex items-center gap-2 text-xs font-bold text-[#e6cca0] hover:text-[#121316] transition-all self-start sm:self-auto py-2 px-3.5 rounded-xl bg-gradient-to-r from-[#2a2d36] to-[#202228] hover:from-[#e6cca0] hover:to-[#d97d64] border border-[#d97d64]/40 hover:border-[#e6cca0] shadow-sm hover:shadow-md hover:shadow-[#d97d64]/20 group/btn"
         >
+          <Sparkles className="w-3.5 h-3.5 text-[#d97d64] group-hover/btn:text-[#121316] transition-colors" />
           <span>+ Sumar mi Auspicio / Marca</span>
-          <ExternalLink className="w-3 h-3" />
-        </a>
+          <ExternalLink className="w-3 h-3 text-[#e6cca0] group-hover/btn:text-[#121316] transition-colors" />
+        </Link>
       </div>
 
       {/* Grid of Alliances / Sponsors */}

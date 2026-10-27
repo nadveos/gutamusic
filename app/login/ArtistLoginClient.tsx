@@ -50,8 +50,13 @@ export function ArtistLoginClient() {
       }
 
       setSuccessMessage('¡Inicio de sesión exitoso! Ingresando...');
+      const userRole = (authData.record as any)?.role;
       setTimeout(() => {
-        router.push('/panel-artista');
+        if (userRole === 'sponsor') {
+          router.push('/panel-auspiciante');
+        } else {
+          router.push('/panel-artista');
+        }
       }, 800);
     } catch (err: any) {
       setErrorMessage(
@@ -171,7 +176,16 @@ export function ArtistLoginClient() {
                 Registrá tu banda gratis
               </Link>
             </div>
-            <div>
+            <div className="pt-1">
+              <span>¿Sos marca o auspiciante? </span>
+              <Link
+                href="/sumar-auspicio"
+                className="text-[#e6cca0] hover:underline font-semibold transition-colors"
+              >
+                Sumar Auspicio Publicitario (30 días)
+              </Link>
+            </div>
+            <div className="pt-2 border-t border-[#262832]">
               <Link
                 href="/"
                 className="text-[#aba79e] hover:text-[#f3f1ec] transition-colors"

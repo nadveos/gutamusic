@@ -626,21 +626,38 @@ export class MusicDataService {
       });
 
       if (records) {
-        return records.map((r) => ({
-          id: r.id,
-          name: r.name,
-          category: r.category || '',
-          description: r.description || '',
-          imageUrl: r.imageUrl || (r.image ? pb.files.getUrl(r, r.image) : ''),
-          phone: r.phone || '',
-          whatsapp: r.whatsapp || '',
-          websiteUrl: r.websiteUrl || '',
-          email: r.email || '',
-          sector: r.sector || 'global_footer',
-          active: Boolean(r.active),
-          priority: typeof r.priority === 'number' ? r.priority : 1,
-          createdDate: r.createdDate || r.created?.split(' ')[0] || '',
-        }));
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        return records
+          .map((r) => ({
+            id: r.id,
+            name: r.name,
+            category: r.category || '',
+            description: r.description || '',
+            imageUrl: r.imageUrl || (r.image ? pb.files.getUrl(r, r.image) : ''),
+            phone: r.phone || '',
+            whatsapp: r.whatsapp || '',
+            websiteUrl: r.websiteUrl || '',
+            email: r.email || '',
+            sector: r.sector || 'global_footer',
+            active: Boolean(r.active),
+            priority: typeof r.priority === 'number' ? r.priority : 1,
+            createdDate: r.createdDate || r.created?.split(' ')[0] || '',
+            startDate: r.startDate || '',
+            endDate: r.endDate || '',
+            sponsorUserId: r.sponsorUserId || '',
+            pricePaid: typeof r.pricePaid === 'number' ? r.pricePaid : undefined,
+            paymentStatus: r.paymentStatus || (r.active ? 'active' : 'expired'),
+            paymentId: r.paymentId || '',
+          }))
+          .filter((item) => {
+            if (!onlyActive) return true;
+            // Si tiene fecha de expiración y ya pasó, y no es marcado como cortesía manual permanente
+            if (item.endDate && item.paymentStatus !== 'manual_free') {
+              return item.endDate >= todayStr;
+            }
+            return item.active;
+          });
       }
     } catch (err) {
       console.warn('Error loading alliances from PocketBase:', err);
@@ -668,6 +685,12 @@ export class MusicDataService {
           active: Boolean(record.active),
           priority: typeof record.priority === 'number' ? record.priority : 1,
           createdDate: record.createdDate || record.created?.split(' ')[0] || '',
+          startDate: record.startDate || '',
+          endDate: record.endDate || '',
+          sponsorUserId: record.sponsorUserId || '',
+          pricePaid: typeof record.pricePaid === 'number' ? record.pricePaid : undefined,
+          paymentStatus: record.paymentStatus || 'active',
+          paymentId: record.paymentId || '',
         };
       }
     } catch (err) {

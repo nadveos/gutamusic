@@ -1,5 +1,7 @@
 import { getServerAdminPb } from '../pocketbase';
 import { sendTelegramMessage } from './telegramService';
+import { AllianceSector } from '../types';
+import { calculateExpirationDate, getPlanBySector } from '../constants/sponsorPricing';
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
@@ -16,6 +18,14 @@ export interface CreateWeeklyFeaturedParams {
   artistName: string;
   userEmail?: string;
   amount?: number; // Precio por semana (default: $15.000 ARS)
+}
+
+export interface CreateSponsorAllianceParams {
+  allianceId: string;
+  brandName: string;
+  sector: AllianceSector;
+  userEmail?: string;
+  amount?: number;
 }
 
 /**
@@ -144,6 +154,70 @@ export async function createWeeklyFeaturedPreference(params: CreateWeeklyFeature
 }
 
 /**
+ * Crea una preferencia de pago para contratación o renovación de Auspicio de Marca por 30 días
+ */
+export async function createSponsorAlliancePreference(params: CreateSponsorAllianceParams) {
+  if (!MP_ACCESS_TOKEN) {
+    throw new Error('MP_ACCESS_TOKEN no configurado en el servidor');
+  }
+
+  const plan = getPlanBySector(params.sector);
+  const price = params.amount || plan.priceArs;
+
+  const body = {
+    items: [
+      {
+        id: `sponsor_${params.allianceId}`,
+        title: `Auspicio Cultural (30 días) — ${params.brandName}`,
+        description: `Espacio publicitario: ${plan.name} (${params.sector}) por 30 días corridos en GUTA MÚSICA`,
+        quantity: 1,
+        currency_id: 'ARS',
+        unit_price: price,
+      },
+    ],
+    payer: {
+      email: (params.userEmail || 'auspicios@guta.meapp.com.ar').trim(),
+    },
+    back_urls: {
+      success: `${SITE_URL}/panel-auspiciante?payment=success&id=${params.allianceId}`,
+      failure: `${SITE_URL}/panel-auspiciante?payment=failure&id=${params.allianceId}`,
+      pending: `${SITE_URL}/panel-auspiciante?payment=pending&id=${params.allianceId}`,
+    },
+    auto_return: 'approved',
+    notification_url: `${SITE_URL}/api/mercadopago/webhook`,
+    metadata: {
+      type: 'sponsor_alliance',
+      alliance_id: params.allianceId,
+      brand_name: params.brandName,
+      sector: params.sector,
+      amount: price,
+    },
+    statement_descriptor: 'GUTA MUSICA',
+  };
+
+  const res = await fetch('https://api.mercadopago.com/checkout/preferences', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    console.error('❌ Error MP sponsor alliance preference:', data);
+    throw new Error(data.message || 'Error al generar link de pago para auspicio');
+  }
+
+  return {
+    preferenceId: data.id,
+    initPoint: data.init_point,
+    sandboxInitPoint: data.sandbox_init_point,
+  };
+}
+
+/**
  * Procesa la notificación del Webhook de Mercado Pago cuando un pago es aprobado
  */
 export async function processMercadoPagoPayment(paymentId: string | number) {
@@ -201,7 +275,45 @@ export async function processMercadoPagoPayment(paymentId: string | number) {
       }
     }
 
-    // 2. Caso Colaboración Voluntaria: Notificar por Telegram
+    // 2. Caso Auspiciante / Alianza Publicitaria (30 días de vigencia)
+    if (paymentType === 'sponsor_alliance' && metadata.alliance_id) {
+      const pb = await getServerAdminPb();
+      const todayIso = new Date().toISOString().split('T')[0];
+      const endDateIso = calculateExpirationDate(new Date());
+
+      try {
+        await pb.collection('alliances').update(metadata.alliance_id, {
+          active: true,
+          paymentStatus: 'active',
+          startDate: todayIso,
+          endDate: endDateIso,
+          pricePaid: amount,
+          paymentId: String(paymentId),
+        });
+
+        const plan = getPlanBySector(metadata.sector);
+
+        // Notificar por Telegram al administrador
+        await sendTelegramMessage({
+          text: [
+            `🎉 <b>¡NUEVO AUSPICIO DE MARCA ACTIVADO (30 DÍAS)!</b>`,
+            ``,
+            `🏢 <b>Marca / Auspiciante:</b> <code>${metadata.brand_name || metadata.alliance_id}</code>`,
+            `📍 <b>Sección Web:</b> ${plan.name} (<code>${metadata.sector}</code>)`,
+            `💰 <b>Monto cobrado:</b> <b>$${amount} ARS</b>`,
+            `📅 <b>Fecha de inicio:</b> ${todayIso}`,
+            `⏱️ <b>Vigencia hasta:</b> ${endDateIso} (30 días corridos)`,
+            ``,
+            `<i>ID Pago MP: <code>${paymentId}</code></i>`,
+          ].join('\n'),
+          parseMode: 'HTML',
+        });
+      } catch (err: any) {
+        console.error('❌ Error al activar auspicio publicitario tras pago MP:', err);
+      }
+    }
+
+    // 3. Caso Colaboración Voluntaria: Notificar por Telegram
     if (paymentType === 'donation') {
       const donorName = metadata.donor_name || payment.payer?.first_name || 'Anónimo';
       const donorMessage = metadata.donor_message;

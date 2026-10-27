@@ -223,6 +223,12 @@ export interface AlliancePartner {
   priority?: number;       // Orden de visualización (1, 2, 3...)
   description?: string;    // Breve reseña o eslogan institucional
   createdDate?: string;
+  startDate?: string;      // Fecha de inicio de vigencia de los 30 días (ISO string o YYYY-MM-DD)
+  endDate?: string;        // Fecha de fin de vigencia (ISO string o YYYY-MM-DD)
+  sponsorUserId?: string;  // ID del usuario creador/auspiciante asociado
+  pricePaid?: number;      // Monto en ARS pagado por el período de 30 días
+  paymentStatus?: 'active' | 'expired' | 'manual_free' | 'pending'; // Estado comercial
+  paymentId?: string;      // Identificador de la transacción de Mercado Pago
 }
 
 export type OfficialPlatformKey = 'tiktok' | 'facebook' | 'instagram' | 'kick' | 'twitch';
