@@ -713,6 +713,23 @@ export class MusicDataService {
   }
 
   static async updateOfficialSocials(settings: OfficialSocialsSettings): Promise<OfficialSocialsSettings> {
+    // Si estamos en el navegador, usar la API route autenticada con superusuario en el servidor
+    if (typeof window !== 'undefined') {
+      try {
+        const res = await fetch('/api/admin/socials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data) return json.data;
+        }
+      } catch (clientErr) {
+        console.warn('API route /api/admin/socials error, fallback to direct pb:', clientErr);
+      }
+    }
+
     try {
       await syncServerAuth();
 

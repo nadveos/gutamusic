@@ -22,6 +22,8 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist, artists: raw
   const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+
   const total = artists.length;
   const currentArtist = artists[currentIndex] || artists[0];
 
@@ -46,6 +48,8 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist, artists: raw
   if (!currentArtist) return null;
 
   const isMultiple = total > 1;
+  const heroImg = currentArtist.bannerUrl || currentArtist.photoUrl;
+  const isImageBroken = failedImages[currentArtist.id] || !heroImg;
 
   return (
     <section
@@ -58,14 +62,19 @@ export const HeroFeatured: React.FC<HeroFeaturedProps> = ({ artist, artists: raw
       {/* Background Media with smooth transition */}
       <div className="absolute inset-0 z-0">
         <div key={currentArtist.id} className="relative w-full h-full animate-fadeIn transition-opacity duration-700">
-          <Image
-            src={currentArtist.bannerUrl || currentArtist.photoUrl}
-            alt={currentArtist.stageName}
-            fill
-            sizes="100vw"
-            priority
-            className="object-cover object-center opacity-30 scale-100 group-hover:scale-102 transition-transform duration-1000 ease-out"
-          />
+          {!isImageBroken ? (
+            <Image
+              src={heroImg}
+              alt={currentArtist.stageName}
+              fill
+              sizes="100vw"
+              priority
+              onError={() => setFailedImages((prev) => ({ ...prev, [currentArtist.id]: true }))}
+              className="object-cover object-center opacity-30 scale-100 group-hover:scale-102 transition-transform duration-1000 ease-out"
+            />
+          ) : (
+            <div className="w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#2a2c38] via-[#1a1b20] to-[#121316] opacity-60" />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-[#151618] via-[#151618]/85 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#151618] via-[#151618]/70 to-transparent" />
         </div>

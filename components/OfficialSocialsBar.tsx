@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { OfficialPlatformKey, OfficialSocialsSettings } from '../lib/types';
-import { PLATFORMS_META, PLATFORM_KEYS, SocialIcon, buildSocialUrl } from '../lib/socialUtils';
+import { PLATFORMS_META, PLATFORM_KEYS, SocialIcon, buildSocialUrl, DEFAULT_OFFICIAL_SOCIALS } from '../lib/socialUtils';
 
 interface OfficialSocialsBarProps {
   settings?: OfficialSocialsSettings;
@@ -17,16 +17,16 @@ export const OfficialSocialsBar: React.FC<OfficialSocialsBarProps> = ({
   showLabel = true,
   className = '',
 }) => {
-  // If settings not provided, use a default fallback
-  const brandName = settings?.brandName || '@sesionesrg';
+  // Configuración efectiva combinando datos provistos con defaults oficiales
+  const effectiveSettings = settings || DEFAULT_OFFICIAL_SOCIALS;
+  const brandName = effectiveSettings?.brandName || '@sesionesrg';
 
-  // Get active platforms that have a non-empty handle
+  // Obtener plataformas oficiales que tengan handle configurado
   const activePlatforms = PLATFORM_KEYS.filter((key) => {
-    const channel = settings?.[key];
+    const channel = effectiveSettings?.[key] || DEFAULT_OFFICIAL_SOCIALS[key];
     if (!channel) return false;
-    const isExplicitlyActive = channel.active !== false;
     const hasHandle = Boolean(channel.handle && channel.handle.trim().length > 0);
-    return isExplicitlyActive && hasHandle;
+    return hasHandle;
   });
 
   if (activePlatforms.length === 0) {
@@ -46,7 +46,7 @@ export const OfficialSocialsBar: React.FC<OfficialSocialsBarProps> = ({
 
         <div className="flex items-center gap-1">
           {activePlatforms.map((key) => {
-            const channel = settings![key];
+            const channel = effectiveSettings?.[key] || DEFAULT_OFFICIAL_SOCIALS[key];
             const meta = PLATFORMS_META[key];
             const targetUrl = channel.url || buildSocialUrl(key, channel.handle);
 
@@ -84,7 +84,7 @@ export const OfficialSocialsBar: React.FC<OfficialSocialsBarProps> = ({
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {activePlatforms.map((key) => {
-            const channel = settings![key];
+            const channel = effectiveSettings?.[key] || DEFAULT_OFFICIAL_SOCIALS[key];
             const meta = PLATFORMS_META[key];
             const targetUrl = channel.url || buildSocialUrl(key, channel.handle);
 
@@ -128,7 +128,7 @@ export const OfficialSocialsBar: React.FC<OfficialSocialsBarProps> = ({
 
         <div className="flex flex-wrap items-center gap-1.5">
           {activePlatforms.map((key) => {
-            const channel = settings![key];
+            const channel = effectiveSettings?.[key] || DEFAULT_OFFICIAL_SOCIALS[key];
             const meta = PLATFORMS_META[key];
             const targetUrl = channel.url || buildSocialUrl(key, channel.handle);
 
@@ -157,7 +157,7 @@ export const OfficialSocialsBar: React.FC<OfficialSocialsBarProps> = ({
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       {activePlatforms.map((key) => {
-        const channel = settings![key];
+        const channel = effectiveSettings?.[key] || DEFAULT_OFFICIAL_SOCIALS[key];
         const meta = PLATFORMS_META[key];
         const targetUrl = channel.url || buildSocialUrl(key, channel.handle);
 
