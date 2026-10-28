@@ -66,7 +66,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
         {/* Background Banner */}
         <div className="absolute inset-0 z-0">
           <Image
-            src={artist.bannerUrl || artist.photoUrl}
+            src={artist.bannerUrl || artist.photoUrl || '/brand/guta-musica-logo.png'}
             alt={artist.stageName}
             fill
             sizes="100vw"
@@ -81,7 +81,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
           {/* Avatar / Main Photo */}
           <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-xl overflow-hidden border border-[#3c3f4c] flex-shrink-0 bg-[#151618]">
             <Image
-              src={artist.photoUrl}
+              src={artist.photoUrl || '/brand/guta-musica-favicon-512.png'}
               alt={artist.stageName}
               fill
               sizes="(max-width: 640px) 128px, 160px"
@@ -417,7 +417,7 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                   }}
                 >
                   <div className="relative aspect-video rounded-lg overflow-hidden bg-black">
-                    <Image src={vid.thumbnailUrl} alt={vid.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
+                    <Image src={vid.thumbnailUrl || '/brand/guta-musica-logo.png'} alt={vid.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-9 h-9 rounded-full bg-[#d97d64] text-[#151618] flex items-center justify-center">
                         <Play className="w-4 h-4 fill-[#151618] ml-0.5" />

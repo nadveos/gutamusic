@@ -68,7 +68,7 @@ export const VideoEmbedGrid: React.FC<VideoEmbedGridProps> = ({
             {/* Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-[#18191d]">
               <Image
-                src={video.thumbnailUrl}
+                src={video.thumbnailUrl || '/brand/guta-musica-logo.png'}
                 alt={video.title}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"

@@ -45,7 +45,7 @@ export const FeaturedInterviewCard: React.FC<FeaturedInterviewCardProps> = ({ in
         <div className="lg:col-span-5 relative">
           <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden natural-panel border border-[#31333d] group">
             <Image
-              src={interview.thumbnailUrl}
+              src={interview.thumbnailUrl || interview.artistPhoto || '/brand/guta-musica-logo.png'}
               alt={interview.title}
               fill
               sizes="(max-width: 1024px) 100vw, 40vw"

@@ -31,7 +31,7 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist }) => {
       {/* Thumbnail Container */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#1a1b1f]">
         <Image
-          src={artist.photoUrl}
+          src={artist.photoUrl || '/brand/guta-musica-favicon-512.png'}
           alt={artist.stageName}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

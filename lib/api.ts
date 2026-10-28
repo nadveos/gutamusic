@@ -2,26 +2,33 @@ import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, GenreType, Pr
 import { DEFAULT_OFFICIAL_SOCIALS, buildSocialUrl } from './socialUtils';
 import { MOCK_ALLIANCES } from './mockData';
 import { getRealEphemerides } from './services/ephemeridesScraper';
+import { getWeeklyFeaturedStatus } from './services/featuredRotationService';
 import { pb, ensureServerSuperUserAuth } from './pocketbase';
+
+function normalizeImageUrl(raw?: any, fallback: string = ''): string {
+  if (!raw || typeof raw !== 'string') return fallback;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return fallback;
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:image/') ||
+    (trimmed.startsWith('/') && !trimmed.startsWith('//'))
+  ) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('//')) {
+    return `https:${trimmed}`;
+  }
+  if (/^[\w.-]+\.[a-z]{2,}\//i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+  return fallback;
+}
 
 async function syncServerAuth() {
   if (typeof window === 'undefined') {
-    // 1. Intentar cargar sesión desde cookies de la petición
-    try {
-      const { cookies } = await import('next/headers');
-      const cookieStore = await cookies();
-      const cookieHeader = cookieStore.toString();
-      if (cookieHeader) {
-        pb.authStore.loadFromCookie(cookieHeader);
-      }
-    } catch {
-      // outside request context
-    }
-
-    // 2. Si no hay token de cookie, autenticar automáticamente con PB_EMAIL y PB_PASSWORD
-    if (!pb.authStore.isValid) {
-      await ensureServerSuperUserAuth();
-    }
+    await ensureServerSuperUserAuth();
   }
 }
 
@@ -56,17 +63,29 @@ export class MusicDataService {
           country: r.country || 'Argentina',
           bio: r.bio || '',
           shortBio: r.shortBio || '',
-          photoUrl: r.photoUrl || (r.photo ? pb.files.getUrl(r, r.photo) : ''),
-          bannerUrl: r.bannerUrl || '',
+          photoUrl: normalizeImageUrl(r.photoUrl || (r.photo ? pb.files.getUrl(r, r.photo) : ''), '/brand/guta-musica-favicon-512.png'),
+          bannerUrl: normalizeImageUrl(r.bannerUrl, ''),
           featured: Boolean(r.featured),
           featuredOfWeek: Boolean(r.featuredOfWeek),
           featuredOfWeekDate: r.featuredOfWeekDate || '',
           socials: r.socials || {},
-          videos: r.videos || [],
-          discography: r.discography || [],
+          videos: Array.isArray(r.videos)
+            ? r.videos.map((v: any) => ({
+                ...v,
+                thumbnailUrl: normalizeImageUrl(v?.thumbnailUrl, '/brand/guta-musica-logo.png'),
+              }))
+            : [],
+          discography: Array.isArray(r.discography)
+            ? r.discography.map((d: any) => ({
+                ...d,
+                coverUrl: normalizeImageUrl(d?.coverUrl, ''),
+              }))
+            : [],
           agenda: r.agenda || [],
           press: r.press || [],
-          gallery: Array.isArray(r.gallery) ? r.gallery : (typeof r.gallery === 'string' && r.gallery ? [r.gallery] : []),
+          gallery: (Array.isArray(r.gallery) ? r.gallery : (typeof r.gallery === 'string' && r.gallery ? [r.gallery] : []))
+            .map((img: any) => normalizeImageUrl(img, ''))
+            .filter(Boolean),
           quotes: r.quotes || '',
           createdDate: r.createdDate || r.created?.split(' ')[0] || '',
           likesCount: typeof r.likesCount === 'number' ? r.likesCount : (parseInt(r.likesCount, 10) || 0),
@@ -244,16 +263,26 @@ export class MusicDataService {
           country: record.country || 'Argentina',
           bio: record.bio || '',
           shortBio: record.shortBio || '',
-          photoUrl: record.photoUrl || (record.photo ? pb.files.getUrl(record, record.photo) : ''),
-          bannerUrl: record.bannerUrl || '',
+          photoUrl: normalizeImageUrl(record.photoUrl || (record.photo ? pb.files.getUrl(record, record.photo) : ''), '/brand/guta-musica-favicon-512.png'),
+          bannerUrl: normalizeImageUrl(record.bannerUrl, ''),
           featured: Boolean(record.featured),
           featuredOfWeek: Boolean(record.featuredOfWeek),
           socials: record.socials || {},
-          videos: artistVideos,
-          discography: record.discography || [],
+          videos: artistVideos.map((v) => ({
+            ...v,
+            thumbnailUrl: normalizeImageUrl(v?.thumbnailUrl, '/brand/guta-musica-logo.png'),
+          })),
+          discography: Array.isArray(record.discography)
+            ? record.discography.map((d: any) => ({
+                ...d,
+                coverUrl: normalizeImageUrl(d?.coverUrl, ''),
+              }))
+            : [],
           agenda: artistAgenda,
           press: artistPress,
-          gallery: Array.isArray(record.gallery) ? record.gallery : (typeof record.gallery === 'string' && record.gallery ? [record.gallery] : []),
+          gallery: (Array.isArray(record.gallery) ? record.gallery : (typeof record.gallery === 'string' && record.gallery ? [record.gallery] : []))
+            .map((img: any) => normalizeImageUrl(img, ''))
+            .filter(Boolean),
           quotes: record.quotes || '',
           createdDate: record.createdDate || record.created?.split(' ')[0] || '',
           likesCount: typeof record.likesCount === 'number' ? record.likesCount : (parseInt(record.likesCount, 10) || 0),
@@ -309,7 +338,6 @@ export class MusicDataService {
 
       if (records && records.length > 0) {
         const approved = records.filter((r) => !r.status || r.status === 'approved').reverse();
-        const { getWeeklyFeaturedStatus } = await import('./services/featuredRotationService');
 
         const weeklyRecords = approved.filter((r) => {
           if (r.featuredOfWeek) {
@@ -367,7 +395,7 @@ export class MusicDataService {
           platform: r.platform || 'youtube',
           url: r.url,
           embedUrl: r.embedUrl,
-          thumbnailUrl: r.thumbnailUrl,
+          thumbnailUrl: normalizeImageUrl(r.thumbnailUrl, '/brand/guta-musica-logo.png'),
           channelOrAuthor: r.channelOrAuthor || '',
           type: r.type || 'session',
           duration: r.duration || '',
@@ -400,7 +428,7 @@ export class MusicDataService {
           artistId: r.artistId,
           artistName: r.artistName,
           artistSlug: r.artistSlug,
-          artistPhoto: r.artistPhoto,
+          artistPhoto: normalizeImageUrl(r.artistPhoto, '/brand/guta-musica-favicon-512.png'),
           host: r.host,
           date: r.date,
           summary: r.summary,
@@ -408,7 +436,7 @@ export class MusicDataService {
           keyHighlights: Array.isArray(r.keyHighlights) ? r.keyHighlights : [],
           videoUrl: r.videoUrl,
           videoPlatform: r.videoPlatform,
-          thumbnailUrl: r.thumbnailUrl,
+          thumbnailUrl: normalizeImageUrl(r.thumbnailUrl || r.artistPhoto, '/brand/guta-musica-logo.png'),
           featured: Boolean(r.featured),
           category: r.category,
         }));
@@ -433,7 +461,7 @@ export class MusicDataService {
           artistId: record.artistId,
           artistName: record.artistName,
           artistSlug: record.artistSlug,
-          artistPhoto: record.artistPhoto,
+          artistPhoto: normalizeImageUrl(record.artistPhoto, '/brand/guta-musica-favicon-512.png'),
           host: record.host,
           date: record.date,
           summary: record.summary,
@@ -441,7 +469,7 @@ export class MusicDataService {
           keyHighlights: Array.isArray(record.keyHighlights) ? record.keyHighlights : [],
           videoUrl: record.videoUrl,
           videoPlatform: record.videoPlatform,
-          thumbnailUrl: record.thumbnailUrl,
+          thumbnailUrl: normalizeImageUrl(record.thumbnailUrl || record.artistPhoto, '/brand/guta-musica-logo.png'),
           featured: Boolean(record.featured),
           category: record.category,
         };
@@ -476,7 +504,7 @@ export class MusicDataService {
           category: r.category,
           categoryLabel: r.categoryLabel,
           source: r.source,
-          imageUrl: r.imageUrl,
+          imageUrl: normalizeImageUrl(r.imageUrl, ''),
           artistRelated: r.artistRelated,
           impactBadge: r.impactBadge,
         }));
@@ -568,7 +596,7 @@ export class MusicDataService {
           category: r.category,
           categoryLabel: r.categoryLabel,
           source: r.source,
-          imageUrl: r.imageUrl,
+          imageUrl: normalizeImageUrl(r.imageUrl, ''),
           artistRelated: r.artistRelated,
           impactBadge: r.impactBadge,
         }));
@@ -634,8 +662,8 @@ export class MusicDataService {
             name: r.name,
             category: r.category || '',
             description: r.description || '',
-            imageUrl: r.imageUrl || (r.image ? pb.files.getUrl(r, r.image) : ''),
-            bannerUrl: r.bannerUrl || '',
+            imageUrl: normalizeImageUrl(r.imageUrl || (r.image ? pb.files.getUrl(r, r.image) : ''), ''),
+            bannerUrl: normalizeImageUrl(r.bannerUrl, ''),
             phone: r.phone || '',
             whatsapp: r.whatsapp || '',
             instagramUrl: r.instagramUrl || '',
@@ -685,8 +713,8 @@ export class MusicDataService {
           name: record.name,
           category: record.category || '',
           description: record.description || '',
-          imageUrl: record.imageUrl || (record.image ? pb.files.getUrl(record, record.image) : ''),
-          bannerUrl: record.bannerUrl || '',
+          imageUrl: normalizeImageUrl(record.imageUrl || (record.image ? pb.files.getUrl(record, record.image) : ''), ''),
+          bannerUrl: normalizeImageUrl(record.bannerUrl, ''),
           phone: record.phone || '',
           whatsapp: record.whatsapp || '',
           instagramUrl: record.instagramUrl || '',

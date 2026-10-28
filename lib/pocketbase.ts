@@ -11,6 +11,9 @@ pb.autoCancellation(false);
 // Sincronizar automáticamente authStore con cookies en el navegador
 if (typeof document !== 'undefined') {
   pb.authStore.loadFromCookie(document.cookie);
+  if (!pb.authStore.isValid) {
+    pb.authStore.clear();
+  }
   pb.authStore.onChange(() => {
     document.cookie = pb.authStore.exportToCookie({
       httpOnly: false,
