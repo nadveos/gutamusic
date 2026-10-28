@@ -45,8 +45,8 @@ const CATEGORY_SUGGESTIONS = [
 export const SumarAuspicioClient: React.FC = () => {
   const router = useRouter();
 
-  // Selección de Plan
-  const [selectedSector, setSelectedSector] = useState<AllianceSector>('global_footer');
+  // Selección de Plan (Preseleccionamos el Más Elegido)
+  const [selectedSector, setSelectedSector] = useState<AllianceSector>('home_mid');
 
   // Datos de la Marca
   const [brandName, setBrandName] = useState('');
@@ -188,61 +188,93 @@ export const SumarAuspicioClient: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 items-stretch">
               {SPONSOR_PLANS.map((plan) => {
                 const isSelected = selectedSector === plan.sector;
+                const isPopular = plan.isPopular;
+                const isBestValue = plan.isBestValue;
+
                 return (
                   <div
                     key={plan.id}
                     onClick={() => setSelectedSector(plan.sector)}
-                    className={`relative rounded-2xl p-5 cursor-pointer transition-all duration-200 flex flex-col justify-between border ${
+                    className={`relative rounded-xl p-3.5 cursor-pointer transition-all duration-200 flex flex-col justify-between border ${
                       isSelected
-                        ? 'bg-[#1e2027] border-[#e6cca0] shadow-xl shadow-[#e6cca0]/10 ring-1 ring-[#e6cca0]'
-                        : 'bg-[#17181d] border-[#292b34] hover:border-[#3d4150] hover:bg-[#1a1b22]'
+                        ? isBestValue
+                          ? 'bg-gradient-to-b from-[#26241a] via-[#1d1f27] to-[#15161c] border-[#e6cca0] shadow-lg shadow-[#e6cca0]/15 ring-2 ring-[#e6cca0]'
+                          : isPopular
+                          ? 'bg-gradient-to-b from-[#271e1d] via-[#1d1f27] to-[#15161c] border-[#d97d64] shadow-lg shadow-[#d97d64]/15 ring-2 ring-[#d97d64]'
+                          : 'bg-[#1e2027] border-[#e6cca0] shadow-md shadow-[#e6cca0]/10 ring-1 ring-[#e6cca0]'
+                        : isBestValue
+                        ? 'bg-gradient-to-b from-[#201e17] to-[#16171d] border-[#e6cca0]/50 hover:border-[#e6cca0] hover:shadow-md'
+                        : isPopular
+                        ? 'bg-gradient-to-b from-[#221a19] to-[#16171d] border-[#d97d64]/50 hover:border-[#d97d64] hover:shadow-md'
+                        : 'bg-[#16171c] border-[#272933] hover:border-[#3c3f4e] hover:bg-[#1a1b22]'
                     }`}
                   >
-                    {plan.badge && (
-                      <span className="inline-block self-start text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#252834] text-[#e6cca0] border border-[#3b3f52] mb-3">
-                        {plan.badge}
-                      </span>
-                    )}
-
-                    <div className="space-y-2">
-                      <h3 className="text-base font-bold text-[#f3f1ec]">{plan.name}</h3>
-                      <p className="text-xs text-[#aba79e] leading-relaxed">{plan.tagline}</p>
-
-                      <div className="pt-2 flex items-baseline gap-1.5">
-                        <span className="text-2xl font-black text-[#e6cca0]">
-                          ${plan.priceArs.toLocaleString('es-AR')}
-                        </span>
-                        <span className="text-xs text-[#78746c]">/ 30 días</span>
+                    <div>
+                      {/* Badge / Tag superior */}
+                      <div className="min-h-[22px] flex items-center">
+                        {isBestValue ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#e6cca0] text-[#121316] shadow-sm">
+                            👑 MÁS CONVENIENTE
+                          </span>
+                        ) : isPopular ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#d97d64] text-[#121316] shadow-sm">
+                            ⭐ MÁS ELEGIDO
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-[9px] font-semibold text-[#a09c93] bg-[#22242c] px-2 py-0.5 rounded-full border border-[#2e313d]">
+                            {plan.badge}
+                          </span>
+                        )}
                       </div>
 
-                      <p className="text-[11px] text-[#78746c] pt-2 border-t border-[#262832]">
-                        <b className="text-[#a09c93]">Audiencia:</b> {plan.audience}
-                      </p>
+                      {/* Título & Precio */}
+                      <div className="pt-2">
+                        <h3 className="text-sm font-bold text-[#f3f1ec] leading-snug truncate">
+                          {plan.name}
+                        </h3>
 
-                      <ul className="space-y-1.5 pt-2">
-                        {plan.benefits.slice(0, 3).map((benefit, bIdx) => (
-                          <li key={bIdx} className="flex items-start gap-1.5 text-[11px] text-[#cfcbc4]">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#5ce487] shrink-0 mt-0.5" />
-                            <span>{benefit}</span>
+                        <div className="pt-1 flex items-baseline gap-1">
+                          <span className="text-xl font-black text-[#e6cca0]">
+                            ${plan.priceArs.toLocaleString('es-AR')}
+                          </span>
+                          <span className="text-[10px] text-[#78746c]">/30 días</span>
+                        </div>
+
+                        <p className="text-[11px] text-[#aba79e] leading-snug line-clamp-2 pt-1 min-h-[32px]">
+                          {plan.tagline}
+                        </p>
+                      </div>
+
+                      {/* Beneficios Clave (Compactos: 2 ítems) */}
+                      <ul className="space-y-1 pt-2 mt-2 border-t border-[#232530]">
+                        {plan.benefits.slice(0, 2).map((benefit, bIdx) => (
+                          <li key={bIdx} className="flex items-start gap-1.5 text-[10px] text-[#cfcbc4] leading-tight">
+                            <CheckCircle2 className="w-3 h-3 text-[#5ce487] shrink-0 mt-0.5" />
+                            <span className="line-clamp-1">{benefit}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
 
-                    <div className="pt-4 mt-4 border-t border-[#262832] flex items-center justify-between">
+                    {/* Selector Inferior Compacto */}
+                    <div className="pt-2.5 mt-2.5 border-t border-[#232530] flex items-center justify-between">
                       <span
-                        className={`text-xs font-semibold ${
-                          isSelected ? 'text-[#e6cca0]' : 'text-[#78746c]'
+                        className={`text-[11px] font-semibold ${
+                          isSelected ? (isPopular ? 'text-[#d97d64]' : 'text-[#e6cca0]') : 'text-[#78746c]'
                         }`}
                       >
-                        {isSelected ? '✓ Seleccionado' : 'Seleccionar este espacio'}
+                        {isSelected ? '✓ Seleccionado' : 'Elegir'}
                       </span>
                       <div
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          isSelected ? 'border-[#e6cca0] bg-[#e6cca0]' : 'border-[#4a4e60]'
+                        className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                          isSelected
+                            ? isPopular
+                              ? 'border-[#d97d64] bg-[#d97d64]'
+                              : 'border-[#e6cca0] bg-[#e6cca0]'
+                            : 'border-[#4a4e60]'
                         }`}
                       >
                         {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#121316]" />}
