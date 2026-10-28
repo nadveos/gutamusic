@@ -15,6 +15,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
+    console.error('[GlobalError]', error);
     const msg = error?.message || '';
     const isChunkError =
       msg.includes('ChunkLoadError') ||

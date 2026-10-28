@@ -22,10 +22,9 @@ export const VoluntaryContributionBanner: React.FC = () => {
     pathname?.startsWith('/registro') ||
     pathname?.startsWith('/panel-');
 
-  if (isExcludedRoute) {
-    return null;
-  }
-
+  // IMPORTANTE: todos los hooks deben ejecutarse SIEMPRE, antes de cualquier return.
+  // Un return temprano antes de los hooks rompe la navegación client-side
+  // ("Rendered fewer hooks than expected") al pasar de una ruta normal a una excluida.
   const [selectedAmount, setSelectedAmount] = useState<number>(3000);
   const [isCustom, setIsCustom] = useState(false);
   const [customAmount, setCustomAmount] = useState<string>('');
@@ -39,6 +38,10 @@ export const VoluntaryContributionBanner: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [paymentStatus]);
+
+  if (isExcludedRoute) {
+    return null;
+  }
 
   const effectiveAmount = isCustom ? (parseInt(customAmount, 10) || 0) : selectedAmount;
 

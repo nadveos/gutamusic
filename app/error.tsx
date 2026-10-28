@@ -14,6 +14,7 @@ export default function ErrorBoundary({
   reset: () => void;
 }) {
   useEffect(() => {
+    console.error('[ErrorBoundary]', error);
     const msg = error?.message || '';
     const isChunkError =
       msg.includes('ChunkLoadError') ||

@@ -210,11 +210,10 @@ export const BrandAllianceShowcase: React.FC<BrandAllianceShowcaseProps> = ({
 
   // Do not render on /admin pages unless explicitly in preview mode
   const isAdmin = pathname?.startsWith('/admin');
-  if (isAdmin && !isPreview) {
-    return null;
-  }
+  const isHidden = isAdmin && !isPreview;
 
   useEffect(() => {
+    if (isHidden) return;
     if (directItems) {
       setAlliances(directItems);
       setLoading(false);
@@ -241,7 +240,12 @@ export const BrandAllianceShowcase: React.FC<BrandAllianceShowcaseProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [sector, directItems]);
+  }, [sector, directItems, isHidden]);
+
+  // El return temprano va DESPUÉS de los hooks (Rules of Hooks)
+  if (isHidden) {
+    return null;
+  }
 
   if (loading && !directItems) {
     return null;
