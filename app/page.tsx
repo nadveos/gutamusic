@@ -12,6 +12,9 @@ import { HomeLiveSidebar } from '../components/HomeLiveSidebar';
 import { getSpotifyPlaylist } from '../lib/services/spotifyService';
 
 export default async function HomePage() {
+  // Asegurar en segundo plano que las efemérides del día de hoy estén sincronizadas en PocketBase
+  MusicDataService.getTodayEphemerides().catch(() => {});
+
   const consagradosArtists = await MusicDataService.getConsagradosArtists();
   const weeklyFeaturedArtists = await MusicDataService.getWeeklyFeaturedArtists();
   const latestArtists = await MusicDataService.getArtists();

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { MusicDataService } from '../../lib/api';
+import { MusicDataService, getArgentinaDayMonth } from '../../lib/api';
 import { EfemeridesClient } from './EfemeridesClient';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,14 @@ export const metadata: Metadata = {
 };
 
 export default async function EfemeridesPage() {
-  const allEphemerides = await MusicDataService.getAllEphemerides();
+  const { day, month } = getArgentinaDayMonth();
+  const todayEphemerides = await MusicDataService.getTodayEphemerides(day, month);
 
-  return <EfemeridesClient initialItems={allEphemerides} />;
+  return (
+    <EfemeridesClient
+      initialItems={todayEphemerides}
+      initialDay={day}
+      initialMonth={month}
+    />
+  );
 }

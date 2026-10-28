@@ -24,7 +24,6 @@ import {
 export default async function AdminDashboardPage() {
   const artists = await MusicDataService.getArtists();
   const videos = await MusicDataService.getVideos();
-  const ephemerides = await MusicDataService.getAllEphemerides();
   const events = await MusicDataService.getUpcomingEvents();
   const interviews = await MusicDataService.getInterviews();
   const alliances = await MusicDataService.getAlliances(undefined, false);
@@ -38,6 +37,12 @@ export default async function AdminDashboardPage() {
   try {
     const userRes = await pb.collection('users').getList(1, 1, { requestKey: null });
     userCount = userRes.totalItems;
+  } catch {}
+
+  let ephemeridesCount = 0;
+  try {
+    const ephRes = await pb.collection('ephemerides').getList(1, 1, { requestKey: null });
+    ephemeridesCount = ephRes.totalItems;
   } catch {}
 
   const stats = [
@@ -85,7 +90,7 @@ export default async function AdminDashboardPage() {
     },
     {
       label: 'Efemérides Históricas',
-      value: ephemerides.length,
+      value: ephemeridesCount,
       icon: BookOpen,
       badgeColor: 'bg-slate-soft text-[#a7b8c8]',
       href: '/admin/efemerides',

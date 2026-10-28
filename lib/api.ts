@@ -3,7 +3,26 @@ import { DEFAULT_OFFICIAL_SOCIALS, buildSocialUrl } from './socialUtils';
 import { MOCK_ALLIANCES } from './mockData';
 import { getRealEphemerides } from './services/ephemeridesScraper';
 import { getWeeklyFeaturedStatus } from './services/featuredRotationService';
-import { pb, ensureServerSuperUserAuth } from './pocketbase';
+import { pb, ensureServerSuperUserAuth, getServerAdminPb } from './pocketbase';
+
+const syncingEphemeridesMap = new Map<string, Promise<EphemerisItem[]>>();
+
+export function getArgentinaDayMonth(): { day: number; month: number } {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      day: 'numeric',
+      month: 'numeric',
+    }).formatToParts(new Date());
+    const day = Number(parts.find((p) => p.type === 'day')?.value);
+    const month = Number(parts.find((p) => p.type === 'month')?.value);
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+      return { day, month };
+    }
+  } catch {}
+  const now = new Date();
+  return { day: now.getDate(), month: now.getMonth() + 1 };
+}
 
 function normalizeImageUrl(raw?: any, fallback: string = ''): string {
   if (!raw || typeof raw !== 'string') return fallback;
@@ -516,66 +535,82 @@ export class MusicDataService {
 
   static async getTodayEphemerides(day?: number, month?: number): Promise<EphemerisItem[]> {
     await syncServerAuth();
-    const now = new Date();
-    const currentDay = day ?? now.getDate();
-    const currentMonth = month ?? (now.getMonth() + 1);
+    const argNow = getArgentinaDayMonth();
+    const currentDay = day ?? argNow.day;
+    const currentMonth = month ?? argNow.month;
 
     // 1. Intentar leer desde PocketBase
     const items = await this.getEphemeridesForDate(currentDay, currentMonth);
     if (items.length > 0) return items;
 
-    // 2. Si no hay registros para hoy, raspar las fuentes automáticamente (sin cron externo)
-    //    y persistir en PocketBase para que las siguientes visitas del día no vuelvan a raspar.
-    console.log(`[AutoSync] No hay efemérides para ${currentDay}/${currentMonth} en PocketBase. Raspando fuentes...`);
-    try {
-      const scraped = await getRealEphemerides(currentDay, currentMonth);
-      if (scraped.length > 0) {
-        // Guardar en PocketBase de forma asíncrona (fire & forget con captura de errores)
-        const savePromises = scraped.map(async (s) => {
-          try {
-            const payload = {
-              day: s.day,
-              month: s.month,
-              year: s.year,
-              title: s.title,
-              description: s.description,
-              category: s.category,
-              categoryLabel: s.categoryLabel,
-              source: s.source,
-              impactBadge: s.impactBadge,
-              imageUrl: s.imageUrl || '',
-            };
-            const created = await pb.collection('ephemerides').create(payload);
-            return { ...payload, id: created.id } as EphemerisItem;
-          } catch (e: any) {
-            console.warn('[AutoSync] Error guardando efeméride en PocketBase:', e?.message);
-            // Devolver el item igualmente para mostrarlo aunque no se haya podido persistir
-            return {
-              id: `tmp-${s.year}-${s.day}-${s.month}`,
-              day: s.day,
-              month: s.month,
-              year: s.year,
-              title: s.title,
-              description: s.description,
-              category: s.category,
-              categoryLabel: s.categoryLabel,
-              source: s.source,
-              impactBadge: s.impactBadge,
-              imageUrl: s.imageUrl || '',
-            } as EphemerisItem;
-          }
-        });
-        const saved = await Promise.all(savePromises);
-        console.log(`[AutoSync] ✅ ${saved.length} efemérides raspadas y guardadas para ${currentDay}/${currentMonth}.`);
-        return saved.slice(0, 4);
-      }
-    } catch (e: any) {
-      console.warn('[AutoSync] Error en raspado automático de efemérides:', e?.message);
+    const dateKey = `${currentDay}-${currentMonth}`;
+    const existingSync = syncingEphemeridesMap.get(dateKey);
+    if (existingSync) {
+      return existingSync;
     }
 
-    // 3. Fallback final: mostrar las 4 primeras del calendario si el scraper tampoco devolvió nada
-    const all = await this.getAllEphemerides();
-    return all.slice(0, 4);
+    // 2. Si no hay registros para esa fecha, raspar las fuentes automáticamente
+    //    y persistir en PocketBase para que las siguientes visitas no vuelvan a raspar.
+    const syncPromise = (async (): Promise<EphemerisItem[]> => {
+      console.log(`[AutoSync] No hay efemérides para ${currentDay}/${currentMonth} en PocketBase. Raspando fuentes...`);
+      try {
+        const scraped = await getRealEphemerides(currentDay, currentMonth);
+        if (scraped.length > 0) {
+          // Verificar una vez más antes de insertar por si otro proceso ya guardó
+          const doubleCheck = await this.getEphemeridesForDate(currentDay, currentMonth);
+          if (doubleCheck.length > 0) return doubleCheck;
+
+          const adminPb = await getServerAdminPb();
+          const saved: EphemerisItem[] = [];
+          const batchSize = 10;
+
+          for (let i = 0; i < scraped.length; i += batchSize) {
+            const chunk = scraped.slice(i, i + batchSize);
+            const chunkResults = await Promise.all(
+              chunk.map(async (s, idx) => {
+                const payload = {
+                  day: s.day,
+                  month: s.month,
+                  year: s.year,
+                  title: s.title,
+                  description: s.description,
+                  category: s.category as any,
+                  categoryLabel: s.categoryLabel,
+                  source: s.source,
+                  impactBadge: s.impactBadge,
+                  imageUrl: normalizeImageUrl(s.imageUrl, ''),
+                };
+                try {
+                  const created = await adminPb.collection('ephemerides').create(payload, {
+                    requestKey: null,
+                  });
+                  return { ...payload, id: created.id } as EphemerisItem;
+                } catch (e: any) {
+                  console.warn('[AutoSync] Error guardando efeméride en PocketBase:', e?.message);
+                  return {
+                    ...payload,
+                    id: `tmp-${s.year}-${s.day}-${s.month}-${i + idx}`,
+                  } as EphemerisItem;
+                }
+              })
+            );
+            saved.push(...chunkResults);
+          }
+
+          console.log(`[AutoSync] ✅ ${saved.length} efemérides raspadas y guardadas para ${currentDay}/${currentMonth}.`);
+          return saved;
+        }
+      } catch (e: any) {
+        console.warn('[AutoSync] Error en raspado automático de efemérides:', e?.message);
+      } finally {
+        syncingEphemeridesMap.delete(dateKey);
+      }
+
+      return [];
+    })();
+
+    syncingEphemeridesMap.set(dateKey, syncPromise);
+    return syncPromise;
   }
 
   static async getAllEphemerides(): Promise<EphemerisItem[]> {

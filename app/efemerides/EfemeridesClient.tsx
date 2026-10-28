@@ -1,21 +1,36 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { EphemerisItem, EphemerisCategory } from '../../lib/types';
-import { Calendar, BookOpen, Search } from 'lucide-react';
+import { EphemerisItem } from '../../lib/types';
+import { Calendar, BookOpen, Search, Loader2 } from 'lucide-react';
 import { ShareButton } from '../../components/ShareButton';
 
 interface EfemeridesClientProps {
   initialItems: EphemerisItem[];
+  initialDay?: number;
+  initialMonth?: number;
 }
 
-export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems }) => {
+export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({
+  initialItems,
+  initialDay,
+  initialMonth,
+}) => {
   const now = new Date();
-  const [selectedDay, setSelectedDay] = useState<number>(now.getDate());
-  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
+  const defaultDay = initialDay ?? now.getDate();
+  const defaultMonth = initialMonth ?? (now.getMonth() + 1);
+
+  const [items, setItems] = useState<EphemerisItem[]>(initialItems);
+  const [searchResults, setSearchResults] = useState<EphemerisItem[] | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number>(defaultDay);
+  const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth);
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [syncingDate, setSyncingDate] = useState<boolean>(false);
+  const syncedKeysRef = useRef<Set<string>>(
+    new Set(initialItems.length > 0 ? [`${defaultDay}-${defaultMonth}`] : [])
+  );
 
   const months = [
     { num: 1, name: 'Enero' },
@@ -43,9 +58,71 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
     { id: 'homenajes', label: 'Homenajes' },
   ];
 
+  // Sincronización bajo demanda si una fecha seleccionada aún no tiene registros en PocketBase
+  useEffect(() => {
+    const hasForDate = items.some((i) => i.day === selectedDay && i.month === selectedMonth);
+    const key = `${selectedDay}-${selectedMonth}`;
+    if (hasForDate || syncedKeysRef.current.has(key)) return;
+
+    syncedKeysRef.current.add(key);
+    let isMounted = true;
+    setSyncingDate(true);
+
+    fetch(`/api/efemerides/sync?day=${selectedDay}&month=${selectedMonth}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && Array.isArray(data?.items) && data.items.length > 0) {
+          setItems((prev) => {
+            const existingIds = new Set(prev.map((p) => p.id));
+            const newOnes = data.items.filter((it: EphemerisItem) => !existingIds.has(it.id));
+            return [...prev, ...newOnes];
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setSyncingDate(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedDay, selectedMonth, items]);
+
+  // Búsqueda global en el archivo de PocketBase cuando el usuario escribe en el buscador
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSearchResults(null);
+      return;
+    }
+
+    let isMounted = true;
+    const timer = setTimeout(() => {
+      setSyncingDate(true);
+      fetch(`/api/efemerides/sync?q=${encodeURIComponent(q)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (isMounted && Array.isArray(data?.items)) {
+            setSearchResults(data.items);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (isMounted) setSyncingDate(false);
+        });
+    }, 300);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
+
   const filteredItems = useMemo(() => {
-    return initialItems.filter((item) => {
-      const matchesDate = !searchQuery ? (item.day === selectedDay && item.month === selectedMonth) : true;
+    const sourceList = searchQuery.trim().length >= 2 && searchResults !== null ? searchResults : items;
+    return sourceList.filter((item) => {
+      const matchesDate = !searchQuery.trim() ? (item.day === selectedDay && item.month === selectedMonth) : true;
       const matchesCat = selectedCategory === 'todas' || item.category === selectedCategory;
 
       const q = searchQuery.toLowerCase().trim();
@@ -58,7 +135,7 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
 
       return matchesDate && matchesCat && matchesText;
     });
-  }, [initialItems, selectedDay, selectedMonth, selectedCategory, searchQuery]);
+  }, [items, searchResults, selectedDay, selectedMonth, selectedCategory, searchQuery]);
 
   return (
     <div className="space-y-6">
@@ -234,6 +311,16 @@ export const EfemeridesClient: React.FC<EfemeridesClientProps> = ({ initialItems
               )}
             </article>
           ))}
+        </div>
+      ) : syncingDate ? (
+        <div className="text-center py-12 natural-card rounded-2xl space-y-3">
+          <Loader2 className="w-8 h-8 text-[#d97d64] mx-auto animate-spin" />
+          <h3 className="text-base font-bold text-[#f3f1ec]">
+            Sincronizando efemérides del {selectedDay} de {months[selectedMonth - 1].name}...
+          </h3>
+          <p className="text-xs text-[#8c887f] max-w-xs mx-auto">
+            Consultando fuentes históricas verificadas y guardando en el archivo.
+          </p>
         </div>
       ) : (
         <div className="text-center py-12 natural-card rounded-2xl space-y-2">
