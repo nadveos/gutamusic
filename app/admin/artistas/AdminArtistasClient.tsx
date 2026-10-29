@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Artist } from '../../../lib/types';
@@ -21,6 +21,56 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    setArtists(initialArtists);
+  }, [initialArtists]);
+
+  useEffect(() => {
+    const refreshFromPocketBase = async () => {
+      try {
+        const records = await pb.collection('artists').getFullList<any>({
+          requestKey: null,
+        });
+        if (records && records.length > 0) {
+          const visibleRecords = records
+            .filter((r) => !r.status || r.status === 'approved')
+            .reverse();
+          const mapped: Artist[] = visibleRecords.map((r) => ({
+            id: r.id,
+            slug: r.slug,
+            stageName: r.stageName,
+            realName: r.realName || '',
+            genres: Array.isArray(r.genres) ? r.genres : (r.genres ? [r.genres] : []),
+            city: r.city || '',
+            province: r.province || '',
+            country: r.country || 'Argentina',
+            bio: r.bio || '',
+            shortBio: r.shortBio || '',
+            photoUrl: r.photoUrl || (r.photo ? pb.files.getUrl(r, r.photo) : '') || '/brand/guta-musica-favicon-512.png',
+            bannerUrl: r.bannerUrl || '',
+            featured: Boolean(r.featured),
+            featuredOfWeek: Boolean(r.featuredOfWeek),
+            featuredOfWeekDate: r.featuredOfWeekDate || '',
+            socials: r.socials || {},
+            videos: Array.isArray(r.videos) ? r.videos : [],
+            discography: Array.isArray(r.discography) ? r.discography : [],
+            agenda: r.agenda || [],
+            press: r.press || [],
+            gallery: Array.isArray(r.gallery) ? r.gallery : [],
+            quotes: r.quotes || '',
+            createdDate: r.createdDate || r.created?.split(' ')[0] || '',
+            likesCount: typeof r.likesCount === 'number' ? r.likesCount : (parseInt(r.likesCount, 10) || 0),
+          }));
+          setArtists(mapped);
+        }
+      } catch (err) {
+        console.warn('No se pudo refrescar artistas en cliente:', err);
+      }
+    };
+
+    refreshFromPocketBase();
+  }, []);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === artists.length) {

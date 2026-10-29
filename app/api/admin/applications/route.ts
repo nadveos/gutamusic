@@ -46,6 +46,7 @@ export async function GET() {
       country: r.country || 'Argentina',
       bio: r.bio || '',
       socials: r.socials || {},
+      referralSource: r.referralSource || r.socials?.referralSource || '',
       photoUrl: r.photoUrl || (r.photo ? `${pb.baseUrl}/api/files/${r.collectionId || r.collectionName}/${r.id}/${r.photo}` : ''),
       message: r.message || '',
       status: r.status || 'pending',

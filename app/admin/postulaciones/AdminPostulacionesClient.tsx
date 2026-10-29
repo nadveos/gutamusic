@@ -41,7 +41,9 @@ interface ApplicationItem {
     youtube?: string;
     instagram?: string;
     tiktok?: string;
+    referralSource?: string;
   };
+  referralSource?: string;
   photoUrl: string;
   message?: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -481,6 +483,17 @@ export const AdminPostulacionesClient: React.FC = () => {
                     <p className="flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5 text-[#93a887]" />
                       <span>{selectedApp.phone}</span>
+                    </p>
+                  )}
+                  {(selectedApp.referralSource || selectedApp.socials?.referralSource) && (
+                    <p className="flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-[#e6cca0]" />
+                      <span>
+                        <strong className="text-[#f3f1ec]">Nos conoció por:</strong>{' '}
+                        <span className="text-[#e6cca0] font-semibold">
+                          {selectedApp.referralSource || selectedApp.socials?.referralSource}
+                        </span>
+                      </span>
                     </p>
                   )}
                 </div>

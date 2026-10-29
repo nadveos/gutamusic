@@ -2,6 +2,9 @@ import React from 'react';
 import { MusicDataService } from '../../../lib/api';
 import { AdminEntrevistasClient } from './AdminEntrevistasClient';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata = {
   title: 'Gestión de Entrevistas | GUTA CMS',
 };

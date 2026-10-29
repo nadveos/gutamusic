@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, code, token, password, name, stageName } = body;
+    const { email, code, token, password, name, stageName, referralSource = '' } = body;
 
     if (!email || !code || !token || !password) {
       return NextResponse.json(
@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
         name: finalName,
         role: 'artist',
         stageName: finalStageName,
+        referralSource: referralSource.trim(),
         verified: true,
       });
     } catch (createErr: any) {

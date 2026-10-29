@@ -1,6 +1,5 @@
 import { Artist, EphemerisItem, Interview, VideoItem, AgendaEvent, GenreType, PressNote, AlliancePartner, AllianceSector, OfficialSocialsSettings } from './types';
 import { DEFAULT_OFFICIAL_SOCIALS, buildSocialUrl } from './socialUtils';
-import { MOCK_ALLIANCES } from './mockData';
 import { getRealEphemerides } from './services/ephemeridesScraper';
 import { getWeeklyFeaturedStatus } from './services/featuredRotationService';
 import { pb, ensureServerSuperUserAuth, getServerAdminPb } from './pocketbase';

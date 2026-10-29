@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
       gallery = [],
       hasDiscrepancies = false,
       discrepanciesNotes = '',
+      referralSource = '',
     } = body;
 
     if (!stageName || !stageName.trim()) {
@@ -168,6 +169,9 @@ export async function POST(req: NextRequest) {
 
     // Registrar también en applications para que aparezca en el panel de postulaciones y notifique a Telegram
     try {
+      const finalReferral = referralSource || socials?.referralSource || (user as any)?.referralSource || '';
+      const mergedSocials = finalReferral ? { ...socials, referralSource: finalReferral } : socials;
+
       const appRecord = await pb.collection('applications').create({
         stageName: stageName.trim(),
         contactName: user.name || stageName.trim(),
@@ -178,15 +182,20 @@ export async function POST(req: NextRequest) {
         province,
         country,
         bio,
-        socials,
+        socials: mergedSocials,
         photoUrl: artistData.photoUrl,
-        message: 'Postulación creada desde el nuevo Portal de Artistas.',
+        message: finalReferral
+          ? `Nos conoció por: ${finalReferral}`
+          : 'Postulación creada desde el nuevo Portal de Artistas.',
         status: 'pending',
         submittedAt: new Date().toISOString(),
       });
 
       const { notifyNewApplication } = await import('@/lib/services/telegramService');
-      await notifyNewApplication(appRecord as any);
+      await notifyNewApplication({
+        ...(appRecord as any),
+        referralSource: finalReferral,
+      });
     } catch (appErr) {
       console.warn('Nota: application sync opcional:', appErr);
     }

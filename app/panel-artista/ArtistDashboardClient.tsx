@@ -355,7 +355,17 @@ export function ArtistDashboardClient() {
       const isNew = !artist?.id;
       const url = '/api/artist-portal/profile';
       const method = isNew ? 'POST' : 'PUT';
-      const payload = isNew ? formData : { id: artist.id, ...formData };
+      const savedReferral =
+        typeof window !== 'undefined' ? localStorage.getItem('guta_referral_source') || '' : '';
+      const mergedSocials = {
+        ...formData.socials,
+        ...(savedReferral && !(formData.socials as any)?.referralSource
+          ? { referralSource: savedReferral }
+          : {}),
+      };
+      const payload = isNew
+        ? { ...formData, socials: mergedSocials, referralSource: (mergedSocials as any).referralSource || '' }
+        : { id: artist.id, ...formData, socials: mergedSocials };
 
       const res = await fetch(url, {
         method,

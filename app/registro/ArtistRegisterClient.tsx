@@ -20,6 +20,18 @@ import {
 } from 'lucide-react';
 import { pb } from '@/lib/pocketbase';
 
+const REFERRAL_OPTIONS = [
+  'Instagram',
+  'TikTok',
+  'Facebook',
+  'YouTube',
+  'Kick / Twitch',
+  'Recomendación de un colega',
+  'Buscador (Google / Web)',
+  'Prensa / Evento en vivo',
+  'Otro',
+];
+
 export function ArtistRegisterClient() {
   const router = useRouter();
 
@@ -29,6 +41,8 @@ export function ArtistRegisterClient() {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [referralSource, setReferralSource] = useState('');
+  const [customReferral, setCustomReferral] = useState('');
 
   // Estados de control de flujo
   const [step, setStep] = useState<'form' | 'otp'>('form');
@@ -172,6 +186,15 @@ export function ArtistRegisterClient() {
 
     setLoading(true);
     try {
+      const finalReferral =
+        referralSource === 'Otro'
+          ? customReferral.trim() || 'Otro'
+          : referralSource.trim();
+
+      if (finalReferral && typeof window !== 'undefined') {
+        localStorage.setItem('guta_referral_source', finalReferral);
+      }
+
       const res = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -181,6 +204,7 @@ export function ArtistRegisterClient() {
           token: otpToken,
           password,
           name: name.trim(),
+          referralSource: finalReferral,
         }),
       });
 
@@ -377,6 +401,41 @@ export function ArtistRegisterClient() {
                     className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs placeholder:text-[#5a5751] focus:outline-none focus:border-[#d97d64] transition-colors font-mono"
                   />
                 </div>
+              </div>
+
+              {/* ¿Por dónde nos conociste? */}
+              <div className="space-y-2 pt-1">
+                <label className="text-[11px] font-semibold text-[#aba79e] block">
+                  ¿Por dónde nos conociste?
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {REFERRAL_OPTIONS.map((opt) => {
+                    const selected = referralSource === opt;
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setReferralSource(selected ? '' : opt)}
+                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                          selected
+                            ? 'bg-[#d97d64] text-[#151618] border-[#d97d64] shadow-sm shadow-[#d97d64]/20'
+                            : 'bg-[#18191e] text-[#aba79e] border-[#2e3039] hover:border-[#464956] hover:text-[#f3f1ec]'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+                {referralSource === 'Otro' && (
+                  <input
+                    type="text"
+                    placeholder="Contanos por dónde nos conociste..."
+                    value={customReferral}
+                    onChange={(e) => setCustomReferral(e.target.value)}
+                    className="w-full mt-1.5 px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs placeholder:text-[#5a5751] focus:outline-none focus:border-[#d97d64] transition-colors"
+                  />
+                )}
               </div>
 
               {/* Botón de Registro */}

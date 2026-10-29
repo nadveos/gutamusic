@@ -4,7 +4,6 @@ import Image from 'next/image';
 import { MusicDataService } from '../../lib/api';
 import { pb } from '../../lib/pocketbase';
 import { AdminHeader } from '../../components/admin/AdminHeader';
-import { SeedPocketBaseButton } from '../../components/admin/SeedPocketBaseButton';
 import {
   Mic2,
   Users,
@@ -20,6 +19,9 @@ import {
   HeartHandshake,
   Share2,
 } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function AdminDashboardPage() {
   const artists = await MusicDataService.getArtists();
@@ -131,10 +133,8 @@ export default async function AdminDashboardPage() {
         })}
       </div>
 
-      {/* Quick Action Shortcuts & PocketBase Seed */}
+      {/* Quick Action Shortcuts */}
       <section className="space-y-4">
-        <SeedPocketBaseButton />
-
         <div className="natural-card p-5 rounded-2xl space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0]">
             Acciones Rápidas

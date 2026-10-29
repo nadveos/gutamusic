@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { getServerAdminPb } from '../pocketbase';
 import { sendArtistStatusEmail } from './emailService';
 import { notifyNewApplication } from './telegramService';
@@ -55,10 +56,14 @@ export async function updateApplicationStatus({
 
       artistRecord = await pb.collection('artists').getFirstListItem(query);
       if (artistRecord) {
-        await pb.collection('artists').update(artistRecord.id, {
-          status,
-          adminNotes: reason || (status === 'approved' ? `Aprobado por ${adminName}` : ''),
-        });
+        try {
+          await pb.collection('artists').update(artistRecord.id, {
+            status,
+            adminNotes: reason || (status === 'approved' ? `Aprobado por ${adminName}` : ''),
+          });
+        } catch {
+          await pb.collection('artists').update(artistRecord.id, { status });
+        }
       }
     } catch {
       // Si no existe perfil en artists y fue aprobado, crearlo automáticamente
@@ -119,6 +124,20 @@ export async function updateApplicationStatus({
     }
   }
 
+  // 4. Invalidar caché de páginas públicas y del panel de administración
+  try {
+    revalidatePath('/', 'layout');
+    revalidatePath('/artistas');
+    revalidatePath('/admin');
+    revalidatePath('/admin/artistas');
+    revalidatePath('/admin/postulaciones');
+    if (artistRecord?.slug) {
+      revalidatePath(`/artistas/${artistRecord.slug}`);
+    }
+  } catch (revalErr) {
+    console.warn('⚠️ No se pudo revalidar rutas tras actualizar postulación:', revalErr);
+  }
+
   return { success: true, appRecord, artistRecord };
 }
 
@@ -150,6 +169,7 @@ export async function createApplicationAndNotify(payload: any) {
       socials: record.socials,
       photoUrl: record.photoUrl,
       message: record.message,
+      referralSource: payload.referralSource || record.referralSource || record.socials?.referralSource,
       submittedAt: record.submittedAt,
     });
   } catch (telErr) {

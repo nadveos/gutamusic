@@ -2,6 +2,9 @@ import React from 'react';
 import { MusicDataService } from '../../../lib/api';
 import { VideoUploadClient } from './VideoUploadClient';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata = {
   title: 'Carga de Videos | GUTA CMS',
 };

@@ -28,6 +28,7 @@ export interface ApplicationNotificationData {
   socials?: Record<string, string>;
   photoUrl?: string;
   message?: string;
+  referralSource?: string;
   submittedAt?: string;
 }
 
@@ -157,6 +158,8 @@ export async function notifyNewApplication(app: ApplicationNotificationData) {
   const bioOrMessage = app.bio || app.message || 'Sin descripción provista.';
   const bioExcerpt = bioOrMessage.length > 300 ? bioOrMessage.slice(0, 297) + '...' : bioOrMessage;
 
+  const referral = app.referralSource || app.socials?.referralSource || '';
+
   const html = [
     `<b>🎸 NUEVA POSTULACIÓN DE ARTISTA</b>`,
     ``,
@@ -165,6 +168,7 @@ export async function notifyNewApplication(app: ApplicationNotificationData) {
     app.phone ? `<b>Teléfono:</b> ${escapeHtml(app.phone)}` : null,
     locationStr ? `<b>Ubicación:</b> ${escapeHtml(locationStr)}` : null,
     `<b>Géneros:</b> ${escapeHtml(genresList)}`,
+    referral ? `<b>📣 Nos conoció por:</b> ${escapeHtml(referral)}` : null,
     ``,
     `<b>Presentación / Bio:</b>`,
     `<blockquote>${escapeHtml(bioExcerpt)}</blockquote>`,
