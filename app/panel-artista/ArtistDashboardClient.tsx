@@ -217,10 +217,16 @@ export function ArtistDashboardClient() {
           discrepanciesNotes: data.artist.adminNotes || '',
         });
       } else {
-        // Inicializar nombre con el nombre artístico del registro si está disponible
+        // Inicializar nombre y origen de contacto del registro si están disponibles
+        const savedRef =
+          typeof window !== 'undefined' ? localStorage.getItem('guta_referral_source') || '' : '';
         setFormData((prev) => ({
           ...prev,
           stageName: data.user?.stageName || '',
+          socials: {
+            ...prev.socials,
+            ...(savedRef ? { referralSource: savedRef } : {}),
+          },
         }));
       }
     } catch (err) {
@@ -884,6 +890,55 @@ export function ArtistDashboardClient() {
                 onChange={(e) => setFormData({ ...formData, quotes: e.target.value })}
                 className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64] italic"
               />
+            </div>
+
+            {/* ¿Por dónde nos conociste? */}
+            <div className="space-y-2 pt-1">
+              <label className="text-[11px] font-semibold text-[#aba79e] block">
+                ¿Por dónde nos conociste?
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'Instagram',
+                  'TikTok',
+                  'Facebook',
+                  'YouTube',
+                  'Kick / Twitch',
+                  'Recomendación de un colega',
+                  'Buscador (Google / Web)',
+                  'Prensa / Evento en vivo',
+                  'Otro',
+                ].map((opt) => {
+                  const currentRef = (formData.socials as any)?.referralSource || '';
+                  const selected = currentRef === opt;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        const nextVal = selected ? '' : opt;
+                        if (typeof window !== 'undefined' && nextVal) {
+                          localStorage.setItem('guta_referral_source', nextVal);
+                        }
+                        setFormData({
+                          ...formData,
+                          socials: {
+                            ...formData.socials,
+                            referralSource: nextVal,
+                          } as any,
+                        });
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer border ${
+                        selected
+                          ? 'bg-[#d97d64] text-[#151618] border-[#d97d64] font-bold'
+                          : 'bg-[#18191e] text-[#aba79e] border-[#2e3039] hover:border-[#464957] hover:text-[#f3f1ec]'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

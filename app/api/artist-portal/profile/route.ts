@@ -128,6 +128,16 @@ export async function POST(req: NextRequest) {
 
     const slug = generateSlug(stageName) + '-' + Math.random().toString(36).substring(2, 6);
 
+    const cookieReferral = req.cookies.get('guta_referral_source')?.value || '';
+    const finalReferral = (
+      referralSource ||
+      socials?.referralSource ||
+      (user as any)?.referralSource ||
+      cookieReferral ||
+      ''
+    ).trim();
+    const mergedSocials = finalReferral ? { ...socials, referralSource: finalReferral } : socials;
+
     const artistData: any = {
       owner: user.id,
       contactEmail: user.email,
@@ -144,7 +154,7 @@ export async function POST(req: NextRequest) {
       photoUrl: photoUrl.trim() || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800',
       bannerUrl: bannerUrl.trim() || photoUrl.trim(),
       featured: false,
-      socials,
+      socials: mergedSocials,
       videos,
       discography,
       agenda,
@@ -169,9 +179,6 @@ export async function POST(req: NextRequest) {
 
     // Registrar también en applications para que aparezca en el panel de postulaciones y notifique a Telegram
     try {
-      const finalReferral = referralSource || socials?.referralSource || (user as any)?.referralSource || '';
-      const mergedSocials = finalReferral ? { ...socials, referralSource: finalReferral } : socials;
-
       const appRecord = await pb.collection('applications').create({
         stageName: stageName.trim(),
         contactName: user.name || stageName.trim(),

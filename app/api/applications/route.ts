@@ -19,6 +19,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const referralSource = (body.referralSource || body.socials?.referralSource || '').trim();
+    const socials = {
+      ...(body.socials || {}),
+      ...(referralSource ? { referralSource } : {}),
+    };
+
     const payload = {
       stageName: (body.stageName || '').trim(),
       contactName: (body.contactName || body.stageName || '').trim(),
@@ -29,9 +35,10 @@ export async function POST(req: NextRequest) {
       province: (body.province || '').trim(),
       country: (body.country || 'Argentina').trim(),
       bio: (body.bio || '').trim(),
-      socials: body.socials || {},
+      socials,
+      referralSource,
       photoUrl: body.photoUrl || '',
-      message: (body.message || '').trim(),
+      message: (body.message || (referralSource ? `Nos conoció por: ${referralSource}` : '')).trim(),
       status: 'pending',
       submittedAt: new Date().toISOString(),
     };

@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     const clientPb = new PocketBase(POCKETBASE_URL);
     const authData = await clientPb.collection('users').authWithPassword(cleanEmail, password);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: '¡Cuenta creada y verificada exitosamente!',
       token: authData.token,
@@ -83,8 +83,19 @@ export async function POST(req: NextRequest) {
         email: authData.record.email,
         name: authData.record.name,
         stageName: finalStageName,
+        referralSource: referralSource.trim(),
       },
     });
+
+    if (referralSource && referralSource.trim()) {
+      response.cookies.set('guta_referral_source', referralSource.trim(), {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30, // 30 días
+        sameSite: 'lax',
+      });
+    }
+
+    return response;
   } catch (error: any) {
     console.error('Error en /api/auth/verify-otp:', error);
     return NextResponse.json(

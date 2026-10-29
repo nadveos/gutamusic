@@ -158,7 +158,11 @@ export async function notifyNewApplication(app: ApplicationNotificationData) {
   const bioOrMessage = app.bio || app.message || 'Sin descripción provista.';
   const bioExcerpt = bioOrMessage.length > 300 ? bioOrMessage.slice(0, 297) + '...' : bioOrMessage;
 
-  const referral = app.referralSource || app.socials?.referralSource || '';
+  const referralFromMsg =
+    app.message && app.message.startsWith('Nos conoció por:')
+      ? app.message.replace('Nos conoció por:', '').trim()
+      : '';
+  const referral = app.referralSource || app.socials?.referralSource || referralFromMsg || 'No especificado';
 
   const html = [
     `<b>🎸 NUEVA POSTULACIÓN DE ARTISTA</b>`,
@@ -168,7 +172,7 @@ export async function notifyNewApplication(app: ApplicationNotificationData) {
     app.phone ? `<b>Teléfono:</b> ${escapeHtml(app.phone)}` : null,
     locationStr ? `<b>Ubicación:</b> ${escapeHtml(locationStr)}` : null,
     `<b>Géneros:</b> ${escapeHtml(genresList)}`,
-    referral ? `<b>📣 Nos conoció por:</b> ${escapeHtml(referral)}` : null,
+    `<b>📣 Nos conoció por:</b> ${escapeHtml(referral)}`,
     ``,
     `<b>Presentación / Bio:</b>`,
     `<blockquote>${escapeHtml(bioExcerpt)}</blockquote>`,
