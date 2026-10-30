@@ -96,6 +96,9 @@ export const HomeLiveSidebar: React.FC<HomeLiveSidebarProps> = ({
           {/* Contenedor de acoplamiento del reproductor persistente global (mantiene la reproducción al navegar) */}
           <div
             id="guta-spotify-home-slot"
+            data-guta-spotify-slot="true"
+            data-spotify-url={`https://open.spotify.com/embed/playlist/${currentId}?utm_source=generator&theme=0`}
+            data-spotify-title="Playlist GUTA en reproducción"
             className="rounded-xl overflow-hidden bg-[#0d0e10] border border-[#262832] shadow-inner h-[352px] w-full"
           />
 

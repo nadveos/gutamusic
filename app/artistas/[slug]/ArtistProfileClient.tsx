@@ -365,18 +365,13 @@ export const ArtistProfileClient: React.FC<ArtistProfileClientProps> = ({ artist
                     </div>
                   )}
 
-                <div className="rounded-xl overflow-hidden bg-black/60 border border-[#2b2d38] shadow-inner">
-                  <iframe
-                    src={`https://open.spotify.com/embed/artist/${spotifyArtistId}?utm_source=generator&theme=0`}
-                    width="100%"
-                    height="352"
-                    frameBorder="0"
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    loading="lazy"
-                    title={`Spotify Player - ${artist.stageName}`}
-                    className="w-full border-0"
-                  />
-                </div>
+                <div
+                  id="guta-spotify-artist-slot"
+                  data-guta-spotify-slot="true"
+                  data-spotify-url={`https://open.spotify.com/embed/artist/${spotifyArtistId}?utm_source=generator&theme=0`}
+                  data-spotify-title={`Escuchando a ${artist.stageName}`}
+                  className="rounded-xl overflow-hidden bg-black/60 border border-[#2b2d38] shadow-inner h-[352px] w-full"
+                />
               </div>
             ) : null}
           </div>
