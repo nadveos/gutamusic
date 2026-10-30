@@ -18,6 +18,7 @@ import {
   FileSpreadsheet,
   ShieldCheck,
   HeartHandshake,
+  Heart,
   Share2,
   X,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile, onLog
 
   const menuItems = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/colaboraciones', label: 'Colaboraciones Recibidas', icon: Heart },
     { href: '/admin/artistas', label: 'Gestión de Artistas', icon: Mic2 },
     { href: '/admin/usuarios', label: 'Usuarios & Cuentas', icon: Users },
     { href: '/admin/entrevistas', label: 'Entrevistas & Lives', icon: Radio },

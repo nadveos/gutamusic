@@ -253,4 +253,20 @@ export interface OfficialSocialsSettings {
   updatedDate?: string;
 }
 
+export interface VoluntaryContribution {
+  id: string;
+  paymentId: string;
+  amount: number;
+  netAmount?: number;
+  donorName: string;
+  donorEmail?: string;
+  message?: string;
+  status: 'approved' | 'pending' | 'rejected' | string;
+  paymentMethod?: string;
+  paymentType?: 'donation' | 'weekly_featured' | 'sponsor_alliance' | 'manual' | string;
+  date: string;
+  created?: string;
+}
+
+
 

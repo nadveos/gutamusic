@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MusicDataService } from '../../lib/api';
 import { pb } from '../../lib/pocketbase';
+import { getContributionsFromDb } from '../../lib/services/mercadopagoService';
 import { AdminHeader } from '../../components/admin/AdminHeader';
 import {
   Mic2,
@@ -17,6 +18,7 @@ import {
   Edit,
   Radio,
   HeartHandshake,
+  Heart,
   Share2,
 } from 'lucide-react';
 
@@ -30,6 +32,8 @@ export default async function AdminDashboardPage() {
   const interviews = await MusicDataService.getInterviews();
   const alliances = await MusicDataService.getAlliances(undefined, false);
   const socials = await MusicDataService.getOfficialSocials();
+  const contributions = await getContributionsFromDb().catch(() => []);
+  const totalDonationsArs = contributions.reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
 
   const activeSocialCount = ['tiktok', 'instagram', 'facebook', 'kick', 'twitch'].filter(
     (k) => (socials as any)[k]?.active && (socials as any)[k]?.handle
@@ -48,6 +52,13 @@ export default async function AdminDashboardPage() {
   } catch {}
 
   const stats = [
+    {
+      label: 'Colaboraciones Recibidas',
+      value: `${contributions.length} ($${totalDonationsArs.toLocaleString('es-AR')})`,
+      icon: Heart,
+      badgeColor: 'bg-sage-soft text-[#93a887]',
+      href: '/admin/colaboraciones',
+    },
     {
       label: 'Artistas en Catálogo',
       value: artists.length,
@@ -178,6 +189,16 @@ export default async function AdminDashboardPage() {
                 <Share2 className="w-3.5 h-3.5 text-[#d97d64]" />
               </div>
               <span>Redes @sesionesrg</span>
+            </Link>
+
+            <Link
+              href="/admin/colaboraciones"
+              className="p-3.5 rounded-xl bg-[#24252c] hover:bg-[#2a2c34] border border-[#31333d] transition-colors flex items-center gap-2.5 text-xs font-semibold text-[#f3f1ec]"
+            >
+              <div className="p-1.5 rounded bg-sage-soft">
+                <Heart className="w-3.5 h-3.5 text-[#93a887]" />
+              </div>
+              <span>Historial de Colaboraciones</span>
             </Link>
 
             <Link

@@ -11,16 +11,22 @@ export async function POST(req: NextRequest) {
       body = await req.json();
     } catch {}
 
-    const topic = searchParams.get('topic') || searchParams.get('type') || body.type || body.topic;
+    const topic =
+      searchParams.get('topic') ||
+      searchParams.get('type') ||
+      body?.type ||
+      body?.topic ||
+      (typeof body?.action === 'string' && body.action.startsWith('payment.') ? 'payment' : '');
+
     const paymentId =
       searchParams.get('data.id') ||
-      searchParams.get('id') ||
+      (topic === 'payment' ? searchParams.get('id') : null) ||
       body?.data?.id ||
-      body?.id;
+      (topic === 'payment' ? body?.id : null);
 
+    // Procesar únicamente notificaciones de tipo 'payment' (con barrera de idempotencia en mercadopagoService)
     if (paymentId && (topic === 'payment' || !topic)) {
-      // Procesar en segundo plano sin demorar la respuesta 200 a Mercado Pago
-      processMercadoPagoPayment(paymentId).catch((err) => {
+      await processMercadoPagoPayment(paymentId).catch((err) => {
         console.error('Error procesando pago MP en webhook:', err);
       });
     }
