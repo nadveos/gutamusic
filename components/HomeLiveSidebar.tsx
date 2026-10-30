@@ -93,20 +93,11 @@ export const HomeLiveSidebar: React.FC<HomeLiveSidebarProps> = ({
             </p>
           </div>
 
-          {/* Iframe Embebido Oficial de Spotify (altura compacta optimizada para columna) */}
-          <div className="rounded-xl overflow-hidden bg-[#0d0e10] border border-[#262832] shadow-inner">
-            <iframe
-              src={`https://open.spotify.com/embed/playlist/${currentId}?utm_source=generator&theme=0`}
-              width="100%"
-              height="352"
-              frameBorder="0"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-              className="w-full"
-              style={{ borderRadius: '10px' }}
-              title={playlistName}
-            />
-          </div>
+          {/* Contenedor de acoplamiento del reproductor persistente global (mantiene la reproducción al navegar) */}
+          <div
+            id="guta-spotify-home-slot"
+            className="rounded-xl overflow-hidden bg-[#0d0e10] border border-[#262832] shadow-inner h-[352px] w-full"
+          />
 
           {/* Call to action para músicos */}
           <div className="pt-2 flex items-center justify-between text-[11px] border-t border-[#252731]">

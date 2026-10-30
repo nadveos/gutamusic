@@ -39,7 +39,9 @@ export default async function EntrevistasPage() {
           return (
             <article
               key={item.id}
-              className="group rounded-2xl overflow-hidden natural-card transition-colors flex flex-col justify-between"
+              className={`group rounded-2xl overflow-hidden natural-card transition-colors flex flex-col justify-between ${
+                item.featured ? 'ring-1 ring-[#d97d64]/45 border-[#d97d64]/40' : ''
+              }`}
             >
               {/* Thumbnail */}
               <div className="relative aspect-video w-full overflow-hidden bg-black">
@@ -58,7 +60,12 @@ export default async function EntrevistasPage() {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1e1f24] via-transparent to-transparent" />
 
-                <div className="absolute top-2.5 left-2.5 z-10">
+                <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
+                  {item.featured && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#d97d64] text-[#151618] shadow-sm">
+                      ★ Destacada
+                    </span>
+                  )}
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#1e1f24]/90 text-[#f3f1ec] border border-[#3c3f4c]">
                     {item.category}
                   </span>

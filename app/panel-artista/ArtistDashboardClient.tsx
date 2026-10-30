@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { pb } from '@/lib/pocketbase';
 import { GenreType, DiscographyType, VideoPlatform } from '@/lib/types';
+import { getWeeklyFeaturedStatus } from '@/lib/services/featuredRotationService';
 
 const GENRE_OPTIONS: GenreType[] = [
   'Folklore',
@@ -602,6 +603,56 @@ export function ArtistDashboardClient() {
           </Link>
         </div>
       )}
+
+      {/* 2.05 Aviso de Vigencia de Artista Destacado de la Semana */}
+      {artist?.featuredOfWeek && (() => {
+        const weeklyStatus = getWeeklyFeaturedStatus(artist.featuredOfWeekDate);
+        const isExpiringSoon = weeklyStatus.daysRemaining <= 2;
+        return (
+          <div
+            className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+              isExpiringSoon
+                ? 'bg-[#d97d64]/15 border-[#d97d64]/50'
+                : 'bg-[#e6cca0]/15 border-[#e6cca0]/40'
+            }`}
+          >
+            <div className="flex items-start sm:items-center gap-3">
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  isExpiringSoon
+                    ? 'bg-[#d97d64]/25 text-[#d97d64]'
+                    : 'bg-[#e6cca0]/25 text-[#e6cca0]'
+                }`}
+              >
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-[#f3f1ec] text-sm">
+                    {isExpiringSoon
+                      ? `¡Aviso de vencimiento! Te ${weeklyStatus.daysRemaining === 1 ? 'queda 1 día' : `quedan ${weeklyStatus.daysRemaining} días`} de Artista Destacado`
+                      : `Te ${weeklyStatus.daysRemaining === 1 ? 'queda 1 día' : `quedan ${weeklyStatus.daysRemaining} días`} de Artista Destacado de la Semana`}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                      isExpiringSoon
+                        ? 'bg-[#d97d64] text-[#151618]'
+                        : 'bg-[#e6cca0] text-[#151618]'
+                    }`}
+                  >
+                    Día {weeklyStatus.daysElapsed} de 7
+                  </span>
+                </div>
+                <p className="text-[#aba79e]">
+                  Tu proyecto figura en la portada principal de GUTA MÚSICA desde el{' '}
+                  <strong className="text-[#f3f1ec]">{weeklyStatus.startDateStr}</strong> hasta el{' '}
+                  <strong className="text-[#f3f1ec]">{weeklyStatus.expiryDateStr}</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 2.1 Oferta de Destaque Semanal con Mercado Pago (Oculto hasta que actives el flag) */}
       {ENABLE_WEEKLY_FEATURED_PURCHASE && isApproved && artist && (

@@ -438,26 +438,93 @@ export class MusicDataService {
         requestKey: null,
       });
       if (records && records.length > 0) {
-        return records.map((r) => ({
-          id: r.id,
-          slug: r.slug,
-          title: r.title,
-          subtitle: r.subtitle,
-          artistId: r.artistId,
-          artistName: r.artistName,
-          artistSlug: r.artistSlug,
-          artistPhoto: normalizeImageUrl(r.artistPhoto, '/brand/guta-musica-favicon-512.png'),
-          host: r.host,
-          date: r.date,
-          summary: r.summary,
-          editorialText: r.editorialText,
-          keyHighlights: Array.isArray(r.keyHighlights) ? r.keyHighlights : [],
-          videoUrl: r.videoUrl,
-          videoPlatform: r.videoPlatform,
-          thumbnailUrl: normalizeImageUrl(r.thumbnailUrl || r.artistPhoto, '/brand/guta-musica-logo.png'),
-          featured: Boolean(r.featured),
-          category: r.category,
-        }));
+        const parseInterviewTimestamp = (dateStr?: string, createdStr?: string): number => {
+          if (dateStr) {
+            const direct = Date.parse(dateStr);
+            if (!isNaN(direct)) return direct;
+
+            // Parsear fechas en español del tipo "21 de agosto de 2026"
+            const monthsEs: Record<string, number> = {
+              enero: 0,
+              febrero: 1,
+              marzo: 2,
+              abril: 3,
+              mayo: 4,
+              junio: 5,
+              julio: 6,
+              agosto: 7,
+              septiembre: 8,
+              setiembre: 8,
+              octubre: 9,
+              noviembre: 10,
+              diciembre: 11,
+            };
+            const match = dateStr
+              .toLowerCase()
+              .match(/(\d{1,2})\s+de\s+([a-záéíóú]+)\s+(?:de\s+)?(\d{4})/);
+            if (match) {
+              const day = parseInt(match[1], 10);
+              const month = monthsEs[match[2]];
+              const year = parseInt(match[3], 10);
+              if (month !== undefined) {
+                return new Date(year, month, day).getTime();
+              }
+            }
+          }
+          if (createdStr) {
+            const fallback = Date.parse(createdStr);
+            if (!isNaN(fallback)) return fallback;
+          }
+          return 0;
+        };
+
+        const getPriorityGroup = (item: Interview): number => {
+          const haystack = `${item.artistName || ''} ${item.title || ''} ${item.slug || ''}`.toLowerCase();
+          if (haystack.includes('tupay')) return 1;
+          if (haystack.includes('cecilia camacho') || haystack.includes('ceci camacho')) return 2;
+          if (item.featured) return 3;
+          return 4;
+        };
+
+        const mapped: (Interview & { _ts: number })[] = records.map((r) => {
+          const haystack = `${r.artistName || ''} ${r.title || ''} ${r.slug || ''}`.toLowerCase();
+          const isPinnedFeatured =
+            Boolean(r.featured) ||
+            haystack.includes('tupay') ||
+            haystack.includes('cecilia camacho') ||
+            haystack.includes('ceci camacho');
+
+          return {
+            id: r.id,
+            slug: r.slug,
+            title: r.title,
+            subtitle: r.subtitle,
+            artistId: r.artistId,
+            artistName: r.artistName,
+            artistSlug: r.artistSlug,
+            artistPhoto: normalizeImageUrl(r.artistPhoto, '/brand/guta-musica-favicon-512.png'),
+            host: r.host,
+            date: r.date,
+            summary: r.summary,
+            editorialText: r.editorialText,
+            keyHighlights: Array.isArray(r.keyHighlights) ? r.keyHighlights : [],
+            videoUrl: r.videoUrl,
+            videoPlatform: r.videoPlatform,
+            thumbnailUrl: normalizeImageUrl(r.thumbnailUrl || r.artistPhoto, '/brand/guta-musica-logo.png'),
+            featured: isPinnedFeatured,
+            category: r.category,
+            _ts: parseInterviewTimestamp(r.date, r.created),
+          };
+        });
+
+        mapped.sort((a, b) => {
+          const prioA = getPriorityGroup(a);
+          const prioB = getPriorityGroup(b);
+          if (prioA !== prioB) return prioA - prioB;
+          return b._ts - a._ts;
+        });
+
+        return mapped.map(({ _ts, ...rest }) => rest);
       }
     } catch (e) {}
 

@@ -4,6 +4,8 @@ import Image from 'next/image';
 import { MusicDataService } from '../../lib/api';
 import { pb } from '../../lib/pocketbase';
 import { getContributionsFromDb } from '../../lib/services/mercadopagoService';
+import { getWeeklyFeaturedStatus } from '../../lib/services/featuredRotationService';
+import { getDaysRemaining } from '../../lib/constants/sponsorPricing';
 import { AdminHeader } from '../../components/admin/AdminHeader';
 import {
   Mic2,
@@ -20,6 +22,7 @@ import {
   HeartHandshake,
   Heart,
   Share2,
+  Clock,
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -143,6 +146,142 @@ export default async function AdminDashboardPage() {
           );
         })}
       </div>
+
+      {/* Control de Vigencias & Avisos Previos al Vencimiento (Artistas y Anunciantes) */}
+      {(() => {
+        const weeklyFeaturedList = artists
+          .filter((a) => a.featuredOfWeek)
+          .map((a) => ({
+            artist: a,
+            status: getWeeklyFeaturedStatus(a.featuredOfWeekDate),
+          }));
+
+        const sponsorVigenciaList = alliances
+          .filter((al) => al.active && al.endDate)
+          .map((al) => ({
+            alliance: al,
+            remaining: getDaysRemaining(al.endDate),
+          }));
+
+        if (weeklyFeaturedList.length === 0 && sponsorVigenciaList.length === 0) return null;
+
+        return (
+          <section className="natural-card p-5 rounded-2xl border border-[#d97d64]/35 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#d97d64]" />
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#e6cca0]">
+                  Vigencia & Avisos de Vencimiento (Artistas Semanales y Anunciantes)
+                </h2>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Columna Artistas Destacados de la Semana */}
+              <div className="p-4 rounded-xl bg-[#18191e] border border-[#2a2c35] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#f3f1ec]">
+                    🎸 Artistas Destacados de la Semana (7 días)
+                  </span>
+                  <Link href="/admin/artistas" className="text-[11px] text-[#e6cca0] hover:underline">
+                    Gestionar →
+                  </Link>
+                </div>
+                {weeklyFeaturedList.length === 0 ? (
+                  <p className="text-xs text-[#78746c]">No hay artistas semanales con vencimiento activo.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {weeklyFeaturedList.map(({ artist, status }) => {
+                      const isSoon = status.daysRemaining <= 2;
+                      return (
+                        <div
+                          key={artist.id}
+                          className={`p-2.5 rounded-lg border flex items-center justify-between gap-2 text-xs ${
+                            isSoon
+                              ? 'bg-[#d97d64]/15 border-[#d97d64]/40'
+                              : 'bg-[#202228] border-[#2d2f38]'
+                          }`}
+                        >
+                          <div>
+                            <strong className="text-[#f3f1ec] block">{artist.stageName}</strong>
+                            <span className="text-[10px] text-[#8c887f]">
+                              Vence: {status.expiryDateStr}
+                            </span>
+                          </div>
+                          <span
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
+                              isSoon
+                                ? 'bg-[#d97d64] text-[#151618]'
+                                : 'bg-[#e6cca0]/20 text-[#e6cca0]'
+                            }`}
+                          >
+                            {status.daysRemaining === 1
+                              ? '⚠️ Queda 1 día'
+                              : `${isSoon ? '⚠️ ' : ''}Quedan ${status.daysRemaining} días`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Columna Anunciantes / Auspiciantes */}
+              <div className="p-4 rounded-xl bg-[#18191e] border border-[#2a2c35] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#f3f1ec]">
+                    🏢 Anunciantes & Auspicios Activos (30 días)
+                  </span>
+                  <Link href="/admin/aliados" className="text-[11px] text-[#e6cca0] hover:underline">
+                    Gestionar →
+                  </Link>
+                </div>
+                {sponsorVigenciaList.length === 0 ? (
+                  <p className="text-xs text-[#78746c]">
+                    Los auspiciantes actuales son de cortesía permanente (sin fecha de vencimiento).
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {sponsorVigenciaList.map(({ alliance, remaining }) => {
+                      const isSoon = remaining.isExpired || remaining.days <= 7;
+                      return (
+                        <div
+                          key={alliance.id}
+                          className={`p-2.5 rounded-lg border flex items-center justify-between gap-2 text-xs ${
+                            isSoon
+                              ? 'bg-[#d97d64]/15 border-[#d97d64]/40'
+                              : 'bg-[#202228] border-[#2d2f38]'
+                          }`}
+                        >
+                          <div>
+                            <strong className="text-[#f3f1ec] block">{alliance.name}</strong>
+                            <span className="text-[10px] text-[#8c887f]">
+                              Vence: {alliance.endDate}
+                            </span>
+                          </div>
+                          <span
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
+                              remaining.isExpired
+                                ? 'bg-[#c05a68] text-[#f3f1ec]'
+                                : isSoon
+                                  ? 'bg-[#d97d64] text-[#151618]'
+                                  : 'bg-[#93a887]/20 text-[#93a887]'
+                            }`}
+                          >
+                            {remaining.isExpired
+                              ? 'Vencido'
+                              : `${isSoon ? '⚠️ ' : ''}Quedan ${remaining.days} días`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Quick Action Shortcuts */}
       <section className="space-y-4">

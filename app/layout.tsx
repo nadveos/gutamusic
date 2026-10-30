@@ -5,6 +5,7 @@ import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { BrandAllianceShowcase } from '../components/BrandAllianceShowcase';
 import { VoluntaryContributionBanner } from '../components/VoluntaryContributionBanner';
+import { PersistentSpotifyPlayer } from '../components/PersistentSpotifyPlayer';
 import { ChunkErrorListener } from '../components/ChunkErrorListener';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
@@ -109,6 +110,7 @@ export default function RootLayout({
           <BrandAllianceShowcase sector="global_footer" />
         </main>
         <Footer />
+        <PersistentSpotifyPlayer />
       </body>
     </html>
   );

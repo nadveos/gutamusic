@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Artist } from '../../../lib/types';
 import { pb } from '../../../lib/pocketbase';
+import { getWeeklyFeaturedStatus } from '../../../lib/services/featuredRotationService';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
 import { ConfirmModal } from '../../../components/admin/ConfirmModal';
 import { Edit, Trash2, Eye, MapPin, CheckSquare, Square } from 'lucide-react';
@@ -152,6 +153,58 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
         actionHref="/admin/artistas/nuevo"
       />
 
+      {/* Aviso de Vigencia de Artistas Destacados de la Semana */}
+      {(() => {
+        const weeklyFeatured = artists
+          .filter((a) => a.featuredOfWeek)
+          .map((a) => ({
+            artist: a,
+            status: getWeeklyFeaturedStatus(a.featuredOfWeekDate),
+          }));
+        if (weeklyFeatured.length === 0) return null;
+
+        return (
+          <div className="p-4 rounded-2xl bg-[#1c1d24] border border-[#e6cca0]/35 space-y-2.5">
+            <div className="text-xs font-bold text-[#e6cca0] uppercase tracking-wider">
+              ⏱️ Control de Vigencia — Artistas Destacados de la Semana (7 días)
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {weeklyFeatured.map(({ artist, status }) => {
+                const isSoon = status.daysRemaining <= 2;
+                return (
+                  <div
+                    key={artist.id}
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-2 text-xs ${
+                      isSoon
+                        ? 'bg-[#d97d64]/15 border-[#d97d64]/50'
+                        : 'bg-[#24252c] border-[#323542]'
+                    }`}
+                  >
+                    <div>
+                      <strong className="text-[#f3f1ec] block">{artist.stageName}</strong>
+                      <span className="text-[10px] text-[#8c887f]">
+                        Vence: {status.expiryDateStr}
+                      </span>
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${
+                        isSoon
+                          ? 'bg-[#d97d64] text-[#151618]'
+                          : 'bg-[#e6cca0]/20 text-[#e6cca0]'
+                      }`}
+                    >
+                      {status.daysRemaining === 1
+                        ? '⚠️ Queda 1 día'
+                        : `${isSoon ? '⚠️ ' : ''}Quedan ${status.daysRemaining} días`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Notifications */}
       {notification && (
         <div
@@ -278,11 +331,21 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
                             ⭐ Consagrado (Fijo)
                           </span>
                         )}
-                        {artist.featuredOfWeek && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#e6cca0]/20 border border-[#e6cca0]/40 text-[#e6cca0] inline-block self-start">
-                            ⏱️ Semanal (Auto 7d)
-                          </span>
-                        )}
+                        {artist.featuredOfWeek && (() => {
+                          const st = getWeeklyFeaturedStatus(artist.featuredOfWeekDate);
+                          const isSoon = st.daysRemaining <= 2;
+                          return (
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-semibold inline-block self-start ${
+                                isSoon
+                                  ? 'bg-[#d97d64]/25 border border-[#d97d64]/50 text-[#f3f1ec]'
+                                  : 'bg-[#e6cca0]/20 border border-[#e6cca0]/40 text-[#e6cca0]'
+                              }`}
+                            >
+                              ⏱️ Semanal • Quedan {st.daysRemaining}d
+                            </span>
+                          );
+                        })()}
                         {!artist.featured && !artist.featuredOfWeek && (
                           <span className="text-[#78746c] text-[11px]">Estándar</span>
                         )}

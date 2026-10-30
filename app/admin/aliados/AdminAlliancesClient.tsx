@@ -407,6 +407,61 @@ export const AdminAlliancesClient: React.FC<AdminAlliancesClientProps> = ({ init
         }}
       />
 
+      {/* Aviso de Vencimiento y Vigencias de Auspiciantes */}
+      {(() => {
+        const timedSponsors = alliances
+          .filter((al) => al.endDate)
+          .map((al) => ({
+            alliance: al,
+            remaining: getDaysRemaining(al.endDate),
+          }));
+
+        if (timedSponsors.length === 0) return null;
+
+        return (
+          <div className="p-4 rounded-2xl bg-[#1c1d24] border border-[#e6cca0]/35 space-y-2.5">
+            <div className="text-xs font-bold text-[#e6cca0] uppercase tracking-wider">
+              ⏱️ Vigencia de Anunciantes (Planes de 30 Días)
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {timedSponsors.map(({ alliance, remaining }) => {
+                const isSoon = remaining.isExpired || remaining.days <= 7;
+                return (
+                  <div
+                    key={alliance.id}
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-2 text-xs ${
+                      isSoon
+                        ? 'bg-[#d97d64]/15 border-[#d97d64]/50'
+                        : 'bg-[#24252c] border-[#323542]'
+                    }`}
+                  >
+                    <div>
+                      <strong className="text-[#f3f1ec] block">{alliance.name}</strong>
+                      <span className="text-[10px] text-[#8c887f]">
+                        Vence: {alliance.endDate}
+                      </span>
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${
+                        remaining.isExpired
+                          ? 'bg-[#c05a68] text-[#f3f1ec]'
+                          : isSoon
+                            ? 'bg-[#d97d64] text-[#151618]'
+                            : 'bg-[#93a887]/20 text-[#93a887]'
+                      }`}
+                    >
+                      {remaining.isExpired
+                        ? 'Vencido'
+                        : `${isSoon ? '⚠️ ' : ''}Quedan ${remaining.days}d`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Notification toast */}
       {notification && (
         <div

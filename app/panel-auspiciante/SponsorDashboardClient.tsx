@@ -248,6 +248,47 @@ export const SponsorDashboardClient: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-8">
+            {/* Banner de Aviso de Días Restantes / Próximo Vencimiento */}
+            {alliance.endDate && (
+              <div
+                className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs ${
+                  alliance.isExpired
+                    ? 'bg-[#d97d64]/15 border-[#d97d64]/50'
+                    : alliance.daysRemaining <= 7
+                      ? 'bg-[#e6cca0]/15 border-[#e6cca0]/50'
+                      : 'bg-[#5ce487]/10 border-[#5ce487]/30'
+                }`}
+              >
+                <div className="flex items-start sm:items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      alliance.isExpired
+                        ? 'bg-[#d97d64]/25 text-[#d97d64]'
+                        : alliance.daysRemaining <= 7
+                          ? 'bg-[#e6cca0]/25 text-[#e6cca0]'
+                          : 'bg-[#5ce487]/20 text-[#5ce487]'
+                    }`}
+                  >
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-[#f3f1ec] text-sm block">
+                      {alliance.isExpired
+                        ? 'Tu período de Anunciante Destacado ha finalizado'
+                        : alliance.daysRemaining <= 7
+                          ? `¡Aviso previo de vencimiento! Te ${alliance.daysRemaining === 1 ? 'queda 1 día' : `quedan ${alliance.daysRemaining} días`} de Anunciante Destacado`
+                          : `Te quedan ${alliance.daysRemaining} días de Anunciante Destacado en ${plan?.name || 'GUTA MÚSICA'}`}
+                    </span>
+                    <p className="text-[#aba79e]">
+                      {alliance.isExpired
+                        ? `Tu campaña venció el ${alliance.endDate}. Podés renovar por 30 días para reactivar tu marca inmediatamente.`
+                        : `Vigencia activa hasta el ${alliance.endDate}. Podés renovar antes del vencimiento para extender 30 días adicionales.`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Métricas y Estado de Vigencia (30 Días) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-4 rounded-2xl bg-[#17181e] border border-[#292b34] space-y-1">
