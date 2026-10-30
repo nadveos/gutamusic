@@ -35,7 +35,7 @@ export function AdminColaboracionesClient({
   const [loading, setLoading] = useState(initialContributions.length === 0);
   const [syncing, setSyncing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterTab, setFilterTab] = useState<'all' | 'mp' | 'manual'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'mp' | 'paypal' | 'manual'>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Toast
@@ -122,11 +122,20 @@ export function AdminColaboracionesClient({
 
       if (!matchesSearch) return false;
 
+      const isPayPalItem =
+        item.paymentId.startsWith('PP-') ||
+        (item.paymentMethod && item.paymentMethod.toLowerCase().includes('paypal'));
+      const isManualItem =
+        item.paymentType === 'manual' || item.paymentId.startsWith('MANUAL-');
+
+      if (filterTab === 'paypal') {
+        return Boolean(isPayPalItem);
+      }
       if (filterTab === 'mp') {
-        return item.paymentType !== 'manual' && !item.paymentId.startsWith('MANUAL-');
+        return !isPayPalItem && !isManualItem;
       }
       if (filterTab === 'manual') {
-        return item.paymentType === 'manual' || item.paymentId.startsWith('MANUAL-');
+        return isManualItem;
       }
 
       return true;
@@ -409,6 +418,17 @@ export function AdminColaboracionesClient({
             </button>
             <button
               type="button"
+              onClick={() => setFilterTab('paypal')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                filterTab === 'paypal'
+                  ? 'bg-[#FFC439] text-[#151618] font-bold'
+                  : 'text-[#aba79e] hover:text-[#f3f1ec]'
+              }`}
+            >
+              PayPal
+            </button>
+            <button
+              type="button"
               onClick={() => setFilterTab('manual')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                 filterTab === 'manual'
@@ -482,8 +502,13 @@ export function AdminColaboracionesClient({
               </thead>
               <tbody className="divide-y divide-[#24252c]">
                 {filteredContributions.map((item) => {
+                  const isPayPal =
+                    item.paymentId.startsWith('PP-') ||
+                    Boolean(item.paymentMethod && item.paymentMethod.toLowerCase().includes('paypal'));
                   const isMp =
-                    item.paymentType !== 'manual' && !item.paymentId.startsWith('MANUAL-');
+                    !isPayPal &&
+                    item.paymentType !== 'manual' &&
+                    !item.paymentId.startsWith('MANUAL-');
                   return (
                     <tr
                       key={item.id || item.paymentId}
@@ -525,9 +550,11 @@ export function AdminColaboracionesClient({
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${
-                            isMp
-                              ? 'bg-[#009EE3]/15 text-[#3bbdf5] border border-[#009EE3]/25'
-                              : 'bg-[#24252c] text-[#e6cca0] border border-[#323540]'
+                            isPayPal
+                              ? 'bg-[#FFC439]/15 text-[#FFC439] border border-[#FFC439]/30'
+                              : isMp
+                                ? 'bg-[#009EE3]/15 text-[#3bbdf5] border border-[#009EE3]/25'
+                                : 'bg-[#24252c] text-[#e6cca0] border border-[#323540]'
                           }`}
                         >
                           <CreditCard className="w-3 h-3" />

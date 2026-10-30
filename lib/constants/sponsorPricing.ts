@@ -7,6 +7,7 @@ export interface SponsorPlan {
   badge?: string;
   tagline: string;
   priceArs: number;
+  priceUsd: number;
   durationDays: number;
   highlighted?: boolean;
   isPopular?: boolean;
@@ -24,6 +25,7 @@ export const SPONSOR_PLANS: SponsorPlan[] = [
     badge: '🎸 Nicho Músicos',
     tagline: 'Llegá a músicos que buscan salas, luthiers y estudios',
     priceArs: 18500,
+    priceUsd: 15,
     durationDays: 30,
     audience: 'Músicos, solistas, bandas independientes y compositores.',
     locationDescription: 'Se muestra en el catálogo completo de artistas independientes y filtros por provincia.',
@@ -40,6 +42,7 @@ export const SPONSOR_PLANS: SponsorPlan[] = [
     badge: '🎟️ Cartelera & Salidas',
     tagline: 'Conectá con personas que salen a recitales y peñas',
     priceArs: 21000,
+    priceUsd: 18,
     durationDays: 30,
     audience: 'Público que asiste a recitales, turistas y productores de eventos.',
     locationDescription: 'Exhibido en la cartelera de fechas de recitales, festivales y encuentros culturales.',
@@ -56,6 +59,7 @@ export const SPONSOR_PLANS: SponsorPlan[] = [
     badge: '⭐ MÁS ELEGIDO',
     tagline: 'Posicionamiento privilegiado en la portada más visitada',
     priceArs: 29500,
+    priceUsd: 25,
     durationDays: 30,
     highlighted: true,
     isPopular: true,
@@ -74,6 +78,7 @@ export const SPONSOR_PLANS: SponsorPlan[] = [
     badge: '🌐 100% de la Web',
     tagline: 'Presencia continua en todas las páginas del portal',
     priceArs: 36000,
+    priceUsd: 30,
     durationDays: 30,
     audience: 'Audiencia general, oyentes, músicos y gestores de todo el país.',
     locationDescription: 'Se exhibe en la base de todas las secciones del portal sin interrumpir la lectura.',
@@ -90,6 +95,7 @@ export const SPONSOR_PLANS: SponsorPlan[] = [
     badge: '👑 MÁS CONVENIENTE',
     tagline: 'Billboard horizontal scroll-reveal en Home + cobertura en toda la web',
     priceArs: 49000,
+    priceUsd: 40,
     durationDays: 30,
     highlighted: true,
     isBestValue: true,

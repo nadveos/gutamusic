@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAdminPb } from '@/lib/pocketbase';
 import { createSponsorAlliancePreference } from '@/lib/services/mercadopagoService';
+import { createPayPalSponsorOrder } from '@/lib/services/paypalService';
 import { getPlanBySector } from '@/lib/constants/sponsorPricing';
 import { AllianceSector } from '@/lib/types';
 
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { allianceId } = body;
+    const { allianceId, paymentProvider = 'mercadopago' } = body;
 
     if (!allianceId) {
       return NextResponse.json({ success: false, error: 'Falta allianceId para renovar' }, { status: 400 });
@@ -23,6 +24,23 @@ export async function POST(req: NextRequest) {
     }
 
     const plan = getPlanBySector(alliance.sector as AllianceSector);
+
+    if (paymentProvider === 'paypal') {
+      const ppOrder = await createPayPalSponsorOrder({
+        allianceId: alliance.id,
+        brandName: alliance.name,
+        sector: alliance.sector as AllianceSector,
+        userEmail: alliance.email,
+        amountUsd: plan.priceUsd,
+        amountArs: plan.priceArs,
+      });
+
+      return NextResponse.json({
+        success: true,
+        initPoint: ppOrder.approveUrl,
+        orderId: ppOrder.orderId,
+      });
+    }
 
     const preference = await createSponsorAlliancePreference({
       allianceId: alliance.id,

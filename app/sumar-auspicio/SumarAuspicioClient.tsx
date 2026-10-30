@@ -64,6 +64,7 @@ export const SumarAuspicioClient: React.FC = () => {
 
   // Estados de carga y error
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingProvider, setSubmittingProvider] = useState<'mercadopago' | 'paypal'>('mercadopago');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const currentPlan = getPlanBySector(selectedSector);
@@ -85,8 +86,11 @@ export const SumarAuspicioClient: React.FC = () => {
     active: true,
   };
 
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCheckout = async (
+    e?: React.FormEvent,
+    paymentProvider: 'mercadopago' | 'paypal' = 'mercadopago'
+  ) => {
+    if (e) e.preventDefault();
     setErrorMessage(null);
 
     if (!brandName.trim()) {
@@ -109,6 +113,7 @@ export const SumarAuspicioClient: React.FC = () => {
       return;
     }
 
+    setSubmittingProvider(paymentProvider);
     setIsSubmitting(true);
 
     try {
@@ -127,6 +132,7 @@ export const SumarAuspicioClient: React.FC = () => {
           websiteUrl: websiteUrl.trim(),
           email: email.trim().toLowerCase(),
           password,
+          paymentProvider,
         }),
       });
 
@@ -143,10 +149,10 @@ export const SumarAuspicioClient: React.FC = () => {
           localStorage.setItem('guta_sponsor_email', email.trim().toLowerCase());
         }
 
-        // Redireccionar a Mercado Pago Checkout Pro
+        // Redireccionar a Mercado Pago o PayPal
         window.location.href = data.initPoint;
       } else {
-        throw new Error('No se pudo generar el enlace de pago de Mercado Pago.');
+        throw new Error('No se pudo generar el enlace de pago.');
       }
     } catch (err: any) {
       console.error('Error al contratar auspicio:', err);
@@ -236,9 +242,12 @@ export const SumarAuspicioClient: React.FC = () => {
                           {plan.name}
                         </h3>
 
-                        <div className="pt-1 flex items-baseline gap-1">
+                        <div className="pt-1 flex items-baseline gap-1.5 flex-wrap">
                           <span className="text-xl font-black text-[#e6cca0]">
                             ${plan.priceArs.toLocaleString('es-AR')}
+                          </span>
+                          <span className="text-[10px] font-bold text-[#FFC439] bg-[#FFC439]/10 px-1.5 py-0.5 rounded">
+                            US$ {plan.priceUsd}
                           </span>
                           <span className="text-[10px] text-[#78746c]">/30 días</span>
                         </div>
@@ -522,9 +531,9 @@ export const SumarAuspicioClient: React.FC = () => {
               </div>
             )}
 
-            {/* Resumen Final de Cobro & CTA Mercado Pago */}
-            <div className="p-6 rounded-2xl bg-gradient-to-r from-[#1a1b22] to-[#14151a] border border-[#2c2e39] flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="space-y-1 text-center md:text-left">
+            {/* Resumen Final de Cobro & CTA Mercado Pago / PayPal */}
+            <div className="p-6 rounded-2xl bg-gradient-to-r from-[#1a1b22] to-[#14151a] border border-[#2c2e39] flex flex-col lg:flex-row items-center justify-between gap-6">
+              <div className="space-y-1 text-center lg:text-left">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#a09c93]">
                   Resumen de tu Contratación
                 </span>
@@ -532,40 +541,59 @@ export const SumarAuspicioClient: React.FC = () => {
                   {currentPlan.name} — <span className="text-[#e6cca0]">30 Días Corridos</span>
                 </h3>
                 <p className="text-xs text-[#78746c]">
-                  Activación inmediata al aprobarse el pago mediante Mercado Pago.
+                  Activación inmediata al aprobarse el pago mediante Mercado Pago (ARS) o PayPal (USD).
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                <div className="text-right hidden sm:block">
-                  <span className="block text-2xl font-black text-[#e6cca0]">
-                    ${currentPlan.priceArs.toLocaleString('es-AR')}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                <div className="text-right hidden xl:block pr-2">
+                  <span className="block text-xl font-black text-[#e6cca0]">
+                    ${currentPlan.priceArs.toLocaleString('es-AR')} ARS
                   </span>
-                  <span className="text-[11px] text-[#78746c]">ARS Final (Pago Único)</span>
+                  <span className="text-[11px] text-[#FFC439] font-semibold">
+                    o US$ {currentPlan.priceUsd} vía PayPal
+                  </span>
                 </div>
 
+                {/* Botón Mercado Pago (ARS) */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#009ee3] hover:bg-[#0086c3] text-[#f3f1ec] font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#009ee3]/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-[#009ee3] hover:bg-[#0086c3] text-[#f3f1ec] font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#009ee3]/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <Lock className="w-4 h-4 text-white" />
                   <span>
-                    {isSubmitting
+                    {isSubmitting && submittingProvider === 'mercadopago'
                       ? 'Conectando con Mercado Pago...'
-                      : `Pagar con Mercado Pago $${currentPlan.priceArs.toLocaleString('es-AR')}`}
+                      : `Mercado Pago $${currentPlan.priceArs.toLocaleString('es-AR')} ARS`}
                   </span>
                   <ArrowRight className="w-4 h-4 text-white" />
+                </button>
+
+                {/* Botón PayPal (USD) */}
+                <button
+                  type="button"
+                  onClick={() => handleCheckout(undefined, 'paypal')}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-[#FFC439] hover:bg-[#f2b324] text-[#121316] font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#FFC439]/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <Globe className="w-4 h-4 text-[#121316]" />
+                  <span>
+                    {isSubmitting && submittingProvider === 'paypal'
+                      ? 'Conectando con PayPal...'
+                      : `PayPal US$ ${currentPlan.priceUsd} USD`}
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-[#121316]" />
                 </button>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-6 text-[11px] text-[#78746c] pt-2">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#5ce487]" /> Pago 100% Seguro por Mercado Pago
+                <ShieldCheck className="w-4 h-4 text-[#5ce487]" /> Pago 100% Seguro por Mercado Pago o PayPal Internacional
               </span>
               <span>•</span>
-              <span>Acepta Saldo en cuenta, Débito, Crédito y Transferencias</span>
+              <span>Acepta Pesos Argentinos (ARS) y Dólares (USD)</span>
               <span>•</span>
               <span>Sin débitos sorpresa: renovación manual al finalizar los 30 días</span>
             </div>

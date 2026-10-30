@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerAdminPb, POCKETBASE_URL } from '@/lib/pocketbase';
 import PocketBase from 'pocketbase';
 import { createSponsorAlliancePreference } from '@/lib/services/mercadopagoService';
+import { createPayPalSponsorOrder } from '@/lib/services/paypalService';
 import { getPlanBySector } from '@/lib/constants/sponsorPricing';
 import { AllianceSector } from '@/lib/types';
 
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
       websiteUrl = '',
       email,
       password,
+      paymentProvider = 'mercadopago',
     } = body;
 
     if (!brandName || !sector || !email) {
@@ -97,7 +99,27 @@ export async function POST(req: NextRequest) {
       pricePaid: plan.priceArs,
     });
 
-    // 3. Generar la preferencia de pago en Mercado Pago Checkout Pro
+    // 3. Generar la preferencia/orden de pago según proveedor elegido (Mercado Pago o PayPal)
+    if (paymentProvider === 'paypal') {
+      const ppOrder = await createPayPalSponsorOrder({
+        allianceId: allianceRecord.id,
+        brandName: brandName.trim(),
+        sector: sector as AllianceSector,
+        userEmail: cleanEmail,
+        amountUsd: plan.priceUsd,
+        amountArs: plan.priceArs,
+      });
+
+      return NextResponse.json({
+        success: true,
+        initPoint: ppOrder.approveUrl,
+        orderId: ppOrder.orderId,
+        allianceId: allianceRecord.id,
+        token: clientAuthToken,
+        user: sponsorUserId ? { id: sponsorUserId, email: cleanEmail } : null,
+      });
+    }
+
     const mpPreference = await createSponsorAlliancePreference({
       allianceId: allianceRecord.id,
       brandName: brandName.trim(),

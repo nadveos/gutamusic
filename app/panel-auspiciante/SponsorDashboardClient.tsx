@@ -140,7 +140,7 @@ export const SponsorDashboardClient: React.FC = () => {
   };
 
   // Manejar renovación de 30 días
-  const handleRenew = async () => {
+  const handleRenew = async (paymentProvider: 'mercadopago' | 'paypal' = 'mercadopago') => {
     if (!alliance?.id) return;
     setRenewLoading(true);
     setErrorToast(null);
@@ -149,7 +149,7 @@ export const SponsorDashboardClient: React.FC = () => {
       const res = await fetch('/api/sponsors/renew', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ allianceId: alliance.id }),
+        body: JSON.stringify({ allianceId: alliance.id, paymentProvider }),
       });
 
       const data = await res.json();
@@ -310,18 +310,29 @@ export const SponsorDashboardClient: React.FC = () => {
                     Renovación 30 Días
                   </span>
                   <p className="text-xs text-[#aba79e]">
-                    Extendé 30 días más tu posición sin perder tu orden.
+                    Extendé 30 días con Mercado Pago (ARS) o PayPal (USD).
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleRenew}
-                  disabled={renewLoading}
-                  className="w-full py-2 px-3 rounded-xl bg-[#009ee3] hover:bg-[#0086c3] text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${renewLoading ? 'animate-spin' : ''}`} />
-                  <span>{renewLoading ? 'Generando link...' : 'Renovar 30 Días'}</span>
-                </button>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleRenew('mercadopago')}
+                    disabled={renewLoading}
+                    className="w-full py-2 px-2 rounded-xl bg-[#009ee3] hover:bg-[#0086c3] text-white font-bold text-[11px] transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${renewLoading ? 'animate-spin' : ''}`} />
+                    <span>Mercado Pago</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRenew('paypal')}
+                    disabled={renewLoading}
+                    className="w-full py-2 px-2 rounded-xl bg-[#FFC439] hover:bg-[#f2b324] text-[#121316] font-bold text-[11px] transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <Globe className="w-3 h-3" />
+                    <span>PayPal {plan?.priceUsd ? `US$${plan.priceUsd}` : 'USD'}</span>
+                  </button>
+                </div>
               </div>
             </div>
 
