@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { captureAndProcessPayPalOrder } from '@/lib/services/paypalService';
+import { sendTelegramMessage } from '@/lib/services/telegramService';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,12 +30,30 @@ export async function POST(req: NextRequest) {
     }
 
     if (orderId) {
-      await captureAndProcessPayPalOrder(orderId).catch((err) => {
+      const result = await captureAndProcessPayPalOrder(orderId).catch((err) => {
         console.error('Error procesando orden PayPal en webhook:', err);
+        return { success: false, error: err?.message };
       });
+
+      // Si el evento vino desde el "Webhook Simulator" de PayPal (el ID simulado no existe en la API real),
+      // enviamos un aviso de prueba a Telegram sin ensuciar la base de datos de colaboraciones reales.
+      if (!result?.success && eventType) {
+        await sendTelegramMessage({
+          text: [
+            `🧪 <b>¡PRUEBA DE WEBHOOK PAYPAL EXITOSA!</b>`,
+            ``,
+            `✅ El servidor de <b>GUTA MÚSICA</b> recibió correctamente la señal desde PayPal.`,
+            `📡 <b>Evento recibido:</b> <code>${eventType}</code>`,
+            `🆔 <b>ID de prueba:</b> <code>${orderId}</code>`,
+            ``,
+            `<i>(Al ser una simulación de PayPal, no se agregó como cobro real en el historial de Admin).</i>`,
+          ].join('\n'),
+          parseMode: 'HTML',
+        });
+      }
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, receivedEvent: eventType || 'custom' });
   } catch (err: any) {
     console.error('❌ Error en Webhook de PayPal:', err);
     return NextResponse.json({ error: err?.message }, { status: 500 });
