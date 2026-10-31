@@ -73,6 +73,7 @@ export const SumarAuspicioClient: React.FC = () => {
   const [qrModalState, setQrModalState] = useState<{
     isOpen: boolean;
     qrData: string;
+    staticPosQrImage?: string | null;
     initPoint?: string;
     allianceId: string;
     amountArs: number;
@@ -163,6 +164,7 @@ export const SumarAuspicioClient: React.FC = () => {
         setQrModalState({
           isOpen: true,
           qrData: data.qrData,
+          staticPosQrImage: data.staticPosQrImage,
           initPoint: data.initPoint,
           allianceId: data.allianceId,
           amountArs: data.amountArs || currentPlan.priceArs,
@@ -650,6 +652,7 @@ export const SumarAuspicioClient: React.FC = () => {
             isOpen={qrModalState.isOpen}
             onClose={() => setQrModalState(null)}
             qrData={qrModalState.qrData}
+            staticPosQrImage={qrModalState.staticPosQrImage}
             initPoint={qrModalState.initPoint}
             allianceId={qrModalState.allianceId}
             brandName={brandName.trim() || 'Tu Marca'}

@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         qrData: qrOrder.qrData,
+        staticPosQrImage: qrOrder.staticPosQrImage,
         isInteroperableEmvco: qrOrder.isInteroperableEmvco,
         initPoint: qrOrder.initPoint,
         preferenceId: qrOrder.preferenceId,

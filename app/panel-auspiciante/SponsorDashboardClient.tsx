@@ -43,6 +43,7 @@ export const SponsorDashboardClient: React.FC = () => {
   const [qrModalState, setQrModalState] = useState<{
     isOpen: boolean;
     qrData: string;
+    staticPosQrImage?: string | null;
     initPoint?: string;
     allianceId: string;
     amountArs: number;
@@ -173,6 +174,7 @@ export const SponsorDashboardClient: React.FC = () => {
         setQrModalState({
           isOpen: true,
           qrData: data.qrData,
+          staticPosQrImage: data.staticPosQrImage,
           initPoint: data.initPoint,
           allianceId: alliance.id,
           amountArs: data.amountArs || plan?.priceArs || 0,
@@ -592,6 +594,7 @@ export const SponsorDashboardClient: React.FC = () => {
             isOpen={qrModalState.isOpen}
             onClose={() => setQrModalState(null)}
             qrData={qrModalState.qrData}
+            staticPosQrImage={qrModalState.staticPosQrImage}
             initPoint={qrModalState.initPoint}
             allianceId={qrModalState.allianceId}
             brandName={alliance.name}

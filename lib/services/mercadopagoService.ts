@@ -687,92 +687,130 @@ async function getMercadoPagoCollectorId(): Promise<string> {
 
 /**
  * Asegura que exista una Sucursal (Store) y Caja (POS) virtual en la cuenta de Mercado Pago
- * para poder emitir códigos QR Dinámicos Interoperables (EMVCo / Transferencia 3.0)
- * compatibles con GOcuotas, Naranja X, MODO, Ualá, Personal Pay, Cuenta DNI y Mercado Pago.
+ * para poder emitir códigos QR Dinámicos e Híbridos Interoperables (EMVCo / Transferencia 3.0).
  */
-async function ensureMercadoPagoQrPos(collectorId: string): Promise<string> {
+async function ensureMercadoPagoQrPos(collectorId: string): Promise<{
+  externalPosId: string;
+  staticPosQrImage?: string;
+}> {
   const externalStoreId = 'GUTASTORE01';
   const externalPosId = 'GUTAPOS01';
 
-  if (globalForMp.__mpQrPosExternalId) {
-    return globalForMp.__mpQrPosExternalId;
-  }
-
-  // 1. Verificar si la caja (POS) ya existe
+  // 1. Verificar si ya existe la caja GUTAPOS01 o alguna caja en la cuenta
   try {
-    const posCheckRes = await fetch(
-      `https://api.mercadopago.com/pos?external_id=${externalPosId}`,
-      {
-        headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
-      }
-    );
+    const posCheckRes = await fetch(`https://api.mercadopago.com/pos`, {
+      headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+    });
     if (posCheckRes.ok) {
       const posCheckData = await posCheckRes.json();
-      if (Array.isArray(posCheckData.results) && posCheckData.results.length > 0) {
+      const results: any[] = Array.isArray(posCheckData.results) ? posCheckData.results : [];
+
+      const exactPos = results.find((p) => p.external_id === externalPosId);
+      if (exactPos) {
         globalForMp.__mpQrPosExternalId = externalPosId;
-        return externalPosId;
+        return {
+          externalPosId,
+          staticPosQrImage: exactPos.qr?.image || exactPos.qr_code,
+        };
+      }
+
+      // Si el usuario ya tenía una caja con external_id configurada en su MP, también podemos capturar su QR estático
+      const anyPosWithExt = results.find((p) => Boolean(p.external_id));
+      if (anyPosWithExt) {
+        globalForMp.__mpQrPosExternalId = anyPosWithExt.external_id;
+        return {
+          externalPosId: anyPosWithExt.external_id,
+          staticPosQrImage: anyPosWithExt.qr?.image || anyPosWithExt.qr_code,
+        };
       }
     }
   } catch (err) {
     console.warn('Error consultando POS existente en MP:', err);
   }
 
-  // 2. Buscar o crear la Sucursal (Store)
+  // 2. Buscar cualquier sucursal existente en la cuenta o crear una nueva
   let storeId: string | number | null = null;
+  let resolvedExternalStoreId = externalStoreId;
+
   try {
     const storeSearchRes = await fetch(
-      `https://api.mercadopago.com/users/${collectorId}/stores/search?external_id=${externalStoreId}`,
+      `https://api.mercadopago.com/users/${collectorId}/stores/search`,
       {
         headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
       }
     );
     if (storeSearchRes.ok) {
       const storeSearchData = await storeSearchRes.json();
-      if (Array.isArray(storeSearchData.results) && storeSearchData.results.length > 0) {
-        storeId = storeSearchData.results[0].id;
+      const stores: any[] = Array.isArray(storeSearchData.results)
+        ? storeSearchData.results
+        : [];
+      if (stores.length > 0) {
+        const matched = stores.find((s) => s.external_id === externalStoreId) || stores[0];
+        storeId = matched.id;
+        if (matched.external_id) {
+          resolvedExternalStoreId = matched.external_id;
+        }
       }
     }
   } catch {}
 
   if (!storeId) {
-    const createStoreRes = await fetch(
-      `https://api.mercadopago.com/users/${collectorId}/stores`,
+    // Intentar crear sucursal con catálogo geográfico estándar de Mercado Pago Argentina
+    const storeCandidates = [
       {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
+        name: 'GUTA MUSICA WEB',
+        external_id: externalStoreId,
+        location: {
+          street_number: '100',
+          street_name: 'Caseros',
+          city_name: 'Salta',
+          state_name: 'Salta',
+          latitude: -24.7891,
+          longitude: -65.4103,
+          reference: 'Plataforma Federal GUTA MUSICA',
         },
-        body: JSON.stringify({
-          name: 'GUTA MUSICA WEB',
-          external_id: externalStoreId,
-          location: {
-            street_number: '100',
-            street_name: 'Caseros',
-            city_name: 'Salta',
-            state_name: 'Salta',
-            latitude: -24.7891,
-            longitude: -65.4103,
-            reference: 'Plataforma Federal GUTA MUSICA',
-          },
-        }),
-      }
-    );
+      },
+      {
+        name: 'GUTA MUSICA WEB',
+        external_id: externalStoreId,
+        location: {
+          street_number: '1000',
+          street_name: 'Avenida Corrientes',
+          city_name: 'Belgrano',
+          state_name: 'Capital Federal',
+          latitude: -34.6037,
+          longitude: -58.3816,
+          reference: 'Plataforma Digital GUTA MUSICA',
+        },
+      },
+    ];
 
-    if (createStoreRes.ok) {
-      const createdStore = await createStoreRes.json();
-      storeId = createdStore.id;
-    } else {
-      const errStore = await createStoreRes.json().catch(() => ({}));
-      console.warn('Aviso al crear Store MP para QR:', errStore);
+    for (const candidate of storeCandidates) {
+      const createStoreRes = await fetch(
+        `https://api.mercadopago.com/users/${collectorId}/stores`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(candidate),
+        }
+      );
+
+      if (createStoreRes.ok) {
+        const createdStore = await createStoreRes.json();
+        storeId = createdStore.id;
+        break;
+      }
     }
   }
 
-  // 3. Crear la Caja (POS) asociada a la sucursal
+  // 3. Crear la Caja (POS) con fixed_amount: false para que soporte TANTO QR Dinámico como QR Abierto (compatible con GOqr)
   const posPayload: Record<string, any> = {
     name: 'Caja Web GUTA QR',
-    fixed_amount: true,
-    external_store_id: externalStoreId,
+    fixed_amount: false,
+    external_store_id: resolvedExternalStoreId,
     external_id: externalPosId,
   };
   if (storeId) {
@@ -789,13 +827,17 @@ async function ensureMercadoPagoQrPos(collectorId: string): Promise<string> {
   });
 
   if (createPosRes.ok) {
+    const createdPos = await createPosRes.json();
     globalForMp.__mpQrPosExternalId = externalPosId;
-    return externalPosId;
+    return {
+      externalPosId,
+      staticPosQrImage: createdPos?.qr?.image || createdPos?.qr_code,
+    };
   }
 
   const posErr = await createPosRes.json().catch(() => ({}));
   console.warn('Aviso al crear POS MP para QR:', posErr);
-  return externalPosId;
+  return { externalPosId };
 }
 
 /**
@@ -812,7 +854,7 @@ export async function createSponsorAllianceQrOrder(params: CreateSponsorAlliance
 
   try {
     const collectorId = await getMercadoPagoCollectorId();
-    const externalPosId = await ensureMercadoPagoQrPos(collectorId);
+    const { externalPosId, staticPosQrImage } = await ensureMercadoPagoQrPos(collectorId);
 
     const qrBody = {
       external_reference: externalReference,
@@ -834,6 +876,19 @@ export async function createSponsorAllianceQrOrder(params: CreateSponsorAlliance
       ],
     };
 
+    // Publicar también la orden en la caja (modelo híbrido para billeteras que leen el QR estático del POS)
+    fetch(
+      `https://api.mercadopago.com/instore/qr/seller/collectors/${collectorId}/pos/${externalPosId}/orders`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(qrBody),
+      }
+    ).catch(() => {});
+
     const qrRes = await fetch(
       `https://api.mercadopago.com/instore/orders/qr/seller/collectors/${collectorId}/pos/${externalPosId}/qrs`,
       {
@@ -851,6 +906,7 @@ export async function createSponsorAllianceQrOrder(params: CreateSponsorAlliance
       if (qrJson?.qr_data) {
         return {
           qrData: qrJson.qr_data as string,
+          staticPosQrImage: staticPosQrImage || null,
           isInteroperableEmvco: true,
           initPoint: preference.initPoint,
           preferenceId: preference.preferenceId,
@@ -868,6 +924,7 @@ export async function createSponsorAllianceQrOrder(params: CreateSponsorAlliance
 
   return {
     qrData: preference.initPoint as string,
+    staticPosQrImage: null,
     isInteroperableEmvco: false,
     initPoint: preference.initPoint,
     preferenceId: preference.preferenceId,
