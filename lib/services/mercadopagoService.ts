@@ -11,6 +11,7 @@ const globalForMp = globalThis as unknown as {
   __mpProcessedPayments?: Set<string>;
   __mpInFlightPayments?: Map<string, Promise<any>>;
   __donationsCollectionChecked?: boolean;
+  __mpQrPosExternalId?: string;
 };
 
 const processedPayments =
@@ -606,8 +607,10 @@ export async function createSponsorAlliancePreference(params: CreateSponsorAllia
 
   const plan = getPlanBySector(params.sector);
   const price = params.amount || plan.priceArs;
+  const externalReference = `sponsor_alliance|${params.allianceId}|${params.sector}|${params.brandName}`;
 
   const body = {
+    external_reference: externalReference,
     items: [
       {
         id: `sponsor_${params.allianceId}`,
@@ -657,7 +660,301 @@ export async function createSponsorAlliancePreference(params: CreateSponsorAllia
     preferenceId: data.id,
     initPoint: data.init_point,
     sandboxInitPoint: data.sandbox_init_point,
+    externalReference,
   };
+}
+
+/**
+ * Obtiene el Collector ID (User ID) de la cuenta de Mercado Pago a partir del token o /users/me
+ */
+async function getMercadoPagoCollectorId(): Promise<string> {
+  if (!MP_ACCESS_TOKEN) throw new Error('MP_ACCESS_TOKEN no configurado');
+  const parts = MP_ACCESS_TOKEN.trim().split('-');
+  const lastPart = parts[parts.length - 1];
+  if (lastPart && /^\d+$/.test(lastPart)) {
+    return lastPart;
+  }
+
+  const res = await fetch('https://api.mercadopago.com/users/me', {
+    headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+  });
+  if (!res.ok) {
+    throw new Error('No se pudo obtener el collector_id de Mercado Pago');
+  }
+  const data = await res.json();
+  return String(data.id);
+}
+
+/**
+ * Asegura que exista una Sucursal (Store) y Caja (POS) virtual en la cuenta de Mercado Pago
+ * para poder emitir códigos QR Dinámicos Interoperables (EMVCo / Transferencia 3.0)
+ * compatibles con GOcuotas, Naranja X, MODO, Ualá, Personal Pay, Cuenta DNI y Mercado Pago.
+ */
+async function ensureMercadoPagoQrPos(collectorId: string): Promise<string> {
+  const externalStoreId = 'GUTASTORE01';
+  const externalPosId = 'GUTAPOS01';
+
+  if (globalForMp.__mpQrPosExternalId) {
+    return globalForMp.__mpQrPosExternalId;
+  }
+
+  // 1. Verificar si la caja (POS) ya existe
+  try {
+    const posCheckRes = await fetch(
+      `https://api.mercadopago.com/pos?external_id=${externalPosId}`,
+      {
+        headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+      }
+    );
+    if (posCheckRes.ok) {
+      const posCheckData = await posCheckRes.json();
+      if (Array.isArray(posCheckData.results) && posCheckData.results.length > 0) {
+        globalForMp.__mpQrPosExternalId = externalPosId;
+        return externalPosId;
+      }
+    }
+  } catch (err) {
+    console.warn('Error consultando POS existente en MP:', err);
+  }
+
+  // 2. Buscar o crear la Sucursal (Store)
+  let storeId: string | number | null = null;
+  try {
+    const storeSearchRes = await fetch(
+      `https://api.mercadopago.com/users/${collectorId}/stores/search?external_id=${externalStoreId}`,
+      {
+        headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+      }
+    );
+    if (storeSearchRes.ok) {
+      const storeSearchData = await storeSearchRes.json();
+      if (Array.isArray(storeSearchData.results) && storeSearchData.results.length > 0) {
+        storeId = storeSearchData.results[0].id;
+      }
+    }
+  } catch {}
+
+  if (!storeId) {
+    const createStoreRes = await fetch(
+      `https://api.mercadopago.com/users/${collectorId}/stores`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: 'GUTA MUSICA WEB',
+          external_id: externalStoreId,
+          location: {
+            street_number: '100',
+            street_name: 'Caseros',
+            city_name: 'Salta',
+            state_name: 'Salta',
+            latitude: -24.7891,
+            longitude: -65.4103,
+            reference: 'Plataforma Federal GUTA MUSICA',
+          },
+        }),
+      }
+    );
+
+    if (createStoreRes.ok) {
+      const createdStore = await createStoreRes.json();
+      storeId = createdStore.id;
+    } else {
+      const errStore = await createStoreRes.json().catch(() => ({}));
+      console.warn('Aviso al crear Store MP para QR:', errStore);
+    }
+  }
+
+  // 3. Crear la Caja (POS) asociada a la sucursal
+  const posPayload: Record<string, any> = {
+    name: 'Caja Web GUTA QR',
+    fixed_amount: true,
+    external_store_id: externalStoreId,
+    external_id: externalPosId,
+  };
+  if (storeId) {
+    posPayload.store_id = Number(storeId);
+  }
+
+  const createPosRes = await fetch('https://api.mercadopago.com/pos', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(posPayload),
+  });
+
+  if (createPosRes.ok) {
+    globalForMp.__mpQrPosExternalId = externalPosId;
+    return externalPosId;
+  }
+
+  const posErr = await createPosRes.json().catch(() => ({}));
+  console.warn('Aviso al crear POS MP para QR:', posErr);
+  return externalPosId;
+}
+
+/**
+ * Genera una orden de pago con Código QR Interoperable (EMVCo / Transferencia 3.0)
+ * para que el auspiciante pueda escanear desde cualquier billetera (GOcuotas, Naranja X, MODO, Ualá, Personal Pay, Cuenta DNI, Mercado Pago).
+ */
+export async function createSponsorAllianceQrOrder(params: CreateSponsorAllianceParams) {
+  // Generamos primero la preferencia estándar para contar siempre con initPoint de respaldo
+  const preference = await createSponsorAlliancePreference(params);
+
+  const plan = getPlanBySector(params.sector);
+  const price = params.amount || plan.priceArs;
+  const externalReference = preference.externalReference;
+
+  try {
+    const collectorId = await getMercadoPagoCollectorId();
+    const externalPosId = await ensureMercadoPagoQrPos(collectorId);
+
+    const qrBody = {
+      external_reference: externalReference,
+      title: `Auspicio Cultural (30 dias) - ${params.brandName}`.slice(0, 60),
+      description: `Espacio publicitario ${plan.name} por 30 dias en GUTA MUSICA`.slice(0, 100),
+      notification_url: `${SITE_URL}/api/mercadopago/webhook`,
+      total_amount: price,
+      items: [
+        {
+          sku_number: `sponsor_${params.allianceId}`,
+          category: 'advertising',
+          title: `Auspicio 30 dias - ${params.brandName}`.slice(0, 60),
+          description: `Plan ${plan.name} en GUTA MUSICA`,
+          unit_price: price,
+          quantity: 1,
+          unit_measure: 'unit',
+          total_amount: price,
+        },
+      ],
+    };
+
+    const qrRes = await fetch(
+      `https://api.mercadopago.com/instore/orders/qr/seller/collectors/${collectorId}/pos/${externalPosId}/qrs`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(qrBody),
+      }
+    );
+
+    if (qrRes.ok) {
+      const qrJson = await qrRes.json();
+      if (qrJson?.qr_data) {
+        return {
+          qrData: qrJson.qr_data as string,
+          isInteroperableEmvco: true,
+          initPoint: preference.initPoint,
+          preferenceId: preference.preferenceId,
+          externalReference,
+          amountArs: price,
+        };
+      }
+    } else {
+      const errData = await qrRes.json().catch(() => ({}));
+      console.warn('⚠️ instore QR devolvió aviso, usando QR de preferencia como fallback:', errData);
+    }
+  } catch (err: any) {
+    console.warn('⚠️ Fallback a initPoint en generación de QR:', err?.message);
+  }
+
+  return {
+    qrData: preference.initPoint as string,
+    isInteroperableEmvco: false,
+    initPoint: preference.initPoint,
+    preferenceId: preference.preferenceId,
+    externalReference,
+    amountArs: price,
+  };
+}
+
+/**
+ * Procesa una notificación de tipo merchant_order de Mercado Pago (habitual en pagos con QR)
+ */
+export async function processMercadoPagoMerchantOrder(orderId: string | number) {
+  if (!MP_ACCESS_TOKEN) return { success: false };
+  const cleanOrderId = String(orderId).trim();
+  if (!cleanOrderId) return { success: false };
+
+  try {
+    const res = await fetch(`https://api.mercadopago.com/merchant_orders/${cleanOrderId}`, {
+      headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+    });
+    if (!res.ok) return { success: false };
+
+    const order = await res.json();
+    const payments = Array.isArray(order.payments) ? order.payments : [];
+    for (const p of payments) {
+      if (p.status === 'approved' && p.id) {
+        await processMercadoPagoPayment(p.id);
+      }
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('Error procesando merchant_order de MP:', err);
+    return { success: false };
+  }
+}
+
+/**
+ * Verifica activamente si un auspicio ya fue pagado (en PocketBase o buscando pagos recientes en Mercado Pago)
+ */
+export async function checkAndActivateSponsorPayment(allianceId: string): Promise<{
+  paid: boolean;
+  alliance?: any;
+}> {
+  const pb = await getServerAdminPb();
+  let alliance: any = null;
+
+  try {
+    alliance = await pb.collection('alliances').getOne(allianceId, { requestKey: null });
+    if (alliance?.paymentStatus === 'active' && alliance?.active) {
+      return { paid: true, alliance };
+    }
+  } catch {
+    return { paid: false };
+  }
+
+  if (MP_ACCESS_TOKEN) {
+    try {
+      const searchRes = await fetch(
+        'https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&status=approved&limit=15',
+        {
+          headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+        }
+      );
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        const results = Array.isArray(searchData.results) ? searchData.results : [];
+        for (const p of results) {
+          const metaAllianceId = p.metadata?.alliance_id;
+          const extRef = String(p.external_reference || '');
+          const matchesExtRef = extRef.startsWith(`sponsor_alliance|${allianceId}|`);
+
+          if (metaAllianceId === allianceId || matchesExtRef) {
+            await processMercadoPagoPayment(p.id);
+            const updatedAlliance = await pb
+              .collection('alliances')
+              .getOne(allianceId, { requestKey: null })
+              .catch(() => alliance);
+            return { paid: true, alliance: updatedAlliance };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Error consultando pagos recientes de auspicio:', err);
+    }
+  }
+
+  return { paid: false, alliance };
 }
 
 /**
@@ -714,7 +1011,18 @@ export async function processMercadoPagoPayment(paymentId: string | number) {
       // Marcar en memoria como procesado para bloquear cualquier reintento inmediato
       processedPayments.add(cleanId);
 
-      const metadata = payment.metadata || {};
+      const metadata = { ...(payment.metadata || {}) };
+      const externalRef = String(payment.external_reference || '');
+
+      // Soporte para pagos por QR Interoperable donde los datos viajan en external_reference
+      if (!metadata.type && externalRef.startsWith('sponsor_alliance|')) {
+        const [, refAllianceId, refSector, refBrandName] = externalRef.split('|');
+        metadata.type = 'sponsor_alliance';
+        metadata.alliance_id = refAllianceId;
+        metadata.sector = refSector;
+        metadata.brand_name = refBrandName;
+      }
+
       const paymentType = metadata.type || 'donation';
       const amount = payment.transaction_amount || metadata.amount || 0;
 

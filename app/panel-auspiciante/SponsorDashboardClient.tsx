@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { AllianceCard } from '@/components/BrandAllianceShowcase';
+import { SponsorQrPaymentModal } from '@/components/SponsorQrPaymentModal';
 import { getPlanBySector } from '@/lib/constants/sponsorPricing';
 import {
   Sparkles,
@@ -22,6 +23,7 @@ import {
   Eye,
   LogOut,
   Store,
+  QrCode,
 } from 'lucide-react';
 import { InstagramIcon } from '@/lib/socialUtils';
 
@@ -38,6 +40,14 @@ export const SponsorDashboardClient: React.FC = () => {
   const [saveLoading, setSaveLoading] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [errorToast, setErrorToast] = useState<string | null>(null);
+  const [qrModalState, setQrModalState] = useState<{
+    isOpen: boolean;
+    qrData: string;
+    initPoint?: string;
+    allianceId: string;
+    amountArs: number;
+    isInteroperableEmvco?: boolean;
+  } | null>(null);
 
   // Formulario de edición
   const [description, setDescription] = useState('');
@@ -140,7 +150,9 @@ export const SponsorDashboardClient: React.FC = () => {
   };
 
   // Manejar renovación de 30 días
-  const handleRenew = async (paymentProvider: 'mercadopago' | 'paypal' = 'mercadopago') => {
+  const handleRenew = async (
+    paymentProvider: 'mercadopago' | 'mercadopago_qr' | 'paypal' = 'mercadopago'
+  ) => {
     if (!alliance?.id) return;
     setRenewLoading(true);
     setErrorToast(null);
@@ -153,10 +165,27 @@ export const SponsorDashboardClient: React.FC = () => {
       });
 
       const data = await res.json();
-      if (data.success && data.initPoint) {
+      if (!data.success) {
+        throw new Error(data.error || 'No se pudo generar la renovación.');
+      }
+
+      if (paymentProvider === 'mercadopago_qr' && data.qrData) {
+        setQrModalState({
+          isOpen: true,
+          qrData: data.qrData,
+          initPoint: data.initPoint,
+          allianceId: alliance.id,
+          amountArs: data.amountArs || plan?.priceArs || 0,
+          isInteroperableEmvco: data.isInteroperableEmvco,
+        });
+        setRenewLoading(false);
+        return;
+      }
+
+      if (data.initPoint) {
         window.location.href = data.initPoint;
       } else {
-        throw new Error(data.error || 'No se pudo generar la renovación.');
+        throw new Error('No se pudo generar la renovación.');
       }
     } catch (err: any) {
       setErrorToast(err.message || 'Error al renovar auspicio.');
@@ -351,28 +380,39 @@ export const SponsorDashboardClient: React.FC = () => {
                     Renovación 30 Días
                   </span>
                   <p className="text-xs text-[#aba79e]">
-                    Extendé 30 días con Mercado Pago (ARS) o PayPal (USD).
+                    Extendé 30 días con QR Billeteras, Mercado Pago o PayPal.
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="space-y-1.5">
                   <button
                     type="button"
-                    onClick={() => handleRenew('mercadopago')}
+                    onClick={() => handleRenew('mercadopago_qr')}
                     disabled={renewLoading}
-                    className="w-full py-2 px-2 rounded-xl bg-[#009ee3] hover:bg-[#0086c3] text-white font-bold text-[11px] transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                    className="w-full py-2 px-2.5 rounded-xl bg-gradient-to-r from-[#1f2937] to-[#111827] hover:from-[#009ee3]/25 hover:to-[#00b489]/25 border border-[#009ee3]/60 text-[#f3f1ec] font-bold text-[11px] transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
-                    <RefreshCw className={`w-3 h-3 ${renewLoading ? 'animate-spin' : ''}`} />
-                    <span>Mercado Pago</span>
+                    <QrCode className="w-3.5 h-3.5 text-[#38bdf8]" />
+                    <span>QR (GOcuotas / Naranja X / MODO)</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRenew('paypal')}
-                    disabled={renewLoading}
-                    className="w-full py-2 px-2 rounded-xl bg-[#FFC439] hover:bg-[#f2b324] text-[#121316] font-bold text-[11px] transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
-                  >
-                    <Globe className="w-3 h-3" />
-                    <span>PayPal {plan?.priceUsd ? `US$${plan.priceUsd}` : 'USD'}</span>
-                  </button>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleRenew('mercadopago')}
+                      disabled={renewLoading}
+                      className="w-full py-2 px-2 rounded-xl bg-[#009ee3] hover:bg-[#0086c3] text-white font-bold text-[11px] transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${renewLoading ? 'animate-spin' : ''}`} />
+                      <span>Mercado Pago</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRenew('paypal')}
+                      disabled={renewLoading}
+                      className="w-full py-2 px-2 rounded-xl bg-[#FFC439] hover:bg-[#f2b324] text-[#121316] font-bold text-[11px] transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <Globe className="w-3 h-3" />
+                      <span>PayPal {plan?.priceUsd ? `US$${plan.priceUsd}` : 'USD'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -544,6 +584,25 @@ export const SponsorDashboardClient: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Modal de Pago con QR Interoperable para Renovación */}
+        {qrModalState && alliance && (
+          <SponsorQrPaymentModal
+            isOpen={qrModalState.isOpen}
+            onClose={() => setQrModalState(null)}
+            qrData={qrModalState.qrData}
+            initPoint={qrModalState.initPoint}
+            allianceId={qrModalState.allianceId}
+            brandName={alliance.name}
+            planName={plan?.name || alliance.sector}
+            amountArs={qrModalState.amountArs}
+            isInteroperableEmvco={qrModalState.isInteroperableEmvco}
+            onPaymentConfirmed={(confirmedId) => {
+              setQrModalState(null);
+              window.location.href = `/panel-auspiciante?payment=success&id=${confirmedId}`;
+            }}
+          />
         )}
       </div>
     </div>

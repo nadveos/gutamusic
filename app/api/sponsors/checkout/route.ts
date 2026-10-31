@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAdminPb, POCKETBASE_URL } from '@/lib/pocketbase';
 import PocketBase from 'pocketbase';
-import { createSponsorAlliancePreference } from '@/lib/services/mercadopagoService';
+import {
+  createSponsorAlliancePreference,
+  createSponsorAllianceQrOrder,
+} from '@/lib/services/mercadopagoService';
 import { createPayPalSponsorOrder } from '@/lib/services/paypalService';
 import { getPlanBySector } from '@/lib/constants/sponsorPricing';
 import { AllianceSector } from '@/lib/types';
@@ -99,7 +102,7 @@ export async function POST(req: NextRequest) {
       pricePaid: plan.priceArs,
     });
 
-    // 3. Generar la preferencia/orden de pago según proveedor elegido (Mercado Pago o PayPal)
+    // 3. Generar la preferencia/orden de pago según proveedor elegido (Mercado Pago, QR Interoperable o PayPal)
     if (paymentProvider === 'paypal') {
       const ppOrder = await createPayPalSponsorOrder({
         allianceId: allianceRecord.id,
@@ -115,6 +118,28 @@ export async function POST(req: NextRequest) {
         initPoint: ppOrder.approveUrl,
         orderId: ppOrder.orderId,
         allianceId: allianceRecord.id,
+        token: clientAuthToken,
+        user: sponsorUserId ? { id: sponsorUserId, email: cleanEmail } : null,
+      });
+    }
+
+    if (paymentProvider === 'mercadopago_qr') {
+      const qrOrder = await createSponsorAllianceQrOrder({
+        allianceId: allianceRecord.id,
+        brandName: brandName.trim(),
+        sector: sector as AllianceSector,
+        userEmail: cleanEmail,
+        amount: plan.priceArs,
+      });
+
+      return NextResponse.json({
+        success: true,
+        qrData: qrOrder.qrData,
+        isInteroperableEmvco: qrOrder.isInteroperableEmvco,
+        initPoint: qrOrder.initPoint,
+        preferenceId: qrOrder.preferenceId,
+        allianceId: allianceRecord.id,
+        amountArs: qrOrder.amountArs,
         token: clientAuthToken,
         user: sponsorUserId ? { id: sponsorUserId, email: cleanEmail } : null,
       });

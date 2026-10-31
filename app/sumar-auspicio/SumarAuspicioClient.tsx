@@ -11,6 +11,7 @@ import {
 } from '@/lib/constants/sponsorPricing';
 import { AllianceSector } from '@/lib/types';
 import { AllianceCard } from '@/components/BrandAllianceShowcase';
+import { SponsorQrPaymentModal } from '@/components/SponsorQrPaymentModal';
 import {
   Sparkles,
   ShieldCheck,
@@ -26,6 +27,7 @@ import {
   AlertCircle,
   ChevronRight,
   Store,
+  QrCode,
 } from 'lucide-react';
 import { InstagramIcon } from '@/lib/socialUtils';
 
@@ -64,8 +66,18 @@ export const SumarAuspicioClient: React.FC = () => {
 
   // Estados de carga y error
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittingProvider, setSubmittingProvider] = useState<'mercadopago' | 'paypal'>('mercadopago');
+  const [submittingProvider, setSubmittingProvider] = useState<
+    'mercadopago' | 'mercadopago_qr' | 'paypal'
+  >('mercadopago');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [qrModalState, setQrModalState] = useState<{
+    isOpen: boolean;
+    qrData: string;
+    initPoint?: string;
+    allianceId: string;
+    amountArs: number;
+    isInteroperableEmvco?: boolean;
+  } | null>(null);
 
   const currentPlan = getPlanBySector(selectedSector);
 
@@ -88,7 +100,7 @@ export const SumarAuspicioClient: React.FC = () => {
 
   const handleCheckout = async (
     e?: React.FormEvent,
-    paymentProvider: 'mercadopago' | 'paypal' = 'mercadopago'
+    paymentProvider: 'mercadopago' | 'mercadopago_qr' | 'paypal' = 'mercadopago'
   ) => {
     if (e) e.preventDefault();
     setErrorMessage(null);
@@ -142,13 +154,25 @@ export const SumarAuspicioClient: React.FC = () => {
         throw new Error(data.error || 'Ocurrió un error al procesar tu solicitud.');
       }
 
-      if (data.initPoint) {
-        // Guardar referencia en localStorage para recuperación en panel
-        if (data.allianceId) {
-          localStorage.setItem('guta_pending_alliance_id', data.allianceId);
-          localStorage.setItem('guta_sponsor_email', email.trim().toLowerCase());
-        }
+      if (data.allianceId) {
+        localStorage.setItem('guta_pending_alliance_id', data.allianceId);
+        localStorage.setItem('guta_sponsor_email', email.trim().toLowerCase());
+      }
 
+      if (paymentProvider === 'mercadopago_qr' && data.qrData) {
+        setQrModalState({
+          isOpen: true,
+          qrData: data.qrData,
+          initPoint: data.initPoint,
+          allianceId: data.allianceId,
+          amountArs: data.amountArs || currentPlan.priceArs,
+          isInteroperableEmvco: data.isInteroperableEmvco,
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (data.initPoint) {
         // Redireccionar a Mercado Pago o PayPal
         window.location.href = data.initPoint;
       } else {
@@ -545,7 +569,7 @@ export const SumarAuspicioClient: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+              <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full lg:w-auto">
                 <div className="text-right hidden xl:block pr-2">
                   <span className="block text-xl font-black text-[#e6cca0]">
                     ${currentPlan.priceArs.toLocaleString('es-AR')} ARS
@@ -555,7 +579,27 @@ export const SumarAuspicioClient: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Botón Mercado Pago (ARS) */}
+                {/* Botón QR Interoperable (GOcuotas, Naranja X, MODO, MP, Ualá) */}
+                <button
+                  type="button"
+                  onClick={() => handleCheckout(undefined, 'mercadopago_qr')}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto px-4 py-3.5 rounded-xl bg-gradient-to-r from-[#1f2937] to-[#111827] hover:from-[#009ee3]/25 hover:to-[#00b489]/25 border border-[#009ee3]/60 text-[#f3f1ec] font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <QrCode className="w-4 h-4 text-[#38bdf8]" />
+                  <div className="text-left leading-tight">
+                    <span className="block">
+                      {isSubmitting && submittingProvider === 'mercadopago_qr'
+                        ? 'Generando QR Interoperable...'
+                        : 'Pagar con QR (Billeteras)'}
+                    </span>
+                    <span className="block text-[10px] font-medium text-[#38bdf8]">
+                      GOcuotas • Naranja X • MODO • MP
+                    </span>
+                  </div>
+                </button>
+
+                {/* Botón Mercado Pago Checkout (ARS) */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -590,15 +634,34 @@ export const SumarAuspicioClient: React.FC = () => {
 
             <div className="flex flex-wrap items-center justify-center gap-6 text-[11px] text-[#78746c] pt-2">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#5ce487]" /> Pago 100% Seguro por Mercado Pago o PayPal Internacional
+                <ShieldCheck className="w-4 h-4 text-[#5ce487]" /> Pago 100% Seguro por QR Interoperable 3.0, Mercado Pago o PayPal
               </span>
               <span>•</span>
-              <span>Acepta Pesos Argentinos (ARS) y Dólares (USD)</span>
+              <span>Acepta GOcuotas, Naranja X, MODO, Ualá, MP (ARS) y PayPal (USD)</span>
               <span>•</span>
               <span>Sin débitos sorpresa: renovación manual al finalizar los 30 días</span>
             </div>
           </section>
         </form>
+
+        {/* Modal de Pago con QR Interoperable */}
+        {qrModalState && (
+          <SponsorQrPaymentModal
+            isOpen={qrModalState.isOpen}
+            onClose={() => setQrModalState(null)}
+            qrData={qrModalState.qrData}
+            initPoint={qrModalState.initPoint}
+            allianceId={qrModalState.allianceId}
+            brandName={brandName.trim() || 'Tu Marca'}
+            planName={currentPlan.name}
+            amountArs={qrModalState.amountArs}
+            isInteroperableEmvco={qrModalState.isInteroperableEmvco}
+            onPaymentConfirmed={(confirmedId) => {
+              setQrModalState(null);
+              router.push(`/panel-auspiciante?payment=success&id=${confirmedId}`);
+            }}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAdminPb } from '@/lib/pocketbase';
-import { createSponsorAlliancePreference } from '@/lib/services/mercadopagoService';
+import {
+  createSponsorAlliancePreference,
+  createSponsorAllianceQrOrder,
+} from '@/lib/services/mercadopagoService';
 import { createPayPalSponsorOrder } from '@/lib/services/paypalService';
 import { getPlanBySector } from '@/lib/constants/sponsorPricing';
 import { AllianceSector } from '@/lib/types';
@@ -39,6 +42,26 @@ export async function POST(req: NextRequest) {
         success: true,
         initPoint: ppOrder.approveUrl,
         orderId: ppOrder.orderId,
+      });
+    }
+
+    if (paymentProvider === 'mercadopago_qr') {
+      const qrOrder = await createSponsorAllianceQrOrder({
+        allianceId: alliance.id,
+        brandName: alliance.name,
+        sector: alliance.sector as AllianceSector,
+        userEmail: alliance.email,
+        amount: plan.priceArs,
+      });
+
+      return NextResponse.json({
+        success: true,
+        qrData: qrOrder.qrData,
+        isInteroperableEmvco: qrOrder.isInteroperableEmvco,
+        initPoint: qrOrder.initPoint,
+        preferenceId: qrOrder.preferenceId,
+        allianceId: alliance.id,
+        amountArs: qrOrder.amountArs,
       });
     }
 
