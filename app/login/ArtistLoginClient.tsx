@@ -186,7 +186,7 @@ export function ArtistLoginClient() {
                 href="/sumar-profesional"
                 className="text-[#5ce487] hover:underline font-semibold transition-colors"
               >
-                Ofrecer mis Servicios (3 días gratis)
+                Registrate 100% Gratis
               </Link>
             </div>
             <div className="pt-1">

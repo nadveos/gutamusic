@@ -220,7 +220,7 @@ export const SumarProfesionalClient: React.FC = () => {
         <div className="text-center space-y-4 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#d97d64]/15 text-[#e6cca0] border border-[#d97d64]/40">
             <Gift className="w-4 h-4 text-[#d97d64]" />
-            <span>Incluye 3 Días de Destacado de Cortesía al Enviar tu Postulación</span>
+            <span>Registro 100% Gratis y Permanente en el Directorio Federal</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black text-[#f3f1ec] tracking-tight leading-tight">
             Sumate al Directorio de{' '}
@@ -670,8 +670,8 @@ export const SumarProfesionalClient: React.FC = () => {
                 <Headphones className="w-4 h-4" />
                 <span>
                   {isSubmitting
-                    ? 'Publicando y Activando 3 Días...'
-                    : 'Publicar mis Servicios + Activar 3 Días Gratis'}
+                    ? 'Registrando tu perfil...'
+                    : 'Registrate 100% Gratis'}
                 </span>
                 <ArrowRight className="w-4 h-4" />
               </button>

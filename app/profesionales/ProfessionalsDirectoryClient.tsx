@@ -298,7 +298,7 @@ export const ProfessionalsDirectoryClient: React.FC<{
               className="px-5 py-3 rounded-xl bg-[#d97d64] hover:bg-[#c96d54] text-[#121316] font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#d97d64]/20 transition-all"
             >
               <UserPlus className="w-4 h-4" />
-              <span>+ Ofrecer mis Servicios (3 Días Destacado Gratis)</span>
+              <span>Registrate 100% Gratis</span>
             </Link>
             <Link
               href="/panel-profesional"
