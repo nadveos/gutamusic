@@ -263,10 +263,62 @@ export interface VoluntaryContribution {
   message?: string;
   status: 'approved' | 'pending' | 'rejected' | string;
   paymentMethod?: string;
-  paymentType?: 'donation' | 'weekly_featured' | 'sponsor_alliance' | 'manual' | string;
+  paymentType?:
+    | 'donation'
+    | 'weekly_featured'
+    | 'sponsor_alliance'
+    | 'professional_featured'
+    | 'manual'
+    | string;
   date: string;
   created?: string;
 }
+
+export type ProfessionalCategoryKey =
+  | 'sello_independiente'
+  | 'productor_artistico'
+  | 'productor_musical'
+  | 'dj'
+  | 'profesor_instrumento'
+  | 'profesor_canto'
+  | 'armonizador'
+  | 'musico_sesionista'
+  | 'voz_sesionista';
+
+export type ProfessionalModality = 'Presencial' | 'Online' | 'Presencial y Online';
+
+export interface MusicProfessional {
+  id: string;
+  slug: string;
+  name: string;
+  roleCategory: ProfessionalCategoryKey;
+  secondaryCategories?: ProfessionalCategoryKey[];
+  specialty: string; // Ej: "Guitarra, Charango y Arreglos Folklóricos"
+  modality: ProfessionalModality;
+  city: string;
+  province: string;
+  country: string;
+  bio: string;
+  shortBio: string;
+  servicesList: string[]; // Lista de servicios ofrecidos
+  photoUrl: string;
+  bannerUrl?: string;
+  whatsapp?: string;
+  phone?: string;
+  email: string;
+  socials: SocialLinks;
+  portfolioUrl?: string; // Link a YouTube o Spotify para mostrar su trabajo
+  active: boolean;
+  userId?: string;
+  submittedAt: string; // ISO string de fecha de envío de postulación
+  courtesyFeaturedUntil: string; // ISO string (submittedAt + 3 días corridos)
+  paidFeatured: boolean; // Si tiene Destacado Semanal de Pago (7 días)
+  paidFeaturedStart?: string; // ISO string o YYYY-MM-DD
+  paidFeaturedUntil?: string; // ISO string o YYYY-MM-DD
+  paymentId?: string;
+  pricePaid?: number;
+}
+
 
 
 

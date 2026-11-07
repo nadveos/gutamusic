@@ -3,6 +3,11 @@ import { sendTelegramMessage } from './telegramService';
 import { AllianceSector } from '../types';
 import { calculateExpirationDate, getPlanBySector } from '../constants/sponsorPricing';
 import { saveContributionToDb } from './mercadopagoService';
+import { activateProfessionalPaidFeatured } from './professionalsService';
+import {
+  PROFESSIONAL_FEATURED_PRICE_ARS,
+  PROFESSIONAL_FEATURED_PRICE_USD,
+} from '../constants/professionalCategories';
 
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
 const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
@@ -35,6 +40,14 @@ export interface CreatePayPalSponsorParams {
   allianceId: string;
   brandName: string;
   sector: AllianceSector;
+  userEmail?: string;
+  amountUsd?: number;
+  amountArs?: number;
+}
+
+export interface CreatePayPalProfessionalParams {
+  professionalId: string;
+  professionalName: string;
   userEmail?: string;
   amountUsd?: number;
   amountArs?: number;
@@ -225,6 +238,76 @@ export async function createPayPalSponsorOrder(params: CreatePayPalSponsorParams
 }
 
 /**
+ * Crea una orden de pago en PayPal (Orders v2) para Destaque Semanal (7 días) de Profesional Musical
+ */
+export async function createPayPalProfessionalOrder(params: CreatePayPalProfessionalParams) {
+  const { accessToken, baseUrl } = await getPayPalAuth();
+  const usdPrice = params.amountUsd || PROFESSIONAL_FEATURED_PRICE_USD;
+  const arsPrice = params.amountArs || PROFESSIONAL_FEATURED_PRICE_ARS;
+  const valueStr = Number(usdPrice).toFixed(2);
+
+  const customMetadata = JSON.stringify({
+    t: 'prof_featured',
+    pid: params.professionalId,
+    usd: usdPrice,
+    ars: arsPrice,
+  });
+
+  const returnParams = new URLSearchParams({
+    type: 'professional_featured',
+    professionalId: params.professionalId,
+    usd: valueStr,
+    ars: String(arsPrice),
+  });
+
+  const body = {
+    intent: 'CAPTURE',
+    purchase_units: [
+      {
+        reference_id: `prof_${params.professionalId}`,
+        custom_id: customMetadata,
+        description: `Destaque Semanal (7 días) — ${params.professionalName} (Profesionales GUTA MÚSICA)`,
+        amount: {
+          currency_code: 'USD',
+          value: valueStr,
+        },
+      },
+    ],
+    application_context: {
+      brand_name: 'GUTA MUSICA',
+      landing_page: 'NO_PREFERENCE',
+      user_action: 'PAY_NOW',
+      shipping_preference: 'NO_SHIPPING',
+      return_url: `${SITE_URL}/api/paypal/capture?${returnParams.toString()}`,
+      cancel_url: `${SITE_URL}/panel-profesional?payment=failure&id=${params.professionalId}`,
+    },
+  };
+
+  const res = await fetch(`${baseUrl}/v2/checkout/orders`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'No se pudo generar la orden de destaque en PayPal');
+  }
+
+  const approveLink = (data.links || []).find(
+    (l: any) => l.rel === 'approve' || l.rel === 'payer-action'
+  );
+
+  return {
+    orderId: data.id,
+    approveUrl: approveLink?.href || '',
+  };
+}
+
+/**
  * Captura una orden aprobada de PayPal y procesa su activación (Donación o Auspicio)
  * con doble barrera de idempotencia para evitar notificaciones duplicadas en Telegram.
  */
@@ -233,6 +316,7 @@ export async function captureAndProcessPayPalOrder(
   hints?: {
     type?: string;
     allianceId?: string;
+    professionalId?: string;
     sector?: string;
     usd?: string | number;
     ars?: string | number;
@@ -304,7 +388,11 @@ export async function captureAndProcessPayPalOrder(
 
       const paymentType =
         hints?.type ||
-        (customMeta.t === 'sponsor' ? 'sponsor_alliance' : customMeta.t) ||
+        (customMeta.t === 'sponsor'
+          ? 'sponsor_alliance'
+          : customMeta.t === 'prof_featured'
+          ? 'professional_featured'
+          : customMeta.t) ||
         'donation';
 
       const usdAmount =
@@ -363,6 +451,45 @@ export async function captureAndProcessPayPalOrder(
           });
 
           return { success: true, paymentType: 'sponsor_alliance', allianceId, usdAmount };
+        }
+      }
+
+      // CASO 1-B: Destaque Semanal de Profesional Musical (7 días)
+      if (paymentType === 'professional_featured') {
+        const professionalId = hints?.professionalId || customMeta.pid;
+        const arsAmount = Number(
+          hints?.ars || customMeta.ars || PROFESSIONAL_FEATURED_PRICE_ARS
+        );
+
+        if (professionalId) {
+          const updatedProf = await activateProfessionalPaidFeatured(
+            professionalId,
+            `PP-${captureId}`,
+            arsAmount
+          );
+          const endDateStr = updatedProf?.paidFeaturedUntil
+            ? updatedProf.paidFeaturedUntil.split('T')[0]
+            : '';
+
+          await sendTelegramMessage({
+            text: [
+              `🎉 <b>¡NUEVO DESTAQUE SEMANAL DE PROFESIONAL VÍA PAYPAL (7 DÍAS)!</b>`,
+              ``,
+              `🎧 <b>Profesional / Sello:</b> <code>${updatedProf?.name || professionalId}</code>`,
+              `💵 <b>Monto cobrado:</b> <b>US$ ${usdAmount.toFixed(2)} USD</b> (~$${arsAmount.toLocaleString('es-AR')} ARS)`,
+              `⏱️ <b>Vigencia hasta:</b> ${endDateStr} (7 días corridos)`,
+              ``,
+              `<i>ID Pago PayPal: <code>${captureId}</code></i>`,
+            ].join('\n'),
+            parseMode: 'HTML',
+          });
+
+          return {
+            success: true,
+            paymentType: 'professional_featured',
+            professionalId,
+            usdAmount,
+          };
         }
       }
 

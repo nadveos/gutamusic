@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   HeartHandshake,
   Heart,
+  Headphones,
   Share2,
   X,
 } from 'lucide-react';
@@ -36,6 +37,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onCloseMobile, onLog
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/colaboraciones', label: 'Colaboraciones Recibidas', icon: Heart },
     { href: '/admin/artistas', label: 'Gestión de Artistas', icon: Mic2 },
+    { href: '/admin/profesionales', label: 'Profesionales & Servicios', icon: Headphones },
     { href: '/admin/usuarios', label: 'Usuarios & Cuentas', icon: Users },
     { href: '/admin/entrevistas', label: 'Entrevistas & Lives', icon: Radio },
     { href: '/admin/redes', label: 'Redes @sesionesrg', icon: Share2 },

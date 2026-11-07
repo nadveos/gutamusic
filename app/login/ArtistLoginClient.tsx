@@ -53,7 +53,11 @@ export function ArtistLoginClient() {
       const userRole = (authData.record as any)?.role;
       setTimeout(() => {
         if (userRole === 'sponsor') {
+          localStorage.setItem('guta_sponsor_email', cleanEmail);
           router.push('/panel-auspiciante');
+        } else if (userRole === 'professional') {
+          localStorage.setItem('guta_professional_email', cleanEmail);
+          router.push('/panel-profesional');
         } else {
           router.push('/panel-artista');
         }
@@ -174,6 +178,15 @@ export function ArtistLoginClient() {
                 className="text-[#d97d64] hover:underline font-semibold transition-colors"
               >
                 Registrá tu banda gratis
+              </Link>
+            </div>
+            <div className="pt-1">
+              <span>¿Sos Productor, Sello, DJ, Docente o Sesionista? </span>
+              <Link
+                href="/sumar-profesional"
+                className="text-[#5ce487] hover:underline font-semibold transition-colors"
+              >
+                Ofrecer mis Servicios (3 días gratis)
               </Link>
             </div>
             <div className="pt-1">

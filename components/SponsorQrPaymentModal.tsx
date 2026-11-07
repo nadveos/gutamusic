@@ -24,6 +24,7 @@ interface SponsorQrPaymentModalProps {
   planName: string;
   amountArs: number;
   isInteroperableEmvco?: boolean;
+  checkPaymentUrl?: string;
   onPaymentConfirmed: (allianceId: string) => void;
 }
 
@@ -47,12 +48,17 @@ export const SponsorQrPaymentModal: React.FC<SponsorQrPaymentModalProps> = ({
   brandName,
   planName,
   amountArs,
+  checkPaymentUrl,
   onPaymentConfirmed,
 }) => {
   const [isPaid, setIsPaid] = useState(false);
   const [checkingManual, setCheckingManual] = useState(false);
   const [useFallbackQrServer, setUseFallbackQrServer] = useState(false);
   const [qrMode, setQrMode] = useState<'dynamic' | 'pos'>('dynamic');
+
+  const resolvedCheckUrl =
+    checkPaymentUrl ||
+    `/api/sponsors/check-payment?allianceId=${encodeURIComponent(allianceId)}`;
 
   // Consultar automáticamente cada 3.5 segundos si el pago del QR ya se acreditó
   useEffect(() => {
@@ -61,10 +67,7 @@ export const SponsorQrPaymentModal: React.FC<SponsorQrPaymentModalProps> = ({
     let active = true;
     const checkStatus = async () => {
       try {
-        const res = await fetch(
-          `/api/sponsors/check-payment?allianceId=${encodeURIComponent(allianceId)}`,
-          { cache: 'no-store' }
-        );
+        const res = await fetch(resolvedCheckUrl, { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
         if (active && data?.paid) {
@@ -81,16 +84,13 @@ export const SponsorQrPaymentModal: React.FC<SponsorQrPaymentModalProps> = ({
       active = false;
       clearInterval(interval);
     };
-  }, [isOpen, allianceId, isPaid, onPaymentConfirmed]);
+  }, [isOpen, allianceId, isPaid, resolvedCheckUrl, onPaymentConfirmed]);
 
   const handleManualCheck = async () => {
     if (!allianceId || checkingManual) return;
     setCheckingManual(true);
     try {
-      const res = await fetch(
-        `/api/sponsors/check-payment?allianceId=${encodeURIComponent(allianceId)}`,
-        { cache: 'no-store' }
-      );
+      const res = await fetch(resolvedCheckUrl, { cache: 'no-store' });
       const data = await res.json();
       if (data?.paid) {
         setIsPaid(true);

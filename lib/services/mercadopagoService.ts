@@ -2,6 +2,12 @@ import { getServerAdminPb } from '../pocketbase';
 import { sendTelegramMessage } from './telegramService';
 import { AllianceSector, VoluntaryContribution } from '../types';
 import { calculateExpirationDate, getPlanBySector } from '../constants/sponsorPricing';
+import {
+  activateProfessionalPaidFeatured,
+  getProfessionalBySlugOrId,
+  getProfessionalFeaturedStatus,
+} from './professionalsService';
+import { PROFESSIONAL_FEATURED_PRICE_ARS } from '../constants/professionalCategories';
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
@@ -1080,8 +1086,44 @@ export async function processMercadoPagoPayment(paymentId: string | number) {
         metadata.brand_name = refBrandName;
       }
 
+      if (!metadata.type && externalRef.startsWith('professional_featured|')) {
+        const [, refProfId, refProfName] = externalRef.split('|');
+        metadata.type = 'professional_featured';
+        metadata.professional_id = refProfId;
+        metadata.professional_name = refProfName;
+      }
+
       const paymentType = metadata.type || 'donation';
       const amount = payment.transaction_amount || metadata.amount || 0;
+
+      // Caso 1-B: Destaque Semanal de Profesional Musical (7 días corridos)
+      if (paymentType === 'professional_featured' && metadata.professional_id) {
+        try {
+          const updatedProf = await activateProfessionalPaidFeatured(
+            metadata.professional_id,
+            cleanId,
+            amount
+          );
+          const endDateStr = updatedProf?.paidFeaturedUntil
+            ? updatedProf.paidFeaturedUntil.split('T')[0]
+            : '';
+
+          await sendTelegramMessage({
+            text: [
+              `🎉 <b>¡NUEVO DESTAQUE SEMANAL DE PROFESIONAL MUSICAL!</b>`,
+              ``,
+              `🎧 <b>Profesional / Sello:</b> <code>${metadata.professional_name || updatedProf?.name || metadata.professional_id}</code>`,
+              `💰 <b>Monto cobrado:</b> <b>$${amount} ARS</b>`,
+              `⏱️ <b>Vigencia:</b> 7 días corridos${endDateStr ? ` (hasta ${endDateStr})` : ''}`,
+              ``,
+              `<i>ID Pago MP: <code>${cleanId}</code></i>`,
+            ].join('\n'),
+            parseMode: 'HTML',
+          });
+        } catch (err: any) {
+          console.error('❌ Error al activar destaque semanal de profesional tras pago MP:', err);
+        }
+      }
 
       // Caso 1: Destaque Semanal ($$): Activar los 7 días automáticamente en PocketBase
       if (paymentType === 'weekly_featured' && metadata.artist_id) {
@@ -1187,4 +1229,208 @@ export async function processMercadoPagoPayment(paymentId: string | number) {
 
   inFlightPayments.set(cleanId, executionPromise);
   return executionPromise;
+}
+
+export interface CreateProfessionalFeaturedParams {
+  professionalId: string;
+  professionalName: string;
+  roleLabel?: string;
+  userEmail?: string;
+  amount?: number;
+}
+
+/**
+ * Crea una preferencia de pago en Mercado Pago para Destaque Semanal (7 días) de un Profesional Musical
+ */
+export async function createProfessionalFeaturedPreference(
+  params: CreateProfessionalFeaturedParams
+) {
+  if (!MP_ACCESS_TOKEN) {
+    throw new Error('MP_ACCESS_TOKEN no configurado en el servidor');
+  }
+
+  const price = params.amount || PROFESSIONAL_FEATURED_PRICE_ARS;
+  const externalReference = `professional_featured|${params.professionalId}|${params.professionalName}`;
+
+  const body = {
+    external_reference: externalReference,
+    items: [
+      {
+        id: `prof_featured_${params.professionalId}`,
+        title: `Destaque Semanal (7 días) — ${params.professionalName}`,
+        description: `Aparición prioritaria en Profesionales & Servicios Musicales de GUTA MÚSICA por 7 días`,
+        quantity: 1,
+        currency_id: 'ARS',
+        unit_price: price,
+      },
+    ],
+    payer: {
+      email: (params.userEmail || 'profesionales@guta.meapp.com.ar').trim(),
+    },
+    back_urls: {
+      success: `${SITE_URL}/panel-profesional?payment=success&id=${params.professionalId}`,
+      failure: `${SITE_URL}/panel-profesional?payment=failure&id=${params.professionalId}`,
+      pending: `${SITE_URL}/panel-profesional?payment=pending&id=${params.professionalId}`,
+    },
+    auto_return: 'approved',
+    notification_url: `${SITE_URL}/api/mercadopago/webhook`,
+    metadata: {
+      type: 'professional_featured',
+      professional_id: params.professionalId,
+      professional_name: params.professionalName,
+      amount: price,
+    },
+    statement_descriptor: 'GUTA MUSICA',
+  };
+
+  const res = await fetch('https://api.mercadopago.com/checkout/preferences', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error al generar preferencia para destaque de profesional');
+  }
+
+  return {
+    preferenceId: data.id,
+    initPoint: data.init_point,
+    sandboxInitPoint: data.sandbox_init_point,
+    externalReference,
+    amountArs: price,
+  };
+}
+
+/**
+ * Crea una orden QR Interoperable 3.0 para Destaque Semanal (7 días) de un Profesional Musical
+ */
+export async function createProfessionalFeaturedQrOrder(
+  params: CreateProfessionalFeaturedParams
+) {
+  const preference = await createProfessionalFeaturedPreference(params);
+  const price = preference.amountArs;
+  const externalReference = preference.externalReference;
+
+  try {
+    const collectorId = await getMercadoPagoCollectorId();
+    const { externalPosId, staticPosQrImage } = await ensureMercadoPagoQrPos(collectorId);
+
+    const qrBody = {
+      external_reference: externalReference,
+      title: `Destaque 7 dias - ${params.professionalName}`.slice(0, 60),
+      description: `Destacado Semanal en Profesionales GUTA MUSICA`.slice(0, 100),
+      notification_url: `${SITE_URL}/api/mercadopago/webhook`,
+      total_amount: price,
+      items: [
+        {
+          sku_number: `prof_${params.professionalId}`,
+          category: 'advertising',
+          title: `Destaque 7 dias - ${params.professionalName}`.slice(0, 60),
+          description: 'Destacado Semanal Profesionales GUTA MUSICA',
+          unit_price: price,
+          quantity: 1,
+          unit_measure: 'unit',
+          total_amount: price,
+        },
+      ],
+    };
+
+    fetch(
+      `https://api.mercadopago.com/instore/qr/seller/collectors/${collectorId}/pos/${externalPosId}/orders`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(qrBody),
+      }
+    ).catch(() => {});
+
+    const qrRes = await fetch(
+      `https://api.mercadopago.com/instore/orders/qr/seller/collectors/${collectorId}/pos/${externalPosId}/qrs`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(qrBody),
+      }
+    );
+
+    if (qrRes.ok) {
+      const qrJson = await qrRes.json();
+      if (qrJson?.qr_data) {
+        return {
+          qrData: qrJson.qr_data as string,
+          staticPosQrImage: staticPosQrImage || null,
+          isInteroperableEmvco: true,
+          initPoint: preference.initPoint,
+          preferenceId: preference.preferenceId,
+          externalReference,
+          amountArs: price,
+        };
+      }
+    }
+  } catch {}
+
+  return {
+    qrData: preference.initPoint as string,
+    staticPosQrImage: null,
+    isInteroperableEmvco: false,
+    initPoint: preference.initPoint,
+    preferenceId: preference.preferenceId,
+    externalReference,
+    amountArs: price,
+  };
+}
+
+/**
+ * Verifica si un profesional ya acreditó el pago de su Destacado Semanal
+ */
+export async function checkAndActivateProfessionalPayment(professionalId: string): Promise<{
+  paid: boolean;
+  professional?: any;
+}> {
+  const prof = await getProfessionalBySlugOrId(professionalId);
+  if (!prof) return { paid: false };
+
+  const status = getProfessionalFeaturedStatus(prof);
+  if (status.featuredType === 'paid' && status.isFeaturedNow) {
+    return { paid: true, professional: prof };
+  }
+
+  if (MP_ACCESS_TOKEN) {
+    try {
+      const searchRes = await fetch(
+        'https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&status=approved&limit=15',
+        {
+          headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+        }
+      );
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        const results = Array.isArray(searchData.results) ? searchData.results : [];
+        for (const p of results) {
+          const metaProfId = p.metadata?.professional_id;
+          const extRef = String(p.external_reference || '');
+          const matchesExtRef = extRef.startsWith(`professional_featured|${professionalId}|`);
+
+          if (metaProfId === professionalId || matchesExtRef) {
+            await processMercadoPagoPayment(p.id);
+            const updated = await getProfessionalBySlugOrId(professionalId);
+            return { paid: true, professional: updated };
+          }
+        }
+      }
+    } catch {}
+  }
+
+  return { paid: false, professional: prof };
 }

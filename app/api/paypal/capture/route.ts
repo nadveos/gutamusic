@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
   const token = searchParams.get('token') || searchParams.get('orderId') || '';
   const type = searchParams.get('type') || 'donation';
   const allianceId = searchParams.get('allianceId') || '';
+  const professionalId = searchParams.get('professionalId') || '';
   const sector = searchParams.get('sector') || '';
   const usd = searchParams.get('usd') || '';
   const ars = searchParams.get('ars') || '';
@@ -26,13 +27,16 @@ export async function GET(req: NextRequest) {
     const fallbackUrl =
       type === 'sponsor_alliance'
         ? `${origin}/panel-auspiciante?payment=failure${allianceId ? `&id=${allianceId}` : ''}`
-        : `${origin}/?payment=failure`;
+        : type === 'professional_featured'
+          ? `${origin}/panel-profesional?payment=failure${professionalId ? `&id=${professionalId}` : ''}`
+          : `${origin}/?payment=failure`;
     return NextResponse.redirect(fallbackUrl);
   }
 
   const result = await captureAndProcessPayPalOrder(token, {
     type,
     allianceId,
+    professionalId,
     sector,
     usd,
     ars,
@@ -46,13 +50,21 @@ export async function GET(req: NextRequest) {
         `${origin}/panel-auspiciante?payment=success${targetAllianceId ? `&id=${targetAllianceId}` : ''}`
       );
     }
+    if (type === 'professional_featured' || result.paymentType === 'professional_featured') {
+      const targetProfId = professionalId || (result as any).professionalId || '';
+      return NextResponse.redirect(
+        `${origin}/panel-profesional?payment=success${targetProfId ? `&id=${targetProfId}` : ''}`
+      );
+    }
     return NextResponse.redirect(`${origin}/?payment=success`);
   }
 
   const failUrl =
     type === 'sponsor_alliance'
       ? `${origin}/panel-auspiciante?payment=failure${allianceId ? `&id=${allianceId}` : ''}`
-      : `${origin}/?payment=failure`;
+      : type === 'professional_featured'
+        ? `${origin}/panel-profesional?payment=failure${professionalId ? `&id=${professionalId}` : ''}`
+        : `${origin}/?payment=failure`;
   return NextResponse.redirect(failUrl);
 }
 
