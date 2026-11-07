@@ -31,7 +31,7 @@ export async function generateMetadata({
     openGraph: {
       title: interview.title,
       description: interview.summary,
-      images: thumb ? [thumb] : [],
+      images: [thumb || '/brand/guta-musica-logo.png'],
     },
   };
 }

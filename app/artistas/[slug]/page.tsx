@@ -27,7 +27,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${artist.stageName} en GUTA MÚSICA`,
       description: artist.shortBio,
-      images: [artist.photoUrl],
+      images: [artist.photoUrl || '/brand/guta-musica-logo.png'],
     },
   };
 }

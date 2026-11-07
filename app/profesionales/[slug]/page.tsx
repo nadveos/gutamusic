@@ -35,9 +35,15 @@ export async function generateMetadata({
     return { title: 'Profesional no encontrado | GUTA MÚSICA' };
   }
   const cat = getProfessionalCategoryInfo(prof.roleCategory);
+  const desc = prof.shortBio || prof.bio || `${prof.name} (${cat.label}) en GUTA MÚSICA.`;
   return {
     title: `${prof.name} — ${cat.label} | GUTA MÚSICA`,
-    description: prof.shortBio || prof.bio || `${prof.name} (${cat.label}) en GUTA MÚSICA.`,
+    description: desc,
+    openGraph: {
+      title: `${prof.name} — ${cat.label} | GUTA MÚSICA`,
+      description: desc,
+      images: [prof.photoUrl || '/brand/guta-musica-logo.png'],
+    },
   };
 }
 

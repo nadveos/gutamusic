@@ -3,11 +3,14 @@
   <desc>Logotipo vectorial con símbolo musical coral y turquesa, y texto GUTA Música en color marfil.</desc>
   <defs>
     <style>
+      .bg{fill:#08090c}
       .coral{fill:#FF493F}
       .cyan{fill:#00D7D8}
       .cream{fill:#FFF4E5}
     </style>
   </defs>
+  <!-- Solid dark/black background -->
+  <rect class="bg" width="1400" height="420"/>
   <!-- Geometric G mark -->
   <path class="coral" fill-rule="evenodd" d="
     M 345,56
@@ -32,7 +35,7 @@
     L459 88
     C429 63 391 48 350 48 Z"/>
   <!-- Music note integrated into the G -->
-  <path fill="#06102D" d="M331 228 H420 V274 H377 V295
+  <path class="bg" d="M331 228 H420 V274 H377 V295
     C377 322 355 342 328 342 C305 342 286 325 286 303
     C286 279 305 261 329 261 C330 261 331 261 331 262 Z"/>
   <circle class="coral" cx="326" cy="303" r="29"/>

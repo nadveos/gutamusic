@@ -56,8 +56,9 @@ export const metadata: Metadata = {
     images: [
       {
         url: '/brand/guta-musica-logo.png',
-        width: 1400,
-        height: 420,
+        width: 1200,
+        height: 630,
+        type: 'image/png',
         alt: 'GUTA MÚSICA — Medio Digital de Artistas Emergentes',
       },
     ],
