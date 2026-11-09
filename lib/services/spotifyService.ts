@@ -61,11 +61,22 @@ export function extractSpotifyArtistId(urlOrId: string): string | null {
   // Regex para capturar de URLs como:
   // https://open.spotify.com/artist/0AMd5Lv1a9CTAdLfbIkf8F
   // https://open.spotify.com/intl-es/artist/0AMd5Lv1a9CTAdLfbIkf8F/discography
-  const match = trimmed.match(/artist\/([a-zA-Z0-9]+)/);
-  if (match) {
+  // spotify:artist:0AMd5Lv1a9CTAdLfbIkf8F
+  const match = trimmed.match(/(?:artist\/|spotify:artist:)([a-zA-Z0-9]{22})/);
+  if (match && match[1]) {
     return match[1];
   }
 
+  return null;
+}
+
+export function extractSpotifyAlbumId(urlOrId: string): string | null {
+  if (!urlOrId) return null;
+  const trimmed = urlOrId.trim();
+  const match = trimmed.match(/(?:album\/|spotify:album:)([a-zA-Z0-9]{22})/);
+  if (match && match[1]) {
+    return match[1];
+  }
   return null;
 }
 
@@ -135,13 +146,49 @@ export async function getSpotifyPlaylist(playlistIdOrUrl: string): Promise<Spoti
 }
 
 
+function normalizeNameForMatch(s: string): string {
+  return s
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+export async function getSpotifyArtistById(artistId: string): Promise<{ id: string; name: string; url: string; photoUrl?: string } | null> {
+  const cleanId = extractSpotifyArtistId(artistId);
+  if (!cleanId) return null;
+
+  const token = await getSpotifyAccessToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/artists/${cleanId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    return {
+      id: data.id,
+      name: data.name || '',
+      url: data.external_urls?.spotify || `https://open.spotify.com/artist/${data.id}`,
+      photoUrl: data.images?.[0]?.url || '',
+    };
+  } catch (err: any) {
+    console.error('Error consultando artista por ID en Spotify:', err.message);
+    return null;
+  }
+}
+
 export async function searchSpotifyArtist(artistName: string): Promise<{ id: string; name: string; url: string; photoUrl?: string } | null> {
   const token = await getSpotifyAccessToken();
   if (!token) return null;
 
   try {
-    const query = encodeURIComponent(artistName);
-    const res = await fetch(`https://api.spotify.com/v1/search?q=${query}&type=artist&limit=3`, {
+    const query = encodeURIComponent(artistName.trim());
+    const res = await fetch(`https://api.spotify.com/v1/search?q=${query}&type=artist&limit=10`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -151,8 +198,12 @@ export async function searchSpotifyArtist(artistName: string): Promise<{ id: str
     const artists = data?.artists?.items || [];
     if (artists.length === 0) return null;
 
-    // Buscar coincidencia exacta o tomar el primer resultado
-    const exact = artists.find((a: any) => a.name.toLowerCase().trim() === artistName.toLowerCase().trim()) || artists[0];
+    const targetNorm = normalizeNameForMatch(artistName);
+    const exact = artists.find((a: any) => normalizeNameForMatch(a.name || '') === targetNorm);
+
+    if (!exact) {
+      return null;
+    }
 
     return {
       id: exact.id,
@@ -162,6 +213,52 @@ export async function searchSpotifyArtist(artistName: string): Promise<{ id: str
     };
   } catch (err: any) {
     console.error('Error buscando artista en Spotify:', err.message);
+    return null;
+  }
+}
+
+export async function getSpotifyAlbumById(albumIdOrUrl: string): Promise<{ album: SpotifyAlbumItem; artistId?: string; artistName?: string } | null> {
+  const albumId = extractSpotifyAlbumId(albumIdOrUrl) || (/^[a-zA-Z0-9]{22}$/.test(albumIdOrUrl.trim()) ? albumIdOrUrl.trim() : null);
+  if (!albumId) return null;
+
+  const token = await getSpotifyAccessToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+
+    const item = await res.json();
+    const normTitle = (item.name || '').toLowerCase().trim();
+    const releaseYear = parseInt((item.release_date || '').split('-')[0], 10) || new Date().getFullYear();
+
+    let type: 'album' | 'single' | 'ep' | 'live_album' = 'album';
+    if (item.album_type === 'single') {
+      type = (item.total_tracks || 1) >= 4 ? 'ep' : 'single';
+    } else if (normTitle.includes('en vivo') || normTitle.includes('live')) {
+      type = 'live_album';
+    }
+
+    const coverUrl = item.images?.[0]?.url || item.images?.[1]?.url || '';
+    const primaryArtist = item.artists?.[0];
+
+    return {
+      album: {
+        id: `disc-sp-${item.id}`,
+        title: item.name,
+        type,
+        year: releaseYear,
+        coverUrl,
+        spotifyUrl: item.external_urls?.spotify || `https://open.spotify.com/album/${item.id}`,
+        tracksCount: item.total_tracks || 1,
+      },
+      artistId: primaryArtist?.id,
+      artistName: primaryArtist?.name,
+    };
+  } catch (err: any) {
+    console.error('Error obteniendo álbum por ID en Spotify:', err.message);
     return null;
   }
 }

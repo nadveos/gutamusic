@@ -16,7 +16,7 @@ interface EnrichArtistModalProps {
   country?: string;
   spotifyUrl?: string;
   initialMode?: EnrichMode;
-  onApply: (selectedDiscography: DiscographyItem[], selectedAgenda: AgendaEvent[]) => void;
+  onApply: (selectedDiscography: DiscographyItem[], selectedAgenda: AgendaEvent[], detectedSpotifyUrl?: string) => void;
 }
 
 export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
@@ -79,6 +79,9 @@ export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
 
       setDiscographyResults(data.discography || []);
       setSelectedDiscIds((data.discography || []).map((d: any) => d.id));
+      if (data.detectedSpotifyUrl) {
+        setCurrentSpotifyUrl(data.detectedSpotifyUrl);
+      }
       setSummary(data.summary || '');
       setSourcesInfo(data.sources || {});
       setHasSearched(true);
@@ -105,7 +108,7 @@ export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
 
   const handleConfirm = () => {
     const finalDiscography = discographyResults.filter((d) => selectedDiscIds.includes(d.id));
-    onApply(finalDiscography, []);
+    onApply(finalDiscography, [], currentSpotifyUrl.trim() || undefined);
     onClose();
   };
 

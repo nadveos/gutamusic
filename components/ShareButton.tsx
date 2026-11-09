@@ -32,7 +32,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
       return url;
     }
     if (typeof window !== 'undefined') return window.location.href;
-    return 'https://guta.meapp.com.ar';
+    return process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
   };
 
   useEffect(() => {

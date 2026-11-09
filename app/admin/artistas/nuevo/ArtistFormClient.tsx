@@ -105,7 +105,8 @@ export const ArtistFormClient: React.FC = () => {
 
   const handleApplyEnrichment = async (
     newDiscography: DiscographyItem[],
-    newAgenda: AgendaEvent[]
+    newAgenda: AgendaEvent[],
+    detectedSpotifyUrl?: string
   ) => {
     // 1. Integrar discografía evitando duplicar por título
     const existingDiscTitles = new Set(
@@ -125,8 +126,11 @@ export const ArtistFormClient: React.FC = () => {
     );
     const updatedAgenda = [...formData.agenda, ...addedAgenda];
 
+    const updatedSpotify = detectedSpotifyUrl || formData.spotify;
+
     setFormData((prev) => ({
       ...prev,
+      spotify: updatedSpotify,
       discography: updatedDiscography,
       agenda: updatedAgenda,
     }));
@@ -141,6 +145,12 @@ export const ArtistFormClient: React.FC = () => {
         await pb.collection('artists').update(editId, {
           discography: updatedDiscography,
           agenda: updatedAgenda,
+          socials: {
+            spotify: updatedSpotify.trim() || undefined,
+            youtube: formData.youtube.trim() || undefined,
+            instagram: formData.instagram.trim() || undefined,
+            tiktok: formData.tiktok.trim() || undefined,
+          },
         });
         setSuccessMessage(
           `¡Éxito! Se guardaron en PocketBase ${addedDisc.length} lanzamientos y ${addedAgenda.length} shows.`

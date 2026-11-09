@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   extractSpotifyArtistId,
+  extractSpotifyAlbumId,
+  getSpotifyArtistById,
+  getSpotifyAlbumById,
   searchSpotifyArtist,
   getSpotifyArtistDiscography,
 } from '@/lib/services/spotifyService';
@@ -20,17 +23,25 @@ export async function POST(req: NextRequest) {
     }
 
     let spotifyArtistId = extractSpotifyArtistId(spotifyUrl);
+    const spotifyAlbumId = extractSpotifyAlbumId(spotifyUrl);
     let officialArtist: any = null;
 
-    // Si no se extrajo directamente de la URL, buscar por nombre
-    if (!spotifyArtistId && stageName) {
+    if (!spotifyArtistId && spotifyAlbumId) {
+      const albumInfo = await getSpotifyAlbumById(spotifyAlbumId);
+      if (albumInfo?.artistId) {
+        spotifyArtistId = albumInfo.artistId;
+      }
+    }
+
+    // Si tenemos el ID directo de la URL, consultar el perfil exacto por ID
+    if (spotifyArtistId) {
+      officialArtist = await getSpotifyArtistById(spotifyArtistId);
+    } else if (stageName) {
+      // Si no se extrajo directamente de la URL, buscar por nombre
       officialArtist = await searchSpotifyArtist(stageName);
       if (officialArtist?.id) {
         spotifyArtistId = officialArtist.id;
       }
-    } else if (spotifyArtistId) {
-      // Si tenemos el ID, podemos intentar buscar sus datos básicos
-      officialArtist = await searchSpotifyArtist(stageName || spotifyArtistId);
     }
 
     if (!spotifyArtistId) {

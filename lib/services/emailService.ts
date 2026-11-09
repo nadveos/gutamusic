@@ -7,6 +7,7 @@ export const resend = resendApiKey ? new Resend(resendApiKey) : null;
 // Remitente: usa el configurado en .env.local o el dominio verificado en Resend (guta.meapp.com.ar)
 const FROM_EMAIL =
   process.env.RESEND_FROM_EMAIL || 'GUTA MÚSICA <no-reply@guta.meapp.com.ar>';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
 
 /**
  * Plantilla base con estética dark mode de GUTA MÚSICA
@@ -166,7 +167,7 @@ export async function sendArtistStatusEmail({
         artistSlug
           ? `
         <div style="margin: 24px 0; text-align: center;">
-          <a href="https://guta.meapp.com.ar/artistas/${artistSlug}" style="display: inline-block; background-color: #d97d64; color: #121316; font-weight: 800; font-size: 14px; padding: 12px 28px; border-radius: 10px; text-decoration: none;">
+          <a href="${SITE_URL}/artistas/${artistSlug}" style="display: inline-block; background-color: #d97d64; color: #121316; font-weight: 800; font-size: 14px; padding: 12px 28px; border-radius: 10px; text-decoration: none;">
             Ver Mi Perfil Público
           </a>
         </div>
@@ -185,7 +186,7 @@ export async function sendArtistStatusEmail({
         ${reason || 'Por favor revisá los datos cargados y actualizá la información solicitada.'}
       </div>
       <div style="margin: 24px 0; text-align: center;">
-        <a href="https://guta.meapp.com.ar/panel-artista" style="display: inline-block; background-color: #e6cca0; color: #121316; font-weight: 800; font-size: 14px; padding: 12px 28px; border-radius: 10px; text-decoration: none;">
+        <a href="${SITE_URL}/panel-artista" style="display: inline-block; background-color: #e6cca0; color: #121316; font-weight: 800; font-size: 14px; padding: 12px 28px; border-radius: 10px; text-decoration: none;">
           Ingresar al Panel y Editar
         </a>
       </div>

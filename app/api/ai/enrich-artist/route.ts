@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { searchArtistMusicBrainz, getArtistReleasesMusicBrainz } from '@/lib/services/musicbrainzService';
 import {
   extractSpotifyArtistId,
+  extractSpotifyAlbumId,
+  getSpotifyArtistById,
+  getSpotifyAlbumById,
   searchSpotifyArtist,
   getSpotifyArtistDiscography,
 } from '@/lib/services/spotifyService';
@@ -105,32 +108,63 @@ export async function POST(req: NextRequest) {
     let spotifyAlbums: any[] = [];
     let detectedSpotifyUrl = spotifyUrl.trim();
     let spotifyArtistId = extractSpotifyArtistId(detectedSpotifyUrl);
+    const spotifyAlbumId = extractSpotifyAlbumId(detectedSpotifyUrl);
+    let officialArtistName = artistQuery;
 
     if (mode !== 'shows') {
-      if (!spotifyArtistId) {
+      // Si pegaron un enlace directo a un Álbum / EP / Single de Spotify
+      if (spotifyAlbumId) {
+        try {
+          const albumResult = await getSpotifyAlbumById(spotifyAlbumId);
+          if (albumResult?.album) {
+            spotifyAlbums.push(albumResult.album);
+            if (!spotifyArtistId && albumResult.artistId) {
+              spotifyArtistId = albumResult.artistId;
+              detectedSpotifyUrl = `https://open.spotify.com/artist/${albumResult.artistId}`;
+            }
+            if (albumResult.artistName) {
+              officialArtistName = albumResult.artistName;
+            }
+          }
+        } catch (spAlbumDirectErr) {
+          console.warn('Spotify direct album fetch warning:', spAlbumDirectErr);
+        }
+      }
+
+      if (!spotifyArtistId && !detectedSpotifyUrl) {
         try {
           const spSearch = await searchSpotifyArtist(artistQuery);
           if (spSearch?.id) {
             spotifyArtistId = spSearch.id;
-            if (!detectedSpotifyUrl) detectedSpotifyUrl = spSearch.url;
+            officialArtistName = spSearch.name || artistQuery;
+            detectedSpotifyUrl = spSearch.url;
           }
         } catch (spSearchErr) {
           console.warn('Spotify search warning:', spSearchErr);
         }
+      } else if (spotifyArtistId) {
+        try {
+          const artistProfile = await getSpotifyArtistById(spotifyArtistId);
+          if (artistProfile) {
+            officialArtistName = artistProfile.name || artistQuery;
+            detectedSpotifyUrl = artistProfile.url || `https://open.spotify.com/artist/${spotifyArtistId}`;
+          }
+        } catch {}
       }
 
       if (spotifyArtistId) {
         try {
-          spotifyAlbums = await getSpotifyArtistDiscography(spotifyArtistId);
+          const artistDiscog = await getSpotifyArtistDiscography(spotifyArtistId);
+          spotifyAlbums.push(...artistDiscog);
         } catch (spAlbumErr) {
           console.warn('Spotify albums fetch warning:', spAlbumErr);
         }
       }
     }
 
-    // 2. Consulta a MusicBrainz (si mode es 'all' o 'discography')
+    // 2. Consulta a MusicBrainz SOLO como respaldo si no se proporcionó URL de Spotify y Spotify no arrojó resultados
     let mbReleases: any[] = [];
-    if (mode !== 'shows') {
+    if (mode !== 'shows' && !spotifyArtistId && !spotifyAlbumId && spotifyAlbums.length === 0) {
       try {
         const countryCode = country.toLowerCase().includes('bolivia') ? 'BO' : 'AR';
         const mbArtist = await searchArtistMusicBrainz(artistQuery, countryCode);
@@ -176,13 +210,17 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      artist: artistQuery,
+      artist: officialArtistName,
       spotifyArtistId: spotifyArtistId || null,
+      detectedSpotifyUrl: detectedSpotifyUrl || null,
       discography: consolidatedDiscography,
       agenda: [],
-      summary: `Se encontraron ${consolidatedDiscography.length} lanzamientos oficiales en Spotify (${spotifyAlbums.length} de Spotify Web API).`,
+      summary:
+        consolidatedDiscography.length > 0
+          ? `Se encontraron ${consolidatedDiscography.length} lanzamientos oficiales para ${officialArtistName} (${consolidatedDiscography.length} de Spotify Web API).`
+          : `No se encontraron lanzamientos públicos en Spotify para ${officialArtistName}.`,
       sources: {
-        spotifyAlbumsFound: spotifyAlbums.length,
+        spotifyAlbumsFound: consolidatedDiscography.length,
         musicBrainzFound: mbReleases.length,
       },
     });

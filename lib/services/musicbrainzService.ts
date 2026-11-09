@@ -108,19 +108,38 @@ export async function fetchMusicBrainz<T = any>(endpoint: string, queryParams: R
  * Busca un artista en MusicBrainz por nombre y país
  */
 export async function searchArtistMusicBrainz(artistName: string, countryCode: string = 'AR'): Promise<MusicBrainzArtist | null> {
-  const query = `artist:"${artistName}" AND country:${countryCode}`;
-  const result = await fetchMusicBrainz<{ artists: any[] }>('artist', { query, limit: '1' });
+  const normTarget = artistName
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 
-  if (!result || !result.artists || result.artists.length === 0) {
-    // Intentar búsqueda más flexible sin comillas
-    const flexResult = await fetchMusicBrainz<{ artists: any[] }>('artist', { query: `artist:${artistName}`, limit: '1' });
-    if (!flexResult || !flexResult.artists || flexResult.artists.length === 0) {
-      return null;
-    }
-    return normalizeMbArtist(flexResult.artists[0]);
+  const query = `artist:"${artistName}" AND country:${countryCode}`;
+  const result = await fetchMusicBrainz<{ artists: any[] }>('artist', { query, limit: '5' });
+
+  const findExact = (items: any[] = []) =>
+    items.find((a) => {
+      const n = (a?.name || '')
+        .toLowerCase()
+        .trim()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+      return n === normTarget;
+    });
+
+  const exactCountryMatch = findExact(result?.artists);
+  if (exactCountryMatch) {
+    return normalizeMbArtist(exactCountryMatch);
   }
 
-  return normalizeMbArtist(result.artists[0]);
+  // Intentar búsqueda exacta por nombre sin filtro de país
+  const flexResult = await fetchMusicBrainz<{ artists: any[] }>('artist', { query: `artist:"${artistName}"`, limit: '5' });
+  const exactAnyMatch = findExact(flexResult?.artists);
+  if (!exactAnyMatch) {
+    return null;
+  }
+
+  return normalizeMbArtist(exactAnyMatch);
 }
 
 /**
