@@ -128,8 +128,8 @@ export const SumarProfesionalClient: React.FC = () => {
       expiryDateStr: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
         .toISOString()
         .split('T')[0],
-      statusBadgeLabel: '✨ Destacado Cortesía',
-      countdownMessage: 'Te quedan 3 días de Destacado de Cortesía gratuito.',
+      statusBadgeLabel: '⭐ Destacado',
+      countdownMessage: 'Perfil Destacado activo.',
     },
   };
 
@@ -582,10 +582,10 @@ export const SumarProfesionalClient: React.FC = () => {
               <div className="lg:col-span-5 space-y-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#e6cca0] flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#d97d64]" />
-                  Vista Previa con tus 3 Días de Cortesía Activos
+                  Vista Previa de tu Perfil en el Directorio
                 </span>
                 <p className="text-xs text-[#78746c]">
-                  Así se verá tu tarjeta destacada apenas envíes tu postulación:
+                  Así se verá tu tarjeta publicada en la sección de Profesionales & Servicios:
                 </p>
                 <div className="p-4 rounded-2xl bg-[#121316] border border-[#292b34]">
                   <ProfessionalCard item={previewItem} isPreview={true} />
@@ -602,10 +602,10 @@ export const SumarProfesionalClient: React.FC = () => {
               </span>
               <div>
                 <h2 className="text-lg font-bold text-[#f3f1ec]">
-                  Cuenta de Autogestión & Activación de Cortesía (3 Días)
+                  Cuenta de Autogestión Profesional
                 </h2>
                 <p className="text-xs text-[#aba79e]">
-                  Con tu email y contraseña podrás editar tu perfil cuando quieras y ver los días restantes de tu destacado.
+                  Con tu email y contraseña podrás editar tu perfil, tus servicios y tus enlaces cuando quieras.
                 </p>
               </div>
             </div>
@@ -652,13 +652,13 @@ export const SumarProfesionalClient: React.FC = () => {
               <div className="space-y-1 text-center sm:text-left">
                 <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#5ce487]">
                   <Gift className="w-4 h-4" />
-                  <span>Registro Gratuito + 3 Días de Destacado de Cortesía</span>
+                  <span>Registro 100% Gratuito en el Directorio Oficial</span>
                 </div>
                 <h3 className="text-lg font-black text-[#f3f1ec]">
                   Publicación inmediata en el Directorio de Profesionales
                 </h3>
                 <p className="text-xs text-[#aba79e]">
-                  Durante tus primeros 3 días aparecerás en las primeras posiciones de forma gratuita. Luego desde tu panel podrás contratar el <b>Destacado Semanal (7 días)</b> cuando lo desees.
+                  Tu perfil queda publicado de forma gratuita y permanente, y desde tu panel podrás gestionar tu información o impulsar tu visibilidad con el <b>Destacado Semanal</b> cuando lo desees.
                 </p>
               </div>
 

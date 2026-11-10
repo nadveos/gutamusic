@@ -50,13 +50,13 @@ export const ProfessionalCard: React.FC<{
 
   const waUrl = getCleanWhatsappUrl(item.whatsapp, item.phone, item.name);
 
+  const isFeatured = isPaidFeatured || isCourtesyFeatured;
+
   return (
     <div
       className={`group rounded-2xl transition-all duration-300 p-5 flex flex-col justify-between relative ${
-        isPaidFeatured
+        isFeatured
           ? 'bg-gradient-to-b from-[#26231b] via-[#1b1c23] to-[#131418] border-2 border-[#e6cca0] shadow-xl shadow-[#e6cca0]/10 ring-1 ring-[#e6cca0]/30'
-          : isCourtesyFeatured
-          ? 'bg-gradient-to-b from-[#231d1c] via-[#1a1b22] to-[#131418] border border-[#d97d64]/70 shadow-lg shadow-[#d97d64]/10'
           : 'bg-[#181920] border border-[#2a2d38] hover:border-[#e6cca0]/50 hover:shadow-xl'
       }`}
     >
@@ -69,15 +69,9 @@ export const ProfessionalCard: React.FC<{
             {catInfo.label}
           </span>
 
-          {isPaidFeatured && (
+          {isFeatured && (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#e6cca0] text-[#121316] shadow-sm">
-              ⭐ Destacado Semanal
-            </span>
-          )}
-
-          {isCourtesyFeatured && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#d97d64]/20 text-[#e6cca0] border border-[#d97d64]/50">
-              ✨ Nuevo • Cortesía 3 Días
+              ⭐ Destacado
             </span>
           )}
         </div>
@@ -385,7 +379,7 @@ export const ProfessionalsDirectoryClient: React.FC<{
                 Sé el primero en ofrecer tus servicios en este rubro
               </h3>
               <p className="text-xs text-[#aba79e]">
-                Sumate ahora y recibí automáticamente <b>3 días de Destacado de Cortesía</b> en la parte superior del directorio.
+                Sumate gratis al directorio federal para conectar con artistas, bandas y proyectos de todo el país.
               </p>
             </div>
             <Link

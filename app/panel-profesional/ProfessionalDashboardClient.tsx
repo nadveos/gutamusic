@@ -276,7 +276,7 @@ export const ProfessionalDashboardClient: React.FC = () => {
             <CheckCircle2 className="w-6 h-6 text-[#5ce487] shrink-0 mt-0.5" />
             <div className="space-y-1">
               <h4 className="text-base font-bold text-[#f3f1ec]">
-                ¡Postulación publicada y 3 Días de Destacado de Cortesía Activados!
+                ¡Postulación publicada y Perfil Destacado Activado!
               </h4>
               <p className="text-xs text-[#a0d29f]">
                 Tu perfil ya aparece al inicio de la sección Profesionales & Servicios Musicales. Desde este panel podés actualizar tus datos o extender tu destaque por 7 días adicionales cuando quieras.
@@ -376,7 +376,7 @@ export const ProfessionalDashboardClient: React.FC = () => {
                 href="/sumar-profesional"
                 className="text-xs font-bold text-[#e6cca0] hover:underline"
               >
-                ¿Aún no estás registrado? Sumate gratis y recibí 3 días de destacado de cortesía →
+                ¿Aún no estás registrado? Registrate 100% Gratis →
               </Link>
             </div>
           </div>

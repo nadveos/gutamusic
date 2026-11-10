@@ -5,7 +5,7 @@ import { ProfessionalDashboardClient } from './ProfessionalDashboardClient';
 export const metadata: Metadata = {
   title: 'Mi Panel Profesional | GUTA MÚSICA',
   description:
-    'Administrá tus servicios musicales, revisá los días restantes de tu destacado de cortesía o semanal y actualizá tus enlaces.',
+    'Administrá tus servicios musicales, revisá el estado de tu perfil destacado y actualizá tus enlaces.',
 };
 
 export default function ProfessionalDashboardPage() {

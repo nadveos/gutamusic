@@ -103,11 +103,11 @@ export function getProfessionalFeaturedStatus(
           daysRemaining,
           isExpiringSoon: daysRemaining <= 1,
           expiryDateStr,
-          statusBadgeLabel: '✨ Destacado Cortesía',
+          statusBadgeLabel: '⭐ Destacado',
           countdownMessage:
             daysRemaining === 1
-              ? '¡Último día! Te queda 1 día de tu Destacado de Cortesía (3 días iniciales).'
-              : `Te quedan ${daysRemaining} días de Destacado de Cortesía gratuito (vence el ${expiryDateStr}).`,
+              ? '¡Último día! Te queda 1 día de Profesional Destacado.'
+              : `Te quedan ${daysRemaining} días de Profesional Destacado (vence el ${expiryDateStr}).`,
         };
       }
     }
