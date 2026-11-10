@@ -10,6 +10,7 @@ import { FeaturedInterviewCard } from '../components/FeaturedInterviewCard';
 import { SponsorBillboardHero } from '../components/SponsorBillboardHero';
 import { HomeLiveSidebar } from '../components/HomeLiveSidebar';
 import { getSpotifyPlaylist } from '../lib/services/spotifyService';
+import { getProfessionalsFromDb } from '../lib/services/professionalsService';
 
 export default async function HomePage() {
   // Asegurar en segundo plano que las efemérides del día de hoy estén sincronizadas en PocketBase
@@ -27,6 +28,10 @@ export default async function HomePage() {
 
   // Auspiciantes para la columna lateral (home_mid & all_sections)
   const homeSponsors = await MusicDataService.getAlliances('home_mid', true);
+  const billboardSponsors = homeSponsors.filter((s) => s.sector === 'all_sections');
+
+  // Profesionales & Servicios Musicales registrados (prioriza destacados vigentes)
+  const homeProfessionals = await getProfessionalsFromDb({ onlyActive: true }).catch(() => []);
 
   return (
     <div className="space-y-10">
@@ -35,8 +40,11 @@ export default async function HomePage() {
         <HeroFeatured artists={consagradosArtists} titleBadge="Artista Consagrado" />
       )}
 
-      {/* 1.1 Billboard de Alto Impacto (Scroll-Reveal): Patrocinador Oficial Exclusivo */}
-      <SponsorBillboardHero />
+      {/* 1.1 Bloque Combinado en Home: Box Auspiciante Premium + Row de 4 Profesionales */}
+      <SponsorBillboardHero
+        initialSponsors={billboardSponsors}
+        professionals={homeProfessionals}
+      />
 
       {/* 2. Grid Editorial en 2 Columnas: Contenido Principal + Sidebar Sticky */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start my-6">
