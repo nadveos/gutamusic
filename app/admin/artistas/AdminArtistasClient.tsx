@@ -8,7 +8,7 @@ import { pb } from '../../../lib/pocketbase';
 import { getWeeklyFeaturedStatus } from '../../../lib/services/featuredRotationService';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
 import { ConfirmModal } from '../../../components/admin/ConfirmModal';
-import { Edit, Trash2, Eye, MapPin, CheckSquare, Square } from 'lucide-react';
+import { Edit, Trash2, Eye, MapPin, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface AdminArtistasClientProps {
   initialArtists: Artist[];
@@ -21,6 +21,7 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [isListCollapsed, setIsListCollapsed] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -255,10 +256,36 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
         </div>
       )}
 
-      {/* Artists Table */}
+      {/* Artists Table (Collapsible) */}
       <div className="natural-card rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#aba79e]">
+        <div className="flex items-center justify-between px-4 py-3 bg-[#1e2027] border-b border-[#2a2c35]">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#f3f1ec]">
+              Listado de Artistas ({artists.length})
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsListCollapsed((prev) => !prev)}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#272933] hover:bg-[#313441] text-[#e6cca0] border border-[#383b49] text-[11px] font-bold transition-colors cursor-pointer"
+          >
+            {isListCollapsed ? (
+              <>
+                <ChevronDown className="w-3.5 h-3.5" />
+                <span>Desplegar listado ({artists.length})</span>
+              </>
+            ) : (
+              <>
+                <ChevronUp className="w-3.5 h-3.5" />
+                <span>Colapsar listado</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {!isListCollapsed && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-[#aba79e]">
             <thead className="bg-[#24252c] border-b border-[#2a2c35] text-[#8c887f] uppercase text-[10px] font-semibold">
               <tr>
                 <th className="py-3 px-3 w-10 text-center">
@@ -383,7 +410,8 @@ export const AdminArtistasClient: React.FC<AdminArtistasClientProps> = ({
               })}
             </tbody>
           </table>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Modal para eliminar individual */}
