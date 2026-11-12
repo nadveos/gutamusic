@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { MusicDataService } from '../lib/api';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const artists = await MusicDataService.getArtists();

@@ -4,9 +4,9 @@ const resendApiKey = process.env.RESEND_API_KEY;
 
 export const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
-// Remitente: usa el configurado en .env.local o el dominio verificado en Resend (guta.meapp.com.ar)
+// Remitente: usa el configurado en .env.local o el dominio verificado en Resend (guta.musica.ar)
 const FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL || 'GUTA MÚSICA <no-reply@guta.meapp.com.ar>';
+  process.env.RESEND_FROM_EMAIL || 'GUTA MÚSICA <no-reply@guta.musica.ar>';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
 
 /**
@@ -119,6 +119,7 @@ export async function sendOtpEmail({
       from: FROM_EMAIL,
       to,
       subject: `${code} es tu código de verificación | GUTA MÚSICA`,
+      replyTo: 'contacto@guta.musica.ar',
       html,
     });
 
@@ -213,6 +214,7 @@ export async function sendArtistStatusEmail({
       from: FROM_EMAIL,
       to,
       subject: `${title} | GUTA MÚSICA`,
+      replyTo: 'contacto@guta.musica.ar',
       html,
     });
 

@@ -8,7 +8,7 @@ import { VoluntaryContributionBanner } from '../components/VoluntaryContribution
 import { PersistentSpotifyPlayer } from '../components/PersistentSpotifyPlayer';
 import { ChunkErrorListener } from '../components/ChunkErrorListener';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
