@@ -238,3 +238,44 @@ export async function getTelegramWebhookInfo() {
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Notifica una nueva consulta desde /contacto por Telegram
+ */
+export async function notifyNewContactInquiry(params: {
+  ticketId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  projectOrCompany?: string;
+  category: string;
+  categoryLabel: string;
+  targetInbox: string;
+  message: string;
+}) {
+  const msgExcerpt =
+    params.message.length > 500 ? params.message.slice(0, 497) + '...' : params.message;
+
+  const html = [
+    `<b>📬 NUEVA CONSULTA WEB (${escapeHtml(params.ticketId)})</b>`,
+    ``,
+    `<b>Canal destino:</b> <code>${escapeHtml(params.targetInbox)}</code>`,
+    `<b>Motivo:</b> ${escapeHtml(params.categoryLabel)}`,
+    `<b>Nombre:</b> ${escapeHtml(params.name)}`,
+    `<b>Email:</b> ${escapeHtml(params.email)}`,
+    params.phone ? `<b>WhatsApp / Tel:</b> ${escapeHtml(params.phone)}` : null,
+    params.projectOrCompany
+      ? `<b>Banda / Marca / Medio:</b> ${escapeHtml(params.projectOrCompany)}`
+      : null,
+    ``,
+    `<b>Mensaje:</b>`,
+    `<blockquote>${escapeHtml(msgExcerpt)}</blockquote>`,
+  ]
+    .filter((line) => line !== null)
+    .join('\n');
+
+  return sendTelegramMessage({
+    text: html,
+    parseMode: 'HTML',
+  });
+}

@@ -198,10 +198,19 @@ export function ArtistLoginClient() {
                 Sumar Auspicio Publicitario (30 días)
               </Link>
             </div>
-            <div className="pt-2 border-t border-[#262832]">
+            <div className="pt-2 border-t border-[#262832] space-y-1.5">
+              <p className="text-[11px] text-[#8c887f]">
+                ¿Necesitás asistencia con tu cuenta?{' '}
+                <a
+                  href="mailto:soporte@guta.musica.ar"
+                  className="text-[#e6cca0] hover:underline font-medium"
+                >
+                  soporte@guta.musica.ar
+                </a>
+              </p>
               <Link
                 href="/"
-                className="text-[#aba79e] hover:text-[#f3f1ec] transition-colors"
+                className="inline-block text-[#aba79e] hover:text-[#f3f1ec] transition-colors"
               >
                 ← Volver al sitio principal
               </Link>

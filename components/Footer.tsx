@@ -63,10 +63,16 @@ export const Footer: React.FC = () => {
                 <Link href="/artistas" className="hover:text-[#e6cca0] transition-colors">Directorio de Artistas</Link>
               </li>
               <li>
+                <Link href="/profesionales" className="hover:text-[#e6cca0] transition-colors">Profesionales & Servicios</Link>
+              </li>
+              <li>
                 <Link href="/entrevistas" className="hover:text-[#e6cca0] transition-colors">Entrevistas & Sesiones en Vivo</Link>
               </li>
               <li>
                 <Link href="/efemerides" className="hover:text-[#e6cca0] transition-colors">Efemérides Musicales Históricas</Link>
+              </li>
+              <li>
+                <Link href="/contacto" className="hover:text-[#e6cca0] transition-colors font-medium text-[#f3f1ec]">Contacto & Soporte Oficial</Link>
               </li>
               <li>
                 <Link href="/registro" className="text-[#d97d64] hover:text-[#e6cca0] font-semibold transition-colors">+ Sumá tu Banda (Registro)</Link>
@@ -92,17 +98,46 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Col 4: Identidad & Autores */}
+          {/* Col 4: Canales Humanos & Dirección */}
           <div className="space-y-2.5">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#f3f1ec]">
-              Cultura Federal
+              Canales de Contacto
             </h4>
-            <p className="text-xs text-[#8c887f] leading-relaxed">
-              Impulsado con pasión por el patrimonio sonoro de nuestro país y la nueva generación de creadores musicales.
-            </p>
-            <div className="p-2.5 rounded-lg bg-[#18191e] border border-[#272932] text-xs space-y-0.5">
-              <span className="text-[#e6cca0] font-medium text-[11px] block">Conducción & Dirección Editorial</span>
-              <span className="text-[#f3f1ec] font-semibold">Guta Flores</span>
+            <div className="space-y-2 text-xs">
+              <div className="p-2.5 rounded-lg bg-[#18191e] border border-[#272932] space-y-0.5">
+                <span className="text-[#e6cca0] font-bold text-[10px] uppercase tracking-wider block">
+                  Comercial, Prensa & Dudas
+                </span>
+                <a
+                  href="mailto:contacto@guta.musica.ar"
+                  className="text-[#f3f1ec] hover:text-[#d97d64] font-semibold transition-colors block break-all"
+                >
+                  contacto@guta.musica.ar
+                </a>
+                <Link
+                  href="/contacto#formulario-consultas"
+                  className="text-[11px] text-[#d97d64] hover:underline inline-block pt-0.5 font-medium"
+                >
+                  Abrir formulario de consultas →
+                </Link>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-[#18191e] border border-[#272932] space-y-0.5">
+                <span className="text-[#d97d64] font-bold text-[10px] uppercase tracking-wider block">
+                  Asistencia al Artista (Vía Directa)
+                </span>
+                <a
+                  href="mailto:soporte@guta.musica.ar"
+                  className="text-[#f3f1ec] hover:text-[#e6cca0] font-semibold transition-colors block break-all"
+                >
+                  soporte@guta.musica.ar
+                </a>
+              </div>
+
+              <div className="px-2.5 py-2 rounded-lg bg-[#18191e]/60 border border-[#24262f] text-[11px] flex items-center justify-between">
+                <span className="text-[#8c887f]">Dirección Editorial:</span>
+                <span className="text-[#f3f1ec] font-semibold">Guta Flores</span>
+              </div>
             </div>
           </div>
         </div>

@@ -1,15 +1,17 @@
-import { redirect } from 'next/navigation';
+import React from 'react';
+import type { Metadata } from 'next';
+import { ContactFormClient } from './ContactFormClient';
 
-export const metadata = {
-  title: 'Sumá tu Banda / Registro de Artistas | GUTA MÚSICA',
+export const metadata: Metadata = {
+  title: 'Contacto & Soporte Oficial | GUTA MÚSICA',
   description:
-    'Convocatoria permanente para artistas, solistas y bandas emergentes. Registrate en GUTA para autogestionar tu ficha y difusión oficial.',
+    'Canales oficiales de atención humana de GUTA MÚSICA: contacto@guta.musica.ar para consultas comerciales, prensa y dudas generales, y soporte@guta.musica.ar para asistencia personalizada al artista.',
 };
 
-/**
- * /contacto redirige automáticamente a /registro para centralizar
- * la postulación desde el panel del artista registrado.
- */
 export default function ContactoPage() {
-  redirect('/registro');
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <ContactFormClient />
+    </div>
+  );
 }

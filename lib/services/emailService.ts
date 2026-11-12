@@ -9,6 +9,10 @@ const FROM_EMAIL =
   process.env.RESEND_FROM_EMAIL || 'GUTA MÚSICA <no-reply@guta.musica.ar>';
 const REGISTRO_EMAIL =
   process.env.RESEND_REGISTER_EMAIL || 'GUTA MÚSICA <registro@guta.musica.ar>';
+const CONTACTO_EMAIL =
+  process.env.RESEND_CONTACT_EMAIL || 'GUTA MÚSICA <contacto@guta.musica.ar>';
+const SOPORTE_EMAIL =
+  process.env.RESEND_SUPPORT_EMAIL || 'GUTA MÚSICA <soporte@guta.musica.ar>';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
 
 /**
@@ -60,6 +64,9 @@ function wrapEmailTemplate(contentHtml: string): string {
             <td style="padding: 24px 32px; background-color: #151619; border-top: 1px solid #262830; text-align: center;">
               <p style="margin: 0 0 6px 0; font-size: 12px; color: #8c887f;">
                 GUTA MÚSICA — Plataforma del Movimiento Musical Argentino
+              </p>
+              <p style="margin: 0 0 8px 0; font-size: 11px; color: #aba79e;">
+                Consultas generales: <a href="mailto:contacto@guta.musica.ar" style="color: #e6cca0; text-decoration: none;">contacto@guta.musica.ar</a> &bull; Asistencia al artista: <a href="mailto:soporte@guta.musica.ar" style="color: #d97d64; text-decoration: none;">soporte@guta.musica.ar</a>
               </p>
               <p style="margin: 0; font-size: 11px; color: #5a5751;">
                 Si no solicitaste este correo, podés ignorarlo de forma segura.
@@ -228,5 +235,125 @@ export async function sendArtistStatusEmail({
     return { success: true, data };
   } catch (err: any) {
     return { success: false, error: err?.message };
+  }
+}
+
+/**
+ * Envía una consulta o solicitud de asistencia desde el formulario de contacto (/contacto)
+ * a contacto@guta.musica.ar o soporte@guta.musica.ar según corresponda, y acuse de recibo al remitente.
+ */
+export async function sendContactInquiryEmail({
+  name,
+  email,
+  phone,
+  projectOrCompany,
+  category,
+  categoryLabel,
+  message,
+  ticketId,
+}: {
+  name: string;
+  email: string;
+  phone?: string;
+  projectOrCompany?: string;
+  category: 'comercial' | 'prensa' | 'soporte' | 'general';
+  categoryLabel: string;
+  message: string;
+  ticketId: string;
+}) {
+  const isSupport = category === 'soporte';
+  const targetInbox = isSupport ? 'soporte@guta.musica.ar' : 'contacto@guta.musica.ar';
+  const senderAddress = isSupport ? SOPORTE_EMAIL : CONTACTO_EMAIL;
+
+  if (!resend) {
+    console.warn('⚠️ RESEND_API_KEY no configurada. Consulta registrada en consola:', {
+      ticketId,
+      targetInbox,
+      name,
+      email,
+      categoryLabel,
+    });
+    return { success: false, error: 'Resend no configurado' };
+  }
+
+  const safeMsg = message
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br/>');
+
+  // 1. Correo interno hacia la casilla humana (contacto@ o soporte@) con replyTo al usuario
+  const adminHtml = wrapEmailTemplate(`
+    <div style="margin-bottom: 16px;">
+      <span style="display: inline-block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #121316; background-color: ${isSupport ? '#d97d64' : '#e6cca0'}; padding: 4px 10px; border-radius: 6px;">
+        ${categoryLabel} • ${ticketId}
+      </span>
+    </div>
+    <h1 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 800; color: #f3f1ec;">
+      Nueva consulta de ${name}
+    </h1>
+    <div style="background-color: #24252c; border: 1px solid #353844; border-radius: 12px; padding: 16px; margin: 16px 0; font-size: 13px; color: #aba79e; line-height: 1.7;">
+      <div><strong style="color: #f3f1ec;">Remitente:</strong> ${name}</div>
+      <div><strong style="color: #f3f1ec;">Email (Responder a):</strong> <a href="mailto:${email}" style="color: #e6cca0;">${email}</a></div>
+      ${phone ? `<div><strong style="color: #f3f1ec;">WhatsApp / Teléfono:</strong> ${phone}</div>` : ''}
+      ${projectOrCompany ? `<div><strong style="color: #f3f1ec;">Banda / Marca / Medio:</strong> ${projectOrCompany}</div>` : ''}
+      <div><strong style="color: #f3f1ec;">Canal destino:</strong> ${targetInbox}</div>
+    </div>
+    <div style="background-color: #151619; border-left: 4px solid #d97d64; padding: 16px; border-radius: 8px; margin-top: 16px; font-size: 14px; line-height: 1.6; color: #f3f1ec;">
+      ${safeMsg}
+    </div>
+    <p style="margin: 20px 0 0 0; font-size: 12px; color: #8c887f;">
+      💡 Podés responder directamente a este correo desde tu Gmail para contestarle a <strong>${name} (${email})</strong>.
+    </p>
+  `);
+
+  // 2. Acuse de recibo para la persona que escribió
+  const userHtml = wrapEmailTemplate(`
+    <h1 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 800; color: #f3f1ec;">
+      Recibimos tu mensaje en GUTA MÚSICA
+    </h1>
+    <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #aba79e;">
+      Hola <strong style="color: #f3f1ec;">${name}</strong>, tu consulta fue derivada a nuestro canal humano <strong style="color: #e6cca0;">${targetInbox}</strong> (${categoryLabel}).
+    </p>
+    <div style="background-color: #24252c; border: 1px solid #353844; border-radius: 12px; padding: 16px; margin: 16px 0; font-size: 13px; color: #aba79e;">
+      <div style="margin-bottom: 6px;"><strong style="color: #f3f1ec;">Referencia:</strong> <code>${ticketId}</code></div>
+      <div style="margin-bottom: 6px;"><strong style="color: #f3f1ec;">Área de atención:</strong> ${categoryLabel}</div>
+      <div><strong style="color: #f3f1ec;">Canal directo:</strong> <a href="mailto:${targetInbox}" style="color: #d97d64;">${targetInbox}</a></div>
+    </div>
+    <p style="margin: 16px 0 0 0; font-size: 13px; color: #aba79e; line-height: 1.6;">
+      Nuestro equipo te responderá a la brevedad desde <strong style="color: #f3f1ec;">${targetInbox}</strong>. Si necesitás agregar información, podés responder directamente a este correo.
+    </p>
+  `);
+
+  try {
+    const [adminRes] = await Promise.all([
+      resend.emails.send({
+        from: senderAddress,
+        to: [targetInbox],
+        replyTo: email,
+        subject: `[${ticketId}] ${categoryLabel} — ${name}`,
+        html: adminHtml,
+      }),
+      resend.emails.send({
+        from: senderAddress,
+        to: [email],
+        replyTo: targetInbox,
+        subject: `Recibimos tu consulta [${ticketId}] | GUTA MÚSICA`,
+        html: userHtml,
+      }).catch((e) => {
+        console.warn('No se pudo enviar copia de confirmación al usuario:', e);
+        return null;
+      }),
+    ]);
+
+    if (adminRes.error) {
+      console.error('❌ Error Resend al enviar consulta de contacto:', adminRes.error);
+      return { success: false, error: adminRes.error.message };
+    }
+
+    return { success: true, data: adminRes.data };
+  } catch (err: any) {
+    console.error('❌ Error en sendContactInquiryEmail:', err);
+    return { success: false, error: err?.message || 'Error enviando consulta' };
   }
 }

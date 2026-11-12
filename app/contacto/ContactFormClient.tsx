@@ -2,563 +2,531 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { GenreType } from '../../lib/types';
-import { pb } from '../../lib/pocketbase';
-import { uploadImageToPocketBase } from '../../lib/uploadFile';
 import {
-  Mic2,
-  Sparkles,
+  Mail,
   Send,
   CheckCircle2,
   AlertCircle,
-  UploadCloud,
-  Music2,
-  MapPin,
-  Mail,
-  Phone,
-  Link as LinkIcon,
   Loader2,
-  HeartHandshake,
+  Headphones,
+  Briefcase,
   Radio,
-  Calendar,
+  HelpCircle,
+  Copy,
+  Check,
+  ArrowUpRight,
+  Sparkles,
+  UserCheck,
+  MessageSquare,
 } from 'lucide-react';
 
-const GENRES: GenreType[] = [
-  'Folklore',
-  'Pop',
-  'Rock',
-  'EDM',
-  'Dance',
-  'Electrónica',
-  'Música Urbana',
-  'Trap',
-  'Hip Hop',
-  'Cumbia',
-  'Cuarteto',
-  'Cumbia / Cuarteto',
-  'Indie',
-  'Tango',
-  'Música Popular',
-  'Fusión Latinoamericana',
-  'House / Techno',
-  'Synthpop',
-  'Reggaeton',
-  'R&B / Soul',
-  'Jazz / Instrumental',
-  'Blues / Funk',
-  'Reggae / Ska',
-  'Chamamé',
-  'Acústico / Cantautor',
-  'Metal / Punk',
-  'Salsa / Bachata',
-  'Música Clásica',
+type InquiryCategory = 'comercial' | 'prensa' | 'general' | 'soporte';
+
+interface CategoryOption {
+  id: InquiryCategory;
+  label: string;
+  description: string;
+  inbox: 'contacto@guta.musica.ar' | 'soporte@guta.musica.ar';
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const CATEGORIES: CategoryOption[] = [
+  {
+    id: 'comercial',
+    label: 'Consultas Comerciales & Auspicios',
+    description: 'Alianzas estratégicas, publicidad en portada y propuestas comerciales.',
+    inbox: 'contacto@guta.musica.ar',
+    icon: Briefcase,
+  },
+  {
+    id: 'prensa',
+    label: 'Prensa, Notas & Difusión',
+    description: 'Gacetillas, cobertura de eventos, entrevistas y medios.',
+    inbox: 'contacto@guta.musica.ar',
+    icon: Radio,
+  },
+  {
+    id: 'general',
+    label: 'Dudas & Consultas Generales',
+    description: 'Consultas sobre la plataforma, agenda cultural o funcionamiento general.',
+    inbox: 'contacto@guta.musica.ar',
+    icon: HelpCircle,
+  },
+  {
+    id: 'soporte',
+    label: 'Asistencia Personalizada al Artista',
+    description: 'Ayuda con tu cuenta, código OTP, sincronización de Spotify o edición de perfil.',
+    inbox: 'soporte@guta.musica.ar',
+    icon: Headphones,
+  },
 ];
 
 export const ContactFormClient: React.FC = () => {
-  const [formData, setFormData] = useState({
-    stageName: '',
-    contactName: '',
-    email: '',
-    phone: '',
-    genres: [] as GenreType[],
-    city: '',
-    province: '',
-    country: 'Argentina',
-    bio: '',
-    spotify: '',
-    youtube: '',
-    instagram: '',
-    tiktok: '',
-    photoUrl: '',
-    message: '',
-  });
+  const [category, setCategory] = useState<InquiryCategory>('comercial');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [projectOrCompany, setProjectOrCompany] = useState('');
+  const [message, setMessage] = useState('');
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [submittedTicket, setSubmittedTicket] = useState<{
+    ticketId: string;
+    targetInbox: string;
+  } | null>(null);
 
-  const handleGenreToggle = (genre: GenreType) => {
-    setFormData((prev) => {
-      const exists = prev.genres.includes(genre);
-      return {
-        ...prev,
-        genres: exists ? prev.genres.filter((g) => g !== genre) : [...prev.genres, genre],
-      };
-    });
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+
+  const handleCopyEmail = (addr: string) => {
+    navigator.clipboard.writeText(addr);
+    setCopiedEmail(addr);
+    setTimeout(() => setCopiedEmail(null), 2200);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files[0]) {
-      const file = files[0];
-      setSelectedFile(file);
-      const preview = URL.createObjectURL(file);
-      setFilePreview(preview);
-    }
-  };
+  const activeCategoryObj =
+    CATEGORIES.find((c) => c.id === category) || CATEGORIES[0];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setErrorMessage('');
 
-    if (formData.genres.length === 0) {
-      setErrorMessage('Por favor seleccioná al menos un género musical.');
-      setIsSubmitting(false);
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      setErrorMessage('Por favor completá tu nombre, correo electrónico y tu consulta.');
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      let finalPhotoUrl = formData.photoUrl;
-
-      // Upload image if a local file was chosen
-      if (selectedFile) {
-        const uploadRes = await uploadImageToPocketBase(selectedFile, 'applications');
-        if (uploadRes.success && uploadRes.url) {
-          finalPhotoUrl = uploadRes.url;
-        }
-      }
-
-      const applicationPayload = {
-        stageName: formData.stageName.trim(),
-        contactName: formData.contactName.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        genres: formData.genres,
-        city: formData.city.trim(),
-        province: formData.province.trim(),
-        country: formData.country.trim(),
-        bio: formData.bio.trim(),
-        socials: {
-          spotify: formData.spotify.trim(),
-          youtube: formData.youtube.trim(),
-          instagram: formData.instagram.trim(),
-          tiktok: formData.tiktok.trim(),
-        },
-        photoUrl: finalPhotoUrl || '',
-        message: formData.message.trim(),
-        status: 'pending',
-        submittedAt: new Date().toISOString(),
-      };
-
-      // Try submitting via server API (creates in PB and sends Telegram notification)
-      let savedViaApi = false;
-      try {
-        const res = await fetch('/api/applications', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(applicationPayload),
-        });
-        if (res.ok) {
-          savedViaApi = true;
-        }
-      } catch (apiErr) {
-        console.warn('API submission failed, falling back to direct PB / local:', apiErr);
-      }
-
-      if (!savedViaApi) {
-        // Fallback: direct PocketBase collection 'applications'
-        try {
-          await pb.collection('applications').create(applicationPayload);
-        } catch (pbErr) {
-          console.warn('PocketBase applications collection not available or rule blocked, saving to local application store:', pbErr);
-        }
-      }
-
-      // Also persist to localStorage for offline admin review demo
-      const existing = JSON.parse(localStorage.getItem('guta_pending_applications') || '[]');
-      existing.unshift({
-        id: 'app-' + Date.now(),
-        ...applicationPayload,
+      const res = await fetch('/api/contacto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          projectOrCompany: projectOrCompany.trim(),
+          category,
+          message: message.trim(),
+        }),
       });
-      localStorage.setItem('guta_pending_applications', JSON.stringify(existing));
 
-      setIsSuccess(true);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'No se pudo enviar tu consulta.');
+      }
+
+      setSubmittedTicket({
+        ticketId: data.ticketId,
+        targetInbox: data.targetInbox,
+      });
     } catch (err: any) {
-      console.error('Error submitting application:', err);
-      setErrorMessage(err?.message || 'Ocurrió un error al enviar tu postulación. Por favor intentá nuevamente.');
+      setErrorMessage(
+        err?.message || 'Ocurrió un error al enviar tu consulta. Por favor intentá nuevamente.'
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isSuccess) {
-    return (
-      <div className="max-w-2xl mx-auto py-12 px-4 text-center space-y-6">
-        <div className="w-16 h-16 rounded-full bg-[#93a887]/20 border border-[#93a887]/30 text-[#93a887] flex items-center justify-center mx-auto animate-in zoom-in-75">
-          <CheckCircle2 className="w-8 h-8" />
-        </div>
-        <div className="space-y-2">
-          <span className="text-xs uppercase font-bold tracking-wider text-[#e6cca0]">¡Postulación Recibida!</span>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#f3f1ec]">
-            Gracias por sumarte, {formData.stageName}
-          </h1>
-          <p className="text-sm text-[#aba79e] leading-relaxed max-w-lg mx-auto">
-            Hemos recibido el material de tu proyecto musical. Nuestro equipo editorial y de curaduría artística revisará tu propuesta para incorporar tu perfil a la plataforma, coordinar notas exclusivas o sumar tus fechas a la cartelera federal.
-          </p>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-[#1e1f24] border border-[#2d2f38] text-xs text-[#aba79e] max-w-md mx-auto space-y-1">
-          <p className="text-[#f3f1ec] font-semibold">¿Qué sigue ahora?</p>
-          <p>Te responderemos al correo <strong className="text-[#e6cca0]">{formData.email}</strong> ante cualquier novedad o coordinación de acústicos en vivo.</p>
-        </div>
-
-        <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/"
-            className="px-5 py-2.5 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] text-xs font-bold transition-colors"
-          >
-            Volver al Inicio
-          </Link>
-          <Link
-            href="/artistas"
-            className="px-5 py-2.5 rounded-xl bg-[#222329] hover:bg-[#282a32] text-[#aba79e] text-xs font-semibold border border-[#31333d] transition-colors"
-          >
-            Explorar Otros Artistas
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-4xl mx-auto space-y-10">
-      {/* Header Banner */}
-      <div className="text-center space-y-3 pt-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#d97d64]/10 border border-[#d97d64]/20 text-[#d97d64] text-xs font-semibold">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Convocatoria Abierta & Permanente</span>
+    <div className="max-w-6xl mx-auto space-y-10">
+      {/* Cabecera Principal */}
+      <div className="text-center space-y-3 pt-2">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#d97d64]/10 border border-[#d97d64]/25 text-[#d97d64] text-xs font-semibold">
+          <UserCheck className="w-3.5 h-3.5" />
+          <span>Canales Humanos de Atención Directa</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-[#f3f1ec] tracking-tight">
-          Sumá tu Banda a <span className="text-[#e6cca0]">GUTA MÚSICA</span>
+          Contacto & <span className="text-[#e6cca0]">Asistencia Oficial</span>
         </h1>
         <p className="text-sm text-[#aba79e] max-w-2xl mx-auto leading-relaxed">
-          GUTA es una plataforma autogestiva y federal dedicada a visibilizar y conectar a solistas, ensambles y bandas emergentes de toda la Argentina. Si hacés música propia, postulate gratis para formar parte de nuestro catálogo, notas editoriales y cartelera cultural.
+          Comunicate directamente con nuestro equipo editorial y técnico. Contamos con dos vías humanas de atención personalizada según tu necesidad.
         </p>
       </div>
 
-      {/* Feature Pills */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="natural-card p-4 rounded-xl flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-[#d97d64]/15 text-[#d97d64]">
-            <Mic2 className="w-4 h-4" />
+      {/* Dos Tarjetas Destacadas: Vía Directa (Soporte) y Formulario / Vía Comercial (Contacto) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Canal 1: soporte@guta.musica.ar (Vía Directa para Artistas) */}
+        <div className="natural-card p-6 sm:p-7 rounded-2xl border border-[#d97d64]/35 bg-gradient-to-br from-[#1b1c22] to-[#15161a] flex flex-col justify-between gap-5 shadow-xl relative overflow-hidden">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#d97d64]/15 border border-[#d97d64]/30 text-[#d97d64] text-[11px] font-bold uppercase tracking-wider">
+                <Headphones className="w-3.5 h-3.5" />
+                Vía Directa • Asistencia al Artista
+              </span>
+              <span className="text-[11px] font-mono text-[#93a887] font-semibold">
+                ● Atención Humana
+              </span>
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-black text-[#f3f1ec]">
+              soporte@guta.musica.ar
+            </h2>
+
+            <p className="text-xs sm:text-sm text-[#aba79e] leading-relaxed">
+              <strong className="text-[#f3f1ec]">Asistencia personalizada al artista:</strong> escribinos directamente desde tu correo si necesitás ayuda con el registro de tu banda, verificación OTP, carga de lanzamientos de Spotify o ajustes en tu perfil.
+            </p>
           </div>
-          <div>
-            <h2 className="text-xs font-bold text-[#f3f1ec]">Perfil Artístico Propio</h2>
-            <p className="text-[11px] text-[#8c887f]">Biografía, discografía, videoteca y enlaces directos a tus plataformas.</p>
+
+          <div className="pt-2 flex flex-wrap items-center gap-2.5">
+            <a
+              href="mailto:soporte@guta.musica.ar?subject=Asistencia%20al%20Artista%20-%20GUTA%20M%C3%9ASICA"
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] text-xs font-extrabold transition-all shadow-md shadow-[#d97d64]/20"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Escribir a Soporte Directo</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </a>
+
+            <button
+              type="button"
+              onClick={() => handleCopyEmail('soporte@guta.musica.ar')}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#22232a] hover:bg-[#2a2c35] text-[#f3f1ec] border border-[#323440] text-xs font-semibold transition-colors cursor-pointer"
+            >
+              {copiedEmail === 'soporte@guta.musica.ar' ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-[#93a887]" />
+                  <span className="text-[#93a887]">Copiado</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-[#e6cca0]" />
+                  <span>Copiar correo</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
-        <div className="natural-card p-4 rounded-xl flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-[#93a887]/15 text-[#93a887]">
-            <Radio className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-xs font-bold text-[#f3f1ec]">Entrevistas & Lives</h2>
-            <p className="text-[11px] text-[#8c887f]">Coberturas periodísticas, sesiones en vivo y crónicas de lanzamientos.</p>
-          </div>
-        </div>
+        {/* Canal 2: contacto@guta.musica.ar (Comercial, Prensa y Dudas Generales + Formulario) */}
+        <div className="natural-card p-6 sm:p-7 rounded-2xl border border-[#e6cca0]/35 bg-gradient-to-br from-[#1b1c22] to-[#15161a] flex flex-col justify-between gap-5 shadow-xl relative overflow-hidden">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#e6cca0]/15 border border-[#e6cca0]/30 text-[#e6cca0] text-[11px] font-bold uppercase tracking-wider">
+                <MessageSquare className="w-3.5 h-3.5" />
+                Formulario & Correo • Comercial y Prensa
+              </span>
+              <span className="text-[11px] font-mono text-[#e6cca0] font-semibold">
+                ● Respuesta en Gmail
+              </span>
+            </div>
 
-        <div className="natural-card p-4 rounded-xl flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-[#e6cca0]/15 text-[#e6cca0]">
-            <Calendar className="w-4 h-4" />
+            <h2 className="text-xl sm:text-2xl font-black text-[#f3f1ec]">
+              contacto@guta.musica.ar
+            </h2>
+
+            <p className="text-xs sm:text-sm text-[#aba79e] leading-relaxed">
+              <strong className="text-[#f3f1ec]">Consultas comerciales, prensa y dudas generales:</strong> utilizá el formulario de consultas aquí debajo o escribinos para auspicios publicitarios, notas de prensa, alianzas y consultas institucionales.
+            </p>
           </div>
-          <div>
-            <h2 className="text-xs font-bold text-[#f3f1ec]">Agenda de Shows</h2>
-            <p className="text-[11px] text-[#8c887f]">Difusión de tus fechas, peñas, festivales y recitales en todo el país.</p>
+
+          <div className="pt-2 flex flex-wrap items-center gap-2.5">
+            <a
+              href="#formulario-consultas"
+              onClick={() => setCategory('comercial')}
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#e6cca0] hover:bg-[#d9be91] text-[#151618] text-xs font-extrabold transition-all shadow-md shadow-[#e6cca0]/15"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Completar Formulario</span>
+            </a>
+
+            <a
+              href="mailto:contacto@guta.musica.ar?subject=Consulta%20General%20/%20Comercial%20-%20GUTA%20M%C3%9ASICA"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#22232a] hover:bg-[#2a2c35] text-[#f3f1ec] border border-[#323440] text-xs font-semibold transition-colors"
+            >
+              <Mail className="w-3.5 h-3.5 text-[#e6cca0]" />
+              <span>Abrir Correo</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={() => handleCopyEmail('contacto@guta.musica.ar')}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#22232a] hover:bg-[#2a2c35] text-[#aba79e] hover:text-[#f3f1ec] border border-[#323440] text-xs font-semibold transition-colors cursor-pointer"
+              title="Copiar contacto@guta.musica.ar"
+            >
+              {copiedEmail === 'contacto@guta.musica.ar' ? (
+                <Check className="w-3.5 h-3.5 text-[#93a887]" />
+              ) : (
+                <Copy className="w-3.5 h-3.5 text-[#e6cca0]" />
+              )}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Main Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {errorMessage && (
-          <div className="p-4 rounded-xl bg-[#c0909b]/15 border border-[#c0909b]/30 text-[#e6a8b4] text-xs flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        {/* 1. Datos del Artista */}
-        <div className="natural-card p-5 sm:p-7 rounded-2xl space-y-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
-            <Music2 className="w-3.5 h-3.5" /> 1. Identidad del Artista / Banda
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">
-                Nombre Artístico / Proyecto *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Ej: Serenata Gaucha, Valeria Soler, Kallpa 380..."
-                value={formData.stageName}
-                onChange={(e) => setFormData({ ...formData, stageName: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">
-                Ciudad / Localidad *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Ej: Cosquín, Rosario, San Telmo, Salta..."
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">
-                Provincia *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Ej: Córdoba, Santa Fe, Jujuy, CABA..."
-                value={formData.province}
-                onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-
-            {/* Genre Selectors */}
-            <div className="sm:col-span-2 space-y-2">
-              <label className="text-xs text-[#aba79e] font-semibold block">
-                Géneros & Estilos Musicales (seleccioná uno o varios) *
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {GENRES.map((genre) => {
-                  const isSelected = formData.genres.includes(genre);
-                  return (
-                    <button
-                      key={genre}
-                      type="button"
-                      onClick={() => handleGenreToggle(genre)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#d97d64] text-[#151618] border-[#d97d64] shadow-md shadow-[#d97d64]/20'
-                          : 'bg-[#18191e] text-[#aba79e] border-[#2e3039] hover:border-[#424554] hover:text-[#f3f1ec]'
-                      }`}
-                    >
-                      {genre}
-                    </button>
-                  );
-                })}
+      {/* Bloque Principal: Formulario de Consultas + Accesos Rápidos */}
+      <div id="formulario-consultas" className="grid grid-cols-1 lg:grid-cols-12 gap-8 scroll-mt-24">
+        {/* Columna Izquierda: Formulario */}
+        <div className="lg:col-span-8 natural-card p-6 sm:p-8 rounded-2xl border border-[#2e3039] shadow-2xl">
+          {submittedTicket ? (
+            <div className="py-10 px-4 text-center space-y-5">
+              <div className="w-16 h-16 rounded-full bg-[#93a887]/20 border border-[#93a887]/35 text-[#93a887] flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <span className="text-xs uppercase font-bold tracking-wider text-[#e6cca0]">
+                  Consulta Enviada • Ref: {submittedTicket.ticketId}
+                </span>
+                <h3 className="text-2xl font-black text-[#f3f1ec]">
+                  ¡Gracias por escribirnos, {name}!
+                </h3>
+                <p className="text-xs sm:text-sm text-[#aba79e] max-w-md mx-auto leading-relaxed">
+                  Tu mensaje fue derivado directamente a nuestra casilla humana{' '}
+                  <strong className="text-[#e6cca0]">{submittedTicket.targetInbox}</strong>. Te responderemos a{' '}
+                  <strong className="text-[#f3f1ec]">{email}</strong> a la brevedad.
+                </p>
+              </div>
+              <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubmittedTicket(null);
+                    setMessage('');
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Enviar otra consulta
+                </button>
+                <Link
+                  href="/"
+                  className="px-5 py-2.5 rounded-xl bg-[#222329] hover:bg-[#282a32] text-[#aba79e] text-xs font-semibold border border-[#31333d] transition-colors"
+                >
+                  Volver al Inicio
+                </Link>
               </div>
             </div>
-
-            <div className="sm:col-span-2">
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">
-                Reseña Biográfica / Propuesta Artística *
-              </label>
-              <textarea
-                rows={4}
-                required
-                placeholder="Contanos brevemente sobre tus canciones, integrantes, influencias, lanzamientos recientes y la historia de tu proyecto..."
-                value={formData.bio}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                className="w-full p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs leading-relaxed focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* 2. Fotos & Multimedia */}
-        <div className="natural-card p-5 sm:p-7 rounded-2xl space-y-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
-            <UploadCloud className="w-3.5 h-3.5" /> 2. Foto del Artista o Banda
-          </h2>
-
-          <div className="space-y-3">
-            <label className="text-xs text-[#aba79e] font-semibold block">
-              Subir Foto Oficial / Flyer de Prensa (desde tu celular o PC)
-            </label>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <label className="flex-1 w-full flex items-center justify-center gap-2.5 p-4 rounded-xl border border-dashed border-[#3c3f4e] hover:border-[#e6cca0] bg-[#18191e] hover:bg-[#202228] cursor-pointer transition-colors text-xs font-semibold text-[#f3f1ec]">
-                <UploadCloud className="w-5 h-5 text-[#e6cca0]" />
-                <span>
-                  {selectedFile ? selectedFile.name : 'Elegir archivo de imagen (JPG, PNG)'}
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-[#262832]">
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black text-[#f3f1ec]">
+                    Formulario de Consultas
+                  </h3>
+                  <p className="text-xs text-[#8c887f]">
+                    Elegí el motivo de tu mensaje para derivarlo al canal correspondiente.
+                  </p>
+                </div>
+                <span className="text-[11px] font-mono px-3 py-1 rounded-lg bg-[#18191e] border border-[#2d2f38] text-[#e6cca0]">
+                  Destino: <strong>{activeCategoryObj.inbox}</strong>
                 </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
+              </div>
 
-              {filePreview && (
-                <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#2e3039] flex-shrink-0">
-                  <Image src={filePreview} alt="Preview" fill sizes="80px" className="object-cover" />
+              {errorMessage && (
+                <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/30 text-red-200 text-xs flex items-center gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <span>{errorMessage}</span>
                 </div>
               )}
-            </div>
 
-            <div className="pt-2">
-              <label className="text-[11px] text-[#78746c] block mb-1">
-                O ingresá una URL directa de imagen si ya la tenés online:
-              </label>
-              <input
-                type="text"
-                placeholder="https://..."
-                value={formData.photoUrl}
-                onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs font-mono focus:outline-none focus:border-[#d97d64]"
-              />
+              {/* Selector de motivo */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[#aba79e] block">
+                  Motivo de la consulta *
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {CATEGORIES.map((item) => {
+                    const Icon = item.icon;
+                    const isSelected = category === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setCategory(item.id)}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                          isSelected
+                            ? 'bg-[#23252e] border-[#d97d64] text-[#f3f1ec] shadow-md shadow-[#d97d64]/10'
+                            : 'bg-[#18191e] border-[#2d2f38] text-[#aba79e] hover:border-[#3e414f] hover:text-[#f3f1ec]'
+                        }`}
+                      >
+                        <div
+                          className={`p-2 rounded-lg shrink-0 mt-0.5 ${
+                            isSelected
+                              ? 'bg-[#d97d64]/20 text-[#d97d64]'
+                              : 'bg-[#22232a] text-[#8c887f]'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold leading-snug">{item.label}</div>
+                          <div className="text-[11px] text-[#8c887f] mt-0.5 line-clamp-2">
+                            {item.description}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Datos personales */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-[#aba79e] font-semibold block mb-1">
+                    Tu Nombre y Apellido *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej: Martín Gómez"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-[#aba79e] font-semibold block mb-1">
+                    Tu Correo Electrónico (para responderte) *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="tu@correo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-[#aba79e] font-semibold block mb-1">
+                    WhatsApp / Teléfono (opcional)
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="+54 9 11 ..."
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-[#aba79e] font-semibold block mb-1">
+                    Banda, Proyecto, Medio o Marca (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Nombre de tu banda, productora o comercio"
+                    value={projectOrCompany}
+                    onChange={(e) => setProjectOrCompany(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
+                  />
+                </div>
+              </div>
+
+              {/* Mensaje */}
+              <div>
+                <label className="text-xs text-[#aba79e] font-semibold block mb-1">
+                  Detalle de tu consulta *
+                </label>
+                <textarea
+                  rows={5}
+                  required
+                  placeholder="Escribí aquí tu consulta comercial, propuesta de prensa, duda general o pedido de asistencia..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="w-full p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs leading-relaxed focus:outline-none focus:border-[#d97d64] resize-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3.5 px-6 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-[#d97d64]/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Enviando consulta...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Enviar Consulta a {activeCategoryObj.inbox}</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+        </div>
+
+        {/* Columna Derecha: Guía de Canales y Accesos Directos */}
+        <div className="lg:col-span-4 space-y-5">
+          <div className="natural-card p-6 rounded-2xl border border-[#2e3039] space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-wider text-[#e6cca0]">
+              👤 Resumen de Canales Humanos
+            </h3>
+            <div className="space-y-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2a2c35] space-y-1">
+                <span className="text-[11px] font-bold uppercase text-[#e6cca0] block">
+                  Comercial, Prensa & Dudas
+                </span>
+                <a
+                  href="mailto:contacto@guta.musica.ar"
+                  className="text-sm font-bold text-[#f3f1ec] hover:text-[#d97d64] transition-colors block break-all"
+                >
+                  contacto@guta.musica.ar
+                </a>
+                <p className="text-[11px] text-[#8c887f]">
+                  Publicidad, notas periodísticas, alianzas culturales y consultas generales.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2a2c35] space-y-1">
+                <span className="text-[11px] font-bold uppercase text-[#d97d64] block">
+                  Asistencia Personalizada al Artista
+                </span>
+                <a
+                  href="mailto:soporte@guta.musica.ar"
+                  className="text-sm font-bold text-[#f3f1ec] hover:text-[#d97d64] transition-colors block break-all"
+                >
+                  soporte@guta.musica.ar
+                </a>
+                <p className="text-[11px] text-[#8c887f]">
+                  Vía directa para artistas registrados, ayuda con perfiles, accesos y soporte técnico.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Accesos rápidos de autogestión */}
+          <div className="natural-card p-6 rounded-2xl border border-[#2e3039] space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#f3f1ec] flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#d97d64]" />
+              <span>¿Querés sumarte a la plataforma?</span>
+            </h3>
+            <p className="text-xs text-[#8c887f] leading-relaxed">
+              Si buscás crear tu perfil en GUTA MÚSICA, podés hacerlo directamente desde nuestros portales de autogestión:
+            </p>
+            <div className="space-y-2 pt-1">
+              <Link
+                href="/registro"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#18191e] hover:bg-[#22232a] border border-[#2e3039] hover:border-[#d97d64]/50 text-xs font-bold text-[#f3f1ec] flex items-center justify-between transition-colors"
+              >
+                <span>🎸 Sumar mi Banda / Proyecto</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-[#d97d64]" />
+              </Link>
+              <Link
+                href="/sumar-profesional"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#18191e] hover:bg-[#22232a] border border-[#2e3039] hover:border-[#5ce487]/50 text-xs font-bold text-[#f3f1ec] flex items-center justify-between transition-colors"
+              >
+                <span>🎧 Sumarme como Profesional / Servicio</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-[#5ce487]" />
+              </Link>
+              <Link
+                href="/sumar-auspicio"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#18191e] hover:bg-[#22232a] border border-[#2e3039] hover:border-[#e6cca0]/50 text-xs font-bold text-[#f3f1ec] flex items-center justify-between transition-colors"
+              >
+                <span>💎 Auspiciar en GUTA MÚSICA</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-[#e6cca0]" />
+              </Link>
             </div>
           </div>
         </div>
-
-        {/* 3. Enlaces & Redes */}
-        <div className="natural-card p-5 sm:p-7 rounded-2xl space-y-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
-            <LinkIcon className="w-3.5 h-3.5" /> 3. Dónde Escucharte (Enlaces)
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">Spotify URL</label>
-              <input
-                type="text"
-                placeholder="https://open.spotify.com/artist/..."
-                value={formData.spotify}
-                onChange={(e) => setFormData({ ...formData, spotify: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">YouTube URL (Canal o Videoclip)</label>
-              <input
-                type="text"
-                placeholder="https://youtube.com/@..."
-                value={formData.youtube}
-                onChange={(e) => setFormData({ ...formData, youtube: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">Instagram URL</label>
-              <input
-                type="text"
-                placeholder="https://instagram.com/..."
-                value={formData.instagram}
-                onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">TikTok / Otras Redes</label>
-              <input
-                type="text"
-                placeholder="https://tiktok.com/@..."
-                value={formData.tiktok}
-                onChange={(e) => setFormData({ ...formData, tiktok: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* 4. Datos de Contacto Directo */}
-        <div className="natural-card p-5 sm:p-7 rounded-2xl space-y-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-2">
-            <HeartHandshake className="w-3.5 h-3.5" /> 4. Contacto del Responsable
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">
-                Nombre de Contacto / Manager *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Tu nombre o representante"
-                value={formData.contactName}
-                onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">
-                Correo Electrónico *
-              </label>
-              <input
-                type="email"
-                required
-                placeholder="banda@gmail.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">
-                WhatsApp / Teléfono
-              </label>
-              <input
-                type="tel"
-                placeholder="+54 9 11 ..."
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-
-            <div className="sm:col-span-3">
-              <label className="text-xs text-[#aba79e] font-semibold block mb-1">
-                Mensaje adicional para la redacción de GUTA (opcional)
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Contanos si tenés próximas fechas, lanzamiento de disco o si te gustaría participar de una sesión acústica..."
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Submit Action */}
-        <div className="text-center pt-2">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] font-bold text-sm shadow-xl shadow-[#d97d64]/25 transition-all flex items-center justify-center gap-2.5 mx-auto cursor-pointer disabled:opacity-50 active:scale-[0.99]"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Enviando postulación...</span>
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                <span>Enviar Postulación a GUTA MÚSICA</span>
-              </>
-            )}
-          </button>
-          <p className="text-[11px] text-[#78746c] mt-2.5">
-            La postulación y difusión en GUTA es 100% gratuita y comunitaria.
-          </p>
-        </div>
-      </form>
+      </div>
     </div>
   );
 };

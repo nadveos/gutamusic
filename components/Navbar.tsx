@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Radio, Music2, Calendar, Mic2, BookOpen, Menu, X, Search, Sparkles, Headphones } from 'lucide-react';
+import { Radio, Music2, Calendar, Mic2, BookOpen, Menu, X, Search, Sparkles, Headphones, Mail } from 'lucide-react';
 import { ShareButton } from './ShareButton';
 import { OfficialSocialsBar } from './OfficialSocialsBar';
 import { SearchModal } from './SearchModal';
@@ -53,7 +53,7 @@ export const Navbar: React.FC = () => {
     { href: '/profesionales', label: 'Profesionales & Servicios', icon: Headphones },
     { href: '/entrevistas', label: 'Entrevistas & Lives', icon: Radio },
     { href: '/efemerides', label: 'Efemérides', icon: BookOpen },
-    { href: '/registro', label: 'Sumá tu Banda', icon: Sparkles },
+    { href: '/contacto', label: 'Contacto', icon: Mail },
   ];
 
   const monthNames = [
