@@ -3,7 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminLoginForm } from './AdminLoginForm';
-import { pb, isSuperUserAuthenticated, logoutSuperUser } from '../../lib/pocketbase';
+import {
+  pb,
+  isSuperUserAuthenticated,
+  logoutSuperUser,
+  hasActiveAdminSessionFlag,
+  refreshSuperUserSessionFromServer,
+  markAdminSessionActive,
+} from '../../lib/pocketbase';
 import { Menu, Music2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -16,18 +23,40 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
     const valid = isSuperUserAuthenticated();
     setIsAuthenticated(valid);
 
-    // Subscribe to PocketBase auth changes
-    const unsub = pb.authStore.onChange((token, model) => {
-      const isAuth = Boolean(token && pb.authStore.isValid);
+    // Si la sesión admin de 30 días está activa pero el token de PocketBase expiró o se entró con Passkey, renovarlo silenciosamente
+    if (valid && !pb.authStore.isValid) {
+      refreshSuperUserSessionFromServer();
+    }
+
+    // Subscribe to PocketBase auth changes without kicking out an active 30-day admin session
+    const unsub = pb.authStore.onChange((token) => {
+      const isAuth = Boolean((token && pb.authStore.isValid) || hasActiveAdminSessionFlag());
       setIsAuthenticated(isAuth);
     });
 
+    // Keep-alive automático cada 10 minutos y al recuperar el foco de la pestaña
+    const keepAliveInterval = setInterval(() => {
+      if (hasActiveAdminSessionFlag()) {
+        refreshSuperUserSessionFromServer();
+      }
+    }, 10 * 60 * 1000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && hasActiveAdminSessionFlag() && !pb.authStore.isValid) {
+        refreshSuperUserSessionFromServer();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       unsub();
+      clearInterval(keepAliveInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
   const handleLoginSuccess = () => {
+    markAdminSessionActive();
     setIsAuthenticated(true);
   };
 

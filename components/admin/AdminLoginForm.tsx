@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { loginAsSuperUser } from '../../lib/pocketbase';
+import {
+  loginAsSuperUser,
+  refreshSuperUserSessionFromServer,
+  markAdminSessionActive,
+} from '../../lib/pocketbase';
 import {
   is2FAEnabled,
   hasRegisteredPasskey,
@@ -61,10 +65,12 @@ export const AdminLoginForm: React.FC<AdminLoginFormProps> = ({ onLoginSuccess }
     try {
       const res = await authenticateWithPasskey();
       if (res.success) {
+        markAdminSessionActive();
+        await refreshSuperUserSessionFromServer();
         setSuccessMsg('¡Identidad verificada con Windows Hello / Biométrica!');
         setTimeout(() => {
           onLoginSuccess();
-        }, 600);
+        }, 400);
       } else {
         setErrorMsg(res.error || 'Verificación de llave cancelada.');
       }

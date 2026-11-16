@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import PocketBase from 'pocketbase';
 import { POCKETBASE_URL, getServerAdminPb } from '../../../../lib/pocketbase';
+import {
+  getProfessionalsFromDb,
+  updateProfessionalInDb,
+} from '../../../../lib/services/professionalsService';
+import { getProfessionalCategoryInfo } from '../../../../lib/constants/professionalCategories';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,18 +106,50 @@ export async function GET() {
       console.warn('⚠️ No se pudieron obtener artistas:', aErr?.message);
     }
 
-    // 3. Cruzar usuario con artista asociado (por owner id o contactEmail)
+    // 3. Obtener lista de profesionales para cruzar relación
+    let profList: any[] = [];
+    try {
+      profList = await getProfessionalsFromDb();
+    } catch (pErr: any) {
+      console.warn('⚠️ No se pudieron obtener profesionales:', pErr?.message);
+    }
+
+    // 4. Cruzar usuario con artista o profesional asociado
     const users = usersList.map((u: any) => {
+      const cleanUserEmail = (u.email || '').trim().toLowerCase();
+      const cleanUserName = (u.name || '').trim().toLowerCase();
+
       const linkedArtist = artistList.find(
         (a: any) =>
           a.owner === u.id ||
-          (a.contactEmail && a.contactEmail.toLowerCase() === (u.email || '').toLowerCase())
+          (a.contactEmail && a.contactEmail.trim().toLowerCase() === cleanUserEmail)
       );
+
+      const linkedProf = profList.find(
+        (p: any) =>
+          p.userId === u.id ||
+          (p.email && p.email.trim().toLowerCase() === cleanUserEmail) ||
+          (cleanUserName &&
+            p.name &&
+            (p.name.trim().toLowerCase() === cleanUserName ||
+              cleanUserName.includes(p.name.trim().toLowerCase()) ||
+              p.name.trim().toLowerCase().includes(cleanUserName)))
+      );
+
+      const accountRole: 'artist' | 'professional' | 'sponsor' =
+        linkedProf || u.role === 'professional'
+          ? 'professional'
+          : u.role === 'sponsor'
+          ? 'sponsor'
+          : 'artist';
+
+      const catInfo = linkedProf ? getProfessionalCategoryInfo(linkedProf.roleCategory) : null;
 
       return {
         id: u.id,
         email: u.email || '',
         name: u.name || '',
+        role: accountRole,
         verified: Boolean(u.verified),
         created: u.created ? u.created.split(' ')[0] : '',
         updated: u.updated ? u.updated.split(' ')[0] : '',
@@ -127,6 +164,19 @@ export async function GET() {
               isExplicitOwner: linkedArtist.owner === u.id,
             }
           : null,
+        professional: linkedProf
+          ? {
+              id: linkedProf.id,
+              name: linkedProf.name || 'Profesional',
+              slug: linkedProf.slug || linkedProf.id,
+              roleCategory: linkedProf.roleCategory,
+              categoryLabel: catInfo?.label || 'Profesional',
+              specialty: linkedProf.specialty || '',
+              photoUrl: linkedProf.photoUrl || '',
+              active: Boolean(linkedProf.active),
+              isExplicitOwner: linkedProf.userId === u.id,
+            }
+          : null,
       };
     });
 
@@ -139,10 +189,22 @@ export async function GET() {
       photoUrl: a.photoUrl || '',
     }));
 
+    const professionals = profList.map((p: any) => ({
+      id: p.id,
+      name: p.name || 'Sin Nombre',
+      slug: p.slug || p.id,
+      roleCategory: p.roleCategory || 'productor_musical',
+      categoryLabel: getProfessionalCategoryInfo(p.roleCategory).label,
+      userId: p.userId || '',
+      email: p.email || '',
+      photoUrl: p.photoUrl || '',
+    }));
+
     return NextResponse.json({
       success: true,
       users,
       artists,
+      professionals,
     });
   } catch (err: any) {
     console.error('❌ Error en GET /api/admin/users:', err);
@@ -250,6 +312,45 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Artista desvinculado.',
+      });
+    }
+
+    // 4b. Vincular usuario a profesional
+    if (action === 'link_professional') {
+      const { userId, professionalId } = body;
+      if (!userId || !professionalId) {
+        return NextResponse.json(
+          { success: false, error: 'Falta userId o professionalId' },
+          { status: 400 }
+        );
+      }
+
+      await updateProfessionalInDb(professionalId, { userId });
+      try {
+        await adminPb.collection('users').update(userId, { role: 'professional' });
+      } catch {}
+
+      return NextResponse.json({
+        success: true,
+        message: 'Ficha de profesional vinculada exitosamente a este usuario.',
+      });
+    }
+
+    // 4c. Desvincular profesional
+    if (action === 'unlink_professional') {
+      const { professionalId } = body;
+      if (!professionalId) {
+        return NextResponse.json(
+          { success: false, error: 'Falta professionalId' },
+          { status: 400 }
+        );
+      }
+
+      await updateProfessionalInDb(professionalId, { userId: '' });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Ficha de profesional desvinculada.',
       });
     }
 

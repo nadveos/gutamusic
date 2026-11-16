@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   Users,
   UserCheck,
@@ -19,8 +18,8 @@ import {
   CheckCircle2,
   ExternalLink,
   ShieldAlert,
-  Sparkles,
   Music2,
+  Headphones,
   Calendar,
   X,
   Check,
@@ -36,15 +35,29 @@ interface LinkedArtist {
   isExplicitOwner?: boolean;
 }
 
+interface LinkedProfessional {
+  id: string;
+  name: string;
+  slug: string;
+  roleCategory: string;
+  categoryLabel: string;
+  specialty?: string;
+  photoUrl?: string;
+  active?: boolean;
+  isExplicitOwner?: boolean;
+}
+
 interface UserItem {
   id: string;
   email: string;
   name: string;
+  role?: 'artist' | 'professional' | 'sponsor';
   verified: boolean;
   created: string;
   updated: string;
   avatar?: string;
   artist: LinkedArtist | null;
+  professional: LinkedProfessional | null;
 }
 
 interface AvailableArtist {
@@ -56,20 +69,38 @@ interface AvailableArtist {
   photoUrl?: string;
 }
 
+interface AvailableProfessional {
+  id: string;
+  name: string;
+  slug: string;
+  roleCategory: string;
+  categoryLabel: string;
+  userId: string;
+  email?: string;
+  photoUrl?: string;
+}
+
 export function AdminUsuariosClient() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [artists, setArtists] = useState<AvailableArtist[]>([]);
+  const [professionals, setProfessionals] = useState<AvailableProfessional[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterTab, setFilterTab] = useState<'all' | 'verified' | 'unverified' | 'linked' | 'unlinked'>('all');
+  const [filterTab, setFilterTab] = useState<
+    'all' | 'artists' | 'professionals' | 'linked' | 'unlinked' | 'unverified'
+  >('all');
 
   // Toasts
-  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  const [toast, setToast] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
 
-  // Modal Vincular Artista
+  // Modal Vincular (Artista o Profesional)
   const [linkingUser, setLinkingUser] = useState<UserItem | null>(null);
-  const [artistSearchQuery, setArtistSearchQuery] = useState('');
+  const [linkingMode, setLinkingMode] = useState<'artist' | 'professional'>('artist');
+  const [linkSearchQuery, setLinkSearchQuery] = useState('');
 
   // Modal Nuevo Usuario
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -100,10 +131,11 @@ export function AdminUsuariosClient() {
       if (data.success) {
         setUsers(data.users || []);
         setArtists(data.artists || []);
+        setProfessionals(data.professionals || []);
       } else {
         showToast('error', data.error || 'Error al cargar usuarios.');
       }
-    } catch (err: any) {
+    } catch {
       showToast('error', 'Error al conectar con la base de datos.');
     } finally {
       setLoading(false);
@@ -122,14 +154,21 @@ export function AdminUsuariosClient() {
         !query ||
         u.email.toLowerCase().includes(query) ||
         u.name.toLowerCase().includes(query) ||
-        (u.artist && u.artist.stageName.toLowerCase().includes(query));
+        (u.artist && u.artist.stageName.toLowerCase().includes(query)) ||
+        (u.professional &&
+          (u.professional.name.toLowerCase().includes(query) ||
+            u.professional.categoryLabel.toLowerCase().includes(query)));
 
       if (!matchesSearch) return false;
 
-      if (filterTab === 'verified') return u.verified;
+      const isProf = Boolean(u.professional || u.role === 'professional');
+      const hasAnyLink = Boolean(u.artist || u.professional);
+
+      if (filterTab === 'professionals') return isProf;
+      if (filterTab === 'artists') return !isProf;
+      if (filterTab === 'linked') return hasAnyLink;
+      if (filterTab === 'unlinked') return !hasAnyLink;
       if (filterTab === 'unverified') return !u.verified;
-      if (filterTab === 'linked') return Boolean(u.artist);
-      if (filterTab === 'unlinked') return !u.artist;
 
       return true;
     });
@@ -140,8 +179,19 @@ export function AdminUsuariosClient() {
     const total = users.length;
     const verified = users.filter((u) => u.verified).length;
     const unverified = total - verified;
-    const linked = users.filter((u) => Boolean(u.artist)).length;
-    return { total, verified, unverified, linked };
+    const linkedArtists = users.filter((u) => Boolean(u.artist)).length;
+    const linkedProfessionals = users.filter((u) =>
+      Boolean(u.professional || u.role === 'professional')
+    ).length;
+    const totalLinked = users.filter((u) => Boolean(u.artist || u.professional)).length;
+    return {
+      total,
+      verified,
+      unverified,
+      linkedArtists,
+      linkedProfessionals,
+      totalLinked,
+    };
   }, [users]);
 
   // Acciones: Toggle Verificado
@@ -166,7 +216,7 @@ export function AdminUsuariosClient() {
       } else {
         showToast('error', data.error || 'Error al cambiar estado.');
       }
-    } catch (err: any) {
+    } catch {
       showToast('error', 'Error al procesar la solicitud.');
     } finally {
       setActionLoadingId(null);
@@ -191,7 +241,7 @@ export function AdminUsuariosClient() {
       } else {
         showToast('error', data.error || 'Error enviando correo de reseteo.');
       }
-    } catch (err: any) {
+    } catch {
       showToast('error', 'Error de conexión.');
     } finally {
       setActionLoadingId(null);
@@ -220,7 +270,36 @@ export function AdminUsuariosClient() {
       } else {
         showToast('error', data.error || 'Error al vincular artista.');
       }
-    } catch (err: any) {
+    } catch {
+      showToast('error', 'Error de red.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Acciones: Vincular Profesional
+  const handleLinkProfessional = async (professionalId: string) => {
+    if (!linkingUser) return;
+    setActionLoadingId(linkingUser.id);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'link_professional',
+          userId: linkingUser.id,
+          professionalId,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('success', data.message);
+        setLinkingUser(null);
+        loadData();
+      } else {
+        showToast('error', data.error || 'Error al vincular profesional.');
+      }
+    } catch {
       showToast('error', 'Error de red.');
     } finally {
       setActionLoadingId(null);
@@ -230,7 +309,8 @@ export function AdminUsuariosClient() {
   // Acciones: Desvincular Artista
   const handleUnlinkArtist = async (user: UserItem) => {
     if (!user.artist?.id) return;
-    if (!confirm(`¿Desvincular a "${user.artist.stageName}" de la cuenta ${user.email}?`)) return;
+    if (!confirm(`¿Desvincular artista "${user.artist.stageName}" de la cuenta ${user.email}?`))
+      return;
 
     setActionLoadingId(user.id);
     try {
@@ -249,7 +329,41 @@ export function AdminUsuariosClient() {
       } else {
         showToast('error', data.error || 'Error al desvincular.');
       }
-    } catch (err: any) {
+    } catch {
+      showToast('error', 'Error de red.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Acciones: Desvincular Profesional
+  const handleUnlinkProfessional = async (user: UserItem) => {
+    if (!user.professional?.id) return;
+    if (
+      !confirm(
+        `¿Desvincular profesional "${user.professional.name}" de la cuenta ${user.email}?`
+      )
+    )
+      return;
+
+    setActionLoadingId(user.id);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'unlink_professional',
+          professionalId: user.professional.id,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('success', data.message);
+        loadData();
+      } else {
+        showToast('error', data.error || 'Error al desvincular profesional.');
+      }
+    } catch {
       showToast('error', 'Error de red.');
     } finally {
       setActionLoadingId(null);
@@ -277,7 +391,7 @@ export function AdminUsuariosClient() {
       } else {
         showToast('error', data.error || 'Error al eliminar usuario.');
       }
-    } catch (err: any) {
+    } catch {
       showToast('error', 'Error de conexión.');
     } finally {
       setActionLoadingId(null);
@@ -331,7 +445,7 @@ export function AdminUsuariosClient() {
         setCreateModalError(errorMsg);
         showToast('error', errorMsg);
       }
-    } catch (err: any) {
+    } catch {
       const errorMsg = 'Error de red o conexión al servidor.';
       setCreateModalError(errorMsg);
       showToast('error', errorMsg);
@@ -371,7 +485,7 @@ export function AdminUsuariosClient() {
       {/* Header */}
       <AdminHeader
         title="Gestión de Cuentas & Usuarios"
-        subtitle="Administrá las cuentas de artistas registradas, verificación OTP, restablecimiento de accesos y vinculación con fichas del catálogo."
+        subtitle="Administrá las cuentas de artistas y profesionales registradas, verificación OTP y vinculación con sus fichas."
         actionText="Nuevo Usuario"
         onActionClick={() => {
           setCreateModalError(null);
@@ -399,18 +513,18 @@ export function AdminUsuariosClient() {
 
         <div className="natural-card p-4 rounded-xl border border-[#2a2c35] space-y-1">
           <div className="flex items-center justify-between text-xs text-[#aba79e]">
-            <span>Pendientes OTP</span>
-            <UserX className="w-4 h-4 text-[#e6cca0]" />
+            <span>Artistas Vinculados</span>
+            <Music2 className="w-4 h-4 text-[#d97d64]" />
           </div>
-          <div className="text-2xl font-black text-[#e6cca0]">{stats.unverified}</div>
+          <div className="text-2xl font-black text-[#d97d64]">{stats.linkedArtists}</div>
         </div>
 
         <div className="natural-card p-4 rounded-xl border border-[#2a2c35] space-y-1">
           <div className="flex items-center justify-between text-xs text-[#aba79e]">
-            <span>Con Artista Vinculado</span>
-            <Music2 className="w-4 h-4 text-[#d97d64]" />
+            <span>Profesionales & Servicios</span>
+            <Headphones className="w-4 h-4 text-[#5ce487]" />
           </div>
-          <div className="text-2xl font-black text-[#d97d64]">{stats.linked}</div>
+          <div className="text-2xl font-black text-[#5ce487]">{stats.linkedProfessionals}</div>
         </div>
       </div>
 
@@ -422,7 +536,7 @@ export function AdminUsuariosClient() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar por email, nombre o banda..."
+            placeholder="Buscar por email, nombre, banda, DJ o estudio..."
             className="w-full pl-10 pr-4 py-2 text-xs rounded-lg bg-[#202228] border border-[#2d2f38] text-[#f3f1ec] placeholder-[#78746c] focus:outline-none focus:border-[#d97d64]"
           />
         </div>
@@ -431,15 +545,24 @@ export function AdminUsuariosClient() {
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           {[
             { id: 'all', label: `Todos (${users.length})` },
-            { id: 'verified', label: `Verificados (${stats.verified})` },
-            { id: 'unverified', label: `Pendientes (${stats.unverified})` },
-            { id: 'linked', label: `Con Artista (${stats.linked})` },
-            { id: 'unlinked', label: `Sin Artista (${stats.total - stats.linked})` },
+            {
+              id: 'artists',
+              label: `🎸 Artistas (${users.length - stats.linkedProfessionals})`,
+            },
+            {
+              id: 'professionals',
+              label: `🎧 Profesionales (${stats.linkedProfessionals})`,
+            },
+            { id: 'linked', label: `Con Ficha (${stats.totalLinked})` },
+            {
+              id: 'unlinked',
+              label: `Sin Ficha (${stats.total - stats.totalLinked})`,
+            },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setFilterTab(tab.id as any)}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
                 filterTab === tab.id
                   ? 'bg-[#d97d64] text-[#121316] font-bold'
                   : 'bg-[#202228] text-[#aba79e] hover:text-[#f3f1ec] border border-[#2d2f38]'
@@ -452,7 +575,7 @@ export function AdminUsuariosClient() {
           <button
             onClick={loadData}
             title="Refrescar datos"
-            className="p-2 rounded-lg bg-[#202228] border border-[#2d2f38] text-[#aba79e] hover:text-[#f3f1ec] transition-colors"
+            className="p-2 rounded-lg bg-[#202228] border border-[#2d2f38] text-[#aba79e] hover:text-[#f3f1ec] transition-colors cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#d97d64]' : ''}`} />
           </button>
@@ -480,7 +603,7 @@ export function AdminUsuariosClient() {
                   <th className="py-3 px-4">Usuario / Email</th>
                   <th className="py-3 px-4">Registro</th>
                   <th className="py-3 px-4">Estado OTP</th>
-                  <th className="py-3 px-4">Ficha de Artista</th>
+                  <th className="py-3 px-4">Ficha Asignada (Artista / Profesional)</th>
                   <th className="py-3 px-4 text-right">Acciones de Soporte</th>
                 </tr>
               </thead>
@@ -490,6 +613,7 @@ export function AdminUsuariosClient() {
                   const initials = (u.name || u.email.split('@')[0])
                     .slice(0, 2)
                     .toUpperCase();
+                  const isProfRole = Boolean(u.professional || u.role === 'professional');
 
                   return (
                     <tr
@@ -499,13 +623,32 @@ export function AdminUsuariosClient() {
                       {/* Usuario */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-[#272931] border border-[#353844] flex items-center justify-center font-bold text-xs text-[#e6cca0]">
+                          <div
+                            className={`w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-xs ${
+                              isProfRole
+                                ? 'bg-[#152820] border-[#2d5842] text-[#5ce487]'
+                                : 'bg-[#272931] border-[#353844] text-[#e6cca0]'
+                            }`}
+                          >
                             {initials}
                           </div>
                           <div className="space-y-0.5">
-                            <span className="font-bold text-[#f3f1ec] block">
-                              {u.name || 'Sin nombre'}
-                            </span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-[#f3f1ec]">
+                                {u.name || 'Sin nombre'}
+                              </span>
+                              {isProfRole ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#5ce487]/15 border border-[#5ce487]/35 text-[10px] font-bold text-[#5ce487]">
+                                  <Headphones className="w-2.5 h-2.5" />
+                                  {u.professional?.categoryLabel || 'Profesional'}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#d97d64]/12 border border-[#d97d64]/30 text-[10px] font-semibold text-[#d97d64]">
+                                  <Music2 className="w-2.5 h-2.5" />
+                                  Artista
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center gap-1.5 text-[11px] text-[#aba79e]">
                               <Mail className="w-3 h-3 text-[#78746c]" />
                               <span>{u.email}</span>
@@ -528,7 +671,7 @@ export function AdminUsuariosClient() {
                           onClick={() => handleToggleVerified(u)}
                           disabled={isActionBusy}
                           title="Hacé clic para alternar verificación manual"
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer ${
                             u.verified
                               ? 'bg-[#18231c] text-[#93a887] border-[#3a5840] hover:bg-[#202e25]'
                               : 'bg-[#292218] text-[#e6cca0] border-[#5e4b2d] hover:bg-[#382e20]'
@@ -548,9 +691,44 @@ export function AdminUsuariosClient() {
                         </button>
                       </td>
 
-                      {/* Artista Vinculado */}
+                      {/* Ficha Asignada (Artista o Profesional) */}
                       <td className="py-3.5 px-4">
-                        {u.artist ? (
+                        {u.professional ? (
+                          <div className="flex items-center gap-2">
+                            {u.professional.photoUrl ? (
+                              <img
+                                src={u.professional.photoUrl}
+                                alt={u.professional.name}
+                                className="w-6 h-6 rounded-full object-cover border border-[#2d5842]"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-[#152820] flex items-center justify-center text-[#5ce487]">
+                                <Headphones className="w-3 h-3" />
+                              </div>
+                            )}
+                            <div>
+                              <Link
+                                href={`/profesionales/${u.professional.slug}`}
+                                target="_blank"
+                                className="font-bold text-[#f3f1ec] hover:text-[#5ce487] inline-flex items-center gap-1 group/prof"
+                              >
+                                <span>{u.professional.name}</span>
+                                <ExternalLink className="w-2.5 h-2.5 opacity-60 group-hover/prof:opacity-100" />
+                              </Link>
+                              <span className="block text-[10px] text-[#5ce487]">
+                                🎧 {u.professional.categoryLabel}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleUnlinkProfessional(u)}
+                              disabled={isActionBusy}
+                              title="Desvincular ficha de profesional"
+                              className="ml-1 text-[#78746c] hover:text-[#e06c75] p-1 rounded transition-colors cursor-pointer"
+                            >
+                              <Unlink className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : u.artist ? (
                           <div className="flex items-center gap-2">
                             {u.artist.photoUrl ? (
                               <img
@@ -573,29 +751,45 @@ export function AdminUsuariosClient() {
                                 <ExternalLink className="w-2.5 h-2.5 opacity-60 group-hover/art:opacity-100" />
                               </Link>
                               <span className="block text-[10px] text-[#78746c]">
-                                {u.artist.isExplicitOwner ? 'Propietario asignado' : 'Coincidencia por email'}
+                                {u.artist.isExplicitOwner
+                                  ? '🎸 Propietario asignado'
+                                  : '🎸 Coincidencia por email'}
                               </span>
                             </div>
                             <button
                               onClick={() => handleUnlinkArtist(u)}
                               disabled={isActionBusy}
                               title="Desvincular artista"
-                              className="ml-1 text-[#78746c] hover:text-[#e06c75] p-1 rounded transition-colors"
+                              className="ml-1 text-[#78746c] hover:text-[#e06c75] p-1 rounded transition-colors cursor-pointer"
                             >
                               <Unlink className="w-3 h-3" />
                             </button>
                           </div>
                         ) : (
-                          <button
-                            onClick={() => {
-                              setLinkingUser(u);
-                              setArtistSearchQuery('');
-                            }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[#242630] hover:bg-[#2e313e] text-[#e6cca0] border border-[#353844] transition-colors"
-                          >
-                            <LinkIcon className="w-3 h-3" />
-                            <span>Vincular Artista</span>
-                          </button>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <button
+                              onClick={() => {
+                                setLinkingUser(u);
+                                setLinkingMode(isProfRole ? 'professional' : 'artist');
+                                setLinkSearchQuery('');
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[#242630] hover:bg-[#2e313e] text-[#e6cca0] border border-[#353844] transition-colors cursor-pointer"
+                            >
+                              <LinkIcon className="w-3 h-3" />
+                              <span>Vincular Artista</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setLinkingUser(u);
+                                setLinkingMode('professional');
+                                setLinkSearchQuery('');
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[#152820] hover:bg-[#1c362b] text-[#5ce487] border border-[#2d5842] transition-colors cursor-pointer"
+                            >
+                              <Headphones className="w-3 h-3" />
+                              <span>Vincular Profesional</span>
+                            </button>
+                          </div>
                         )}
                       </td>
 
@@ -603,15 +797,16 @@ export function AdminUsuariosClient() {
                       <td className="py-3.5 px-4 text-right">
                         <div className="inline-flex items-center gap-1.5 justify-end">
                           {/* Cambiar vinculación si ya tiene */}
-                          {u.artist && (
+                          {(u.artist || u.professional) && (
                             <button
                               onClick={() => {
                                 setLinkingUser(u);
-                                setArtistSearchQuery('');
+                                setLinkingMode(u.professional ? 'professional' : 'artist');
+                                setLinkSearchQuery('');
                               }}
                               disabled={isActionBusy}
-                              title="Cambiar artista vinculado"
-                              className="p-1.5 rounded-lg bg-[#202228] hover:bg-[#2b2d38] text-[#aba79e] hover:text-[#f3f1ec] border border-[#2d2f38] transition-colors"
+                              title="Cambiar ficha vinculada (Artista / Profesional)"
+                              className="p-1.5 rounded-lg bg-[#202228] hover:bg-[#2b2d38] text-[#aba79e] hover:text-[#f3f1ec] border border-[#2d2f38] transition-colors cursor-pointer"
                             >
                               <LinkIcon className="w-3.5 h-3.5" />
                             </button>
@@ -622,7 +817,7 @@ export function AdminUsuariosClient() {
                             onClick={() => handleRequestPasswordReset(u)}
                             disabled={isActionBusy}
                             title="Enviar correo de restablecimiento de contraseña"
-                            className="p-1.5 rounded-lg bg-[#202228] hover:bg-[#2b2d38] text-[#aba79e] hover:text-[#e6cca0] border border-[#2d2f38] transition-colors"
+                            className="p-1.5 rounded-lg bg-[#202228] hover:bg-[#2b2d38] text-[#aba79e] hover:text-[#e6cca0] border border-[#2d2f38] transition-colors cursor-pointer"
                           >
                             <KeyRound className="w-3.5 h-3.5" />
                           </button>
@@ -632,7 +827,7 @@ export function AdminUsuariosClient() {
                             onClick={() => setUserToDelete(u)}
                             disabled={isActionBusy}
                             title="Eliminar usuario"
-                            className="p-1.5 rounded-lg bg-[#202228] hover:bg-[#341d21] text-[#aba79e] hover:text-[#e06c75] border border-[#2d2f38] transition-colors"
+                            className="p-1.5 rounded-lg bg-[#202228] hover:bg-[#341d21] text-[#aba79e] hover:text-[#e06c75] border border-[#2d2f38] transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -647,7 +842,7 @@ export function AdminUsuariosClient() {
         )}
       </div>
 
-      {/* MODAL 1: Vincular Artista */}
+      {/* MODAL 1: Vincular Artista o Profesional */}
       {linkingUser && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-[#1a1b22] border border-[#2e313d] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
@@ -655,10 +850,10 @@ export function AdminUsuariosClient() {
               <div>
                 <h3 className="text-base font-bold text-[#f3f1ec] flex items-center gap-2">
                   <LinkIcon className="w-4 h-4 text-[#d97d64]" />
-                  <span>Vincular Ficha de Artista</span>
+                  <span>Vincular Ficha a Cuenta de Usuario</span>
                 </h3>
                 <p className="text-xs text-[#aba79e] mt-0.5">
-                  Asignar acceso a <strong className="text-[#e6cca0]">{linkingUser.email}</strong>
+                  Asignar perfil a <strong className="text-[#e6cca0]">{linkingUser.email}</strong>
                 </p>
               </div>
               <button
@@ -670,77 +865,177 @@ export function AdminUsuariosClient() {
             </div>
 
             <div className="p-5 space-y-4">
+              {/* Selector de Tipo de Ficha */}
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#14151a] border border-[#2a2c35]">
+                <button
+                  type="button"
+                  onClick={() => setLinkingMode('artist')}
+                  className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    linkingMode === 'artist'
+                      ? 'bg-[#d97d64] text-[#151618]'
+                      : 'text-[#aba79e] hover:text-[#f3f1ec]'
+                  }`}
+                >
+                  <Music2 className="w-3.5 h-3.5" />
+                  <span>Ficha de Artista ({artists.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLinkingMode('professional')}
+                  className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    linkingMode === 'professional'
+                      ? 'bg-[#5ce487] text-[#151618]'
+                      : 'text-[#aba79e] hover:text-[#f3f1ec]'
+                  }`}
+                >
+                  <Headphones className="w-3.5 h-3.5" />
+                  <span>Ficha de Profesional ({professionals.length})</span>
+                </button>
+              </div>
+
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78746c]" />
                 <input
                   type="text"
-                  value={artistSearchQuery}
-                  onChange={(e) => setArtistSearchQuery(e.target.value)}
-                  placeholder="Buscar artista por nombre en el catálogo..."
+                  value={linkSearchQuery}
+                  onChange={(e) => setLinkSearchQuery(e.target.value)}
+                  placeholder={
+                    linkingMode === 'artist'
+                      ? 'Buscar artista por nombre en el catálogo...'
+                      : 'Buscar profesional, DJ, estudio o sello...'
+                  }
                   className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl bg-[#202228] border border-[#2d2f38] text-[#f3f1ec] placeholder-[#78746c] focus:outline-none focus:border-[#d97d64]"
                   autoFocus
                 />
               </div>
 
-              {/* Lista de Artistas */}
-              <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
-                {artists
-                  .filter((a) =>
-                    !artistSearchQuery ||
-                    a.stageName.toLowerCase().includes(artistSearchQuery.toLowerCase())
-                  )
-                  .slice(0, 30)
-                  .map((art) => {
-                    const isAlreadyLinkedToThis = linkingUser.artist?.id === art.id;
-                    const hasOtherOwner = Boolean(art.owner && art.owner !== linkingUser.id);
+              {/* Lista de Artistas o Profesionales */}
+              {linkingMode === 'artist' ? (
+                <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
+                  {artists
+                    .filter(
+                      (a) =>
+                        !linkSearchQuery ||
+                        a.stageName.toLowerCase().includes(linkSearchQuery.toLowerCase())
+                    )
+                    .slice(0, 30)
+                    .map((art) => {
+                      const isAlreadyLinkedToThis = linkingUser.artist?.id === art.id;
+                      const hasOtherOwner = Boolean(art.owner && art.owner !== linkingUser.id);
 
-                    return (
-                      <div
-                        key={art.id}
-                        onClick={() => handleLinkArtist(art.id)}
-                        className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                          isAlreadyLinkedToThis
-                            ? 'bg-[#1e2a22] border-[#3a5840] text-[#93a887]'
-                            : 'bg-[#202228] hover:bg-[#272931] border-[#2d2f38] text-[#f3f1ec]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          {art.photoUrl ? (
-                            <img
-                              src={art.photoUrl}
-                              alt={art.stageName}
-                              className="w-8 h-8 rounded-lg object-cover border border-[#353844]"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-lg bg-[#292b35] flex items-center justify-center text-[#d97d64]">
-                              <Music2 className="w-4 h-4" />
+                      return (
+                        <div
+                          key={art.id}
+                          onClick={() => handleLinkArtist(art.id)}
+                          className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                            isAlreadyLinkedToThis
+                              ? 'bg-[#1e2a22] border-[#3a5840] text-[#93a887]'
+                              : 'bg-[#202228] hover:bg-[#272931] border-[#2d2f38] text-[#f3f1ec]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            {art.photoUrl ? (
+                              <img
+                                src={art.photoUrl}
+                                alt={art.stageName}
+                                className="w-8 h-8 rounded-lg object-cover border border-[#353844]"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-lg bg-[#292b35] flex items-center justify-center text-[#d97d64]">
+                                <Music2 className="w-4 h-4" />
+                              </div>
+                            )}
+                            <div>
+                              <span className="font-bold text-xs block">{art.stageName}</span>
+                              <span className="text-[10px] text-[#78746c]">slug: {art.slug}</span>
                             </div>
-                          )}
+                          </div>
+
                           <div>
-                            <span className="font-bold text-xs block">{art.stageName}</span>
-                            <span className="text-[10px] text-[#78746c]">slug: {art.slug}</span>
+                            {isAlreadyLinkedToThis ? (
+                              <span className="text-[11px] font-bold text-[#93a887] flex items-center gap-1">
+                                <Check className="w-3.5 h-3.5" /> Vinculado
+                              </span>
+                            ) : hasOtherOwner ? (
+                              <span className="text-[10px] text-[#e6cca0] px-2 py-0.5 rounded bg-[#2c261c] border border-[#4d3d25]">
+                                Reasignar
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-[#aba79e] px-2 py-0.5 rounded bg-[#242630]">
+                                Asignar
+                              </span>
+                            )}
                           </div>
                         </div>
+                      );
+                    })}
+                </div>
+              ) : (
+                <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
+                  {professionals
+                    .filter(
+                      (p) =>
+                        !linkSearchQuery ||
+                        p.name.toLowerCase().includes(linkSearchQuery.toLowerCase()) ||
+                        p.categoryLabel.toLowerCase().includes(linkSearchQuery.toLowerCase())
+                    )
+                    .slice(0, 30)
+                    .map((prof) => {
+                      const isAlreadyLinkedToThis = linkingUser.professional?.id === prof.id;
+                      const hasOtherOwner = Boolean(
+                        prof.userId && prof.userId !== linkingUser.id
+                      );
 
-                        <div>
-                          {isAlreadyLinkedToThis ? (
-                            <span className="text-[11px] font-bold text-[#93a887] flex items-center gap-1">
-                              <Check className="w-3.5 h-3.5" /> Vinculado
-                            </span>
-                          ) : hasOtherOwner ? (
-                            <span className="text-[10px] text-[#e6cca0] px-2 py-0.5 rounded bg-[#2c261c] border border-[#4d3d25]">
-                              Reasignar
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-[#aba79e] px-2 py-0.5 rounded bg-[#242630]">
-                              Asignar
-                            </span>
-                          )}
+                      return (
+                        <div
+                          key={prof.id}
+                          onClick={() => handleLinkProfessional(prof.id)}
+                          className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                            isAlreadyLinkedToThis
+                              ? 'bg-[#152820] border-[#2d5842] text-[#5ce487]'
+                              : 'bg-[#202228] hover:bg-[#272931] border-[#2d2f38] text-[#f3f1ec]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            {prof.photoUrl ? (
+                              <img
+                                src={prof.photoUrl}
+                                alt={prof.name}
+                                className="w-8 h-8 rounded-lg object-cover border border-[#2d5842]"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-lg bg-[#152820] flex items-center justify-center text-[#5ce487]">
+                                <Headphones className="w-4 h-4" />
+                              </div>
+                            )}
+                            <div>
+                              <span className="font-bold text-xs block">{prof.name}</span>
+                              <span className="text-[10px] text-[#5ce487]">
+                                🎧 {prof.categoryLabel}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            {isAlreadyLinkedToThis ? (
+                              <span className="text-[11px] font-bold text-[#5ce487] flex items-center gap-1">
+                                <Check className="w-3.5 h-3.5" /> Vinculado
+                              </span>
+                            ) : hasOtherOwner ? (
+                              <span className="text-[10px] text-[#e6cca0] px-2 py-0.5 rounded bg-[#2c261c] border border-[#4d3d25]">
+                                Reasignar
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-[#5ce487] px-2 py-0.5 rounded bg-[#152820] border border-[#2d5842]">
+                                Asignar
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-              </div>
+                      );
+                    })}
+                </div>
+              )}
             </div>
 
             <div className="p-4 bg-[#151619] border-t border-[#2a2c35] flex justify-end">
@@ -900,7 +1195,7 @@ export function AdminUsuariosClient() {
               </h3>
               <p className="text-xs text-[#aba79e] leading-relaxed">
                 Estás a punto de eliminar a <strong className="text-[#f3f1ec]">{userToDelete.email}</strong>.
-                Si tenía un artista vinculado, se liberará la ficha para que pueda asignarse a otro usuario.
+                Si tenía un artista o profesional vinculado, se liberará la ficha para que pueda asignarse a otro usuario.
                 Esta acción no se puede deshacer.
               </p>
             </div>
