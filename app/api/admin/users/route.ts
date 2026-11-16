@@ -6,6 +6,57 @@ import {
   updateProfessionalInDb,
 } from '../../../../lib/services/professionalsService';
 import { getProfessionalCategoryInfo } from '../../../../lib/constants/professionalCategories';
+import { sendIncompleteProfileReminderEmail } from '../../../../lib/services/emailService';
+
+interface ReminderLogEntry {
+  sentAt: string;
+  count: number;
+}
+
+type ReminderLogMap = Record<string, ReminderLogEntry>;
+
+async function getReminderLog(adminPb: PocketBase): Promise<{
+  recordId: string | null;
+  log: ReminderLogMap;
+}> {
+  try {
+    const rec = await adminPb
+      .collection('site_settings')
+      .getFirstListItem('key="onboarding_reminders_log"', { requestKey: null });
+    const parsed =
+      typeof rec.data === 'string' ? JSON.parse(rec.data) : rec.data || {};
+    return {
+      recordId: rec.id,
+      log: parsed && typeof parsed === 'object' ? parsed : {},
+    };
+  } catch {
+    return { recordId: null, log: {} };
+  }
+}
+
+async function saveReminderLog(
+  adminPb: PocketBase,
+  recordId: string | null,
+  log: ReminderLogMap
+) {
+  const payload = {
+    key: 'onboarding_reminders_log',
+    data: JSON.stringify(log),
+  };
+  try {
+    if (recordId) {
+      await adminPb
+        .collection('site_settings')
+        .update(recordId, payload, { requestKey: null });
+    } else {
+      await adminPb
+        .collection('site_settings')
+        .create(payload, { requestKey: null });
+    }
+  } catch (e) {
+    console.warn('No se pudo guardar onboarding_reminders_log:', e);
+  }
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -114,8 +165,17 @@ export async function GET() {
       console.warn('⚠️ No se pudieron obtener profesionales:', pErr?.message);
     }
 
+    // 3b. Obtener registro de recordatorios de soporte enviados
+    const { recordId: reminderRecordId, log: reminderLog } =
+      await getReminderLog(adminPb);
+    let logModified = false;
+    let autoSentCount = 0;
+    const nowMs = Date.now();
+    const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+
     // 4. Cruzar usuario con artista o profesional asociado
-    const users = usersList.map((u: any) => {
+    const users = [];
+    for (const u of usersList) {
       const cleanUserEmail = (u.email || '').trim().toLowerCase();
       const cleanUserName = (u.name || '').trim().toLowerCase();
 
@@ -145,7 +205,38 @@ export async function GET() {
 
       const catInfo = linkedProf ? getProfessionalCategoryInfo(linkedProf.roleCategory) : null;
 
-      return {
+      let remEntry = reminderLog[u.id] || reminderLog[cleanUserEmail] || null;
+
+      // Automatización: si es cuenta de artista, no tiene ficha vinculada, lleva >2 horas registrada y nunca se le envió el correo de soporte
+      const createdMs = u.created ? new Date(u.created).getTime() : nowMs;
+      const isOlderThanTwoHours =
+        !isNaN(createdMs) && nowMs - createdMs >= TWO_HOURS_MS;
+
+      if (
+        accountRole === 'artist' &&
+        !linkedArtist &&
+        !linkedProf &&
+        cleanUserEmail &&
+        !remEntry &&
+        isOlderThanTwoHours
+      ) {
+        const sendRes = await sendIncompleteProfileReminderEmail({
+          to: cleanUserEmail,
+          userName: u.name || cleanUserEmail.split('@')[0],
+        });
+        if (sendRes.success) {
+          remEntry = {
+            sentAt: new Date().toISOString(),
+            count: 1,
+          };
+          reminderLog[u.id] = remEntry;
+          reminderLog[cleanUserEmail] = remEntry;
+          logModified = true;
+          autoSentCount++;
+        }
+      }
+
+      users.push({
         id: u.id,
         email: u.email || '',
         name: u.name || '',
@@ -154,6 +245,8 @@ export async function GET() {
         created: u.created ? u.created.split(' ')[0] : '',
         updated: u.updated ? u.updated.split(' ')[0] : '',
         avatar: u.avatar || '',
+        reminderSentAt: remEntry?.sentAt || null,
+        reminderCount: remEntry?.count || 0,
         artist: linkedArtist
           ? {
               id: linkedArtist.id,
@@ -177,8 +270,12 @@ export async function GET() {
               isExplicitOwner: linkedProf.userId === u.id,
             }
           : null,
-      };
-    });
+      });
+    }
+
+    if (logModified) {
+      await saveReminderLog(adminPb, reminderRecordId, reminderLog);
+    }
 
     const artists = artistList.map((a: any) => ({
       id: a.id,
@@ -205,6 +302,7 @@ export async function GET() {
       users,
       artists,
       professionals,
+      autoSentCount,
     });
   } catch (err: any) {
     console.error('❌ Error en GET /api/admin/users:', err);
@@ -351,6 +449,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Ficha de profesional desvinculada.',
+      });
+    }
+
+    // 4d. Enviar correo de asistencia / recordatorio de ficha incompleta desde soporte@guta.musica.ar
+    if (action === 'send_profile_reminder') {
+      const { userId, email, name } = body;
+      if (!email) {
+        return NextResponse.json(
+          { success: false, error: 'Falta email del usuario' },
+          { status: 400 }
+        );
+      }
+
+      const cleanEmail = email.trim().toLowerCase();
+      const sendRes = await sendIncompleteProfileReminderEmail({
+        to: cleanEmail,
+        userName: name || cleanEmail.split('@')[0],
+      });
+
+      if (!sendRes.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: sendRes.error || 'No se pudo enviar el correo de recordatorio.',
+          },
+          { status: 500 }
+        );
+      }
+
+      const { recordId, log } = await getReminderLog(adminPb);
+      const prev = (userId && log[userId]) || log[cleanEmail] || { sentAt: '', count: 0 };
+      const entry: ReminderLogEntry = {
+        sentAt: new Date().toISOString(),
+        count: (prev.count || 0) + 1,
+      };
+      if (userId) log[userId] = entry;
+      log[cleanEmail] = entry;
+      await saveReminderLog(adminPb, recordId, log);
+
+      return NextResponse.json({
+        success: true,
+        sentAt: entry.sentAt,
+        count: entry.count,
+        message: `Correo de asistencia enviado desde soporte@guta.musica.ar a ${cleanEmail}.`,
       });
     }
 

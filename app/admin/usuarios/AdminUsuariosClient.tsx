@@ -21,6 +21,7 @@ import {
   Music2,
   Headphones,
   Calendar,
+  Send,
   X,
   Check,
 } from 'lucide-react';
@@ -56,6 +57,8 @@ interface UserItem {
   created: string;
   updated: string;
   avatar?: string;
+  reminderSentAt?: string | null;
+  reminderCount?: number;
   artist: LinkedArtist | null;
   professional: LinkedProfessional | null;
 }
@@ -132,6 +135,12 @@ export function AdminUsuariosClient() {
         setUsers(data.users || []);
         setArtists(data.artists || []);
         setProfessionals(data.professionals || []);
+        if (data.autoSentCount && data.autoSentCount > 0) {
+          showToast(
+            'info',
+            `📬 Se envió automáticamente el correo de asistencia a ${data.autoSentCount} cuenta(s) sin ficha.`
+          );
+        }
       } else {
         showToast('error', data.error || 'Error al cargar usuarios.');
       }
@@ -243,6 +252,44 @@ export function AdminUsuariosClient() {
       }
     } catch {
       showToast('error', 'Error de conexión.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Acciones: Enviar correo de asistencia para completar ficha (desde soporte@guta.musica.ar)
+  const handleSendProfileReminder = async (user: UserItem) => {
+    setActionLoadingId(user.id);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_profile_reminder',
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('success', data.message);
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === user.id
+              ? {
+                  ...u,
+                  reminderSentAt: data.sentAt,
+                  reminderCount: data.count,
+                }
+              : u
+          )
+        );
+      } else {
+        showToast('error', data.error || 'Error enviando recordatorio.');
+      }
+    } catch {
+      showToast('error', 'Error de conexión al enviar recordatorio.');
     } finally {
       setActionLoadingId(null);
     }
@@ -788,6 +835,32 @@ export function AdminUsuariosClient() {
                             >
                               <Headphones className="w-3 h-3" />
                               <span>Vincular Profesional</span>
+                            </button>
+                            <button
+                              onClick={() => handleSendProfileReminder(u)}
+                              disabled={isActionBusy}
+                              title={
+                                u.reminderSentAt
+                                  ? `Asistencia enviada el ${u.reminderSentAt.split('T')[0]} (${u.reminderCount || 1}x). Hacé clic para reenviar.`
+                                  : 'Enviar correo de asistencia desde soporte@guta.musica.ar ofreciendo ayuda o carga manual'
+                              }
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
+                                u.reminderSentAt
+                                  ? 'bg-[#1a241e] hover:bg-[#233229] text-[#93a887] border-[#324d3b]'
+                                  : 'bg-[#2a1f1d] hover:bg-[#382825] text-[#d97d64] border-[#523732]'
+                              }`}
+                            >
+                              {u.reminderSentAt ? (
+                                <>
+                                  <Check className="w-3 h-3" />
+                                  <span>Asistencia enviada</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Send className="w-3 h-3" />
+                                  <span>Enviar Asistencia</span>
+                                </>
+                              )}
                             </button>
                           </div>
                         )}

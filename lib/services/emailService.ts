@@ -357,3 +357,92 @@ export async function sendContactInquiryEmail({
     return { success: false, error: err?.message || 'Error enviando consulta' };
   }
 }
+
+/**
+ * Envía un correo cercano y humano desde soporte@guta.musica.ar a usuarios registrados
+ * que aún no completaron la ficha de su banda/proyecto musical, ofreciéndoles ayuda
+ * o carga manual respondiendo directamente al correo.
+ */
+export async function sendIncompleteProfileReminderEmail({
+  to,
+  userName = 'Artista',
+}: {
+  to: string;
+  userName?: string;
+}) {
+  if (!resend) {
+    console.warn('⚠️ RESEND_API_KEY no configurada. Recordatorio omitido para:', to);
+    return { success: false, error: 'Resend API Key no configurada' };
+  }
+
+  const cleanName = userName?.trim() || to.split('@')[0];
+
+  const html = wrapEmailTemplate(`
+    <h1 style="margin: 0 0 14px 0; font-size: 21px; font-weight: 800; color: #f3f1ec;">
+      Hola ${cleanName}, ¿necesitás una mano para subir tu proyecto musical? 🎸
+    </h1>
+    <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.65; color: #aba79e;">
+      Vimos que te registraste en <strong style="color: #f3f1ec;">GUTA MÚSICA</strong>, ¡gracias por sumarte a nuestra comunidad federal! Notamos que tu cuenta ya está creada, pero <strong style="color: #e6cca0;">todavía no quedó publicada la ficha de tu banda o proyecto solista</strong> en el catálogo.
+    </p>
+    <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.65; color: #aba79e;">
+      Te escribimos desde soporte para saber si tuviste algún inconveniente técnico al completar el formulario o al sincronizar tu perfil de Spotify.
+    </p>
+
+    <!-- Opción 1: Completar desde el panel -->
+    <div style="background-color: #24252c; border: 1px solid #353844; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #e6cca0;">
+        Opción 1 • Completarlo desde tu panel (2 minutos)
+      </p>
+      <p style="margin: 0 0 16px 0; font-size: 13px; line-height: 1.55; color: #aba79e;">
+        Podés ingresar con tu correo y contraseña y pegar tu link de Spotify para que el sistema importe tu foto y discografía automáticamente:
+      </p>
+      <div style="text-align: center;">
+        <a href="${SITE_URL}/panel-artista" style="display: inline-block; background-color: #d97d64; color: #121316; font-weight: 800; font-size: 13px; padding: 12px 24px; border-radius: 10px; text-decoration: none;">
+          Completar Mi Ficha de Artista →
+        </a>
+      </div>
+    </div>
+
+    <!-- Opción 2: Nosotros lo cargamos por vos -->
+    <div style="background-color: #18221c; border: 1px solid #2f4d39; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #93a887;">
+        Opción 2 • ¡Nosotros lo cargamos por vos! 🤝
+      </p>
+      <p style="margin: 0 0 10px 0; font-size: 13px; line-height: 1.6; color: #f3f1ec;">
+        Si te resultó engorroso el formulario o estás desde el celu sin tiempo, <strong>respondé directamente a este correo</strong> enviándonos estos datos básicos y nuestro equipo arma y vincula tu ficha manualmente:
+      </p>
+      <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #aba79e;">
+        <li><strong style="color: #f3f1ec;">Nombre de la banda o proyecto artístico</strong></li>
+        <li><strong style="color: #f3f1ec;">Ciudad y Provincia</strong></li>
+        <li><strong style="color: #f3f1ec;">Género musical y breve reseña (bio)</strong></li>
+        <li><strong style="color: #f3f1ec;">Link de Spotify, YouTube e Instagram</strong> (y una foto adjunta si no tenés Spotify)</li>
+      </ul>
+    </div>
+
+    <p style="margin: 20px 0 0 0; font-size: 13px; color: #aba79e; line-height: 1.6;">
+      Estamos a disposición para lo que necesites. ¡Esperamos escuchar tu música pronto en la plataforma!<br/>
+      <strong style="color: #f3f1ec;">Equipo de Soporte — GUTA MÚSICA</strong><br/>
+      <a href="mailto:soporte@guta.musica.ar" style="color: #d97d64; text-decoration: none;">soporte@guta.musica.ar</a>
+    </p>
+  `);
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: SOPORTE_EMAIL,
+      to: [to],
+      replyTo: 'soporte@guta.musica.ar',
+      subject: `¿Te damos una mano para publicar tu proyecto en GUTA MÚSICA? 🎸`,
+      html,
+    });
+
+    if (error) {
+      console.error('❌ Error Resend en sendIncompleteProfileReminderEmail:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (err: any) {
+    console.error('❌ Error enviando recordatorio de perfil incompleto:', err);
+    return { success: false, error: err?.message || 'Error al enviar recordatorio' };
+  }
+}
