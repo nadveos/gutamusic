@@ -106,7 +106,9 @@ export const ArtistFormClient: React.FC = () => {
   const handleApplyEnrichment = async (
     newDiscography: DiscographyItem[],
     newAgenda: AgendaEvent[],
-    detectedSpotifyUrl?: string
+    detectedSpotifyUrl?: string,
+    detectedArtistName?: string,
+    detectedPhotoUrl?: string
   ) => {
     // 1. Integrar discografía evitando duplicar por título
     const existingDiscTitles = new Set(
@@ -127,9 +129,13 @@ export const ArtistFormClient: React.FC = () => {
     const updatedAgenda = [...formData.agenda, ...addedAgenda];
 
     const updatedSpotify = detectedSpotifyUrl || formData.spotify;
+    const updatedStageName = formData.stageName.trim() || detectedArtistName || '';
+    const updatedPhotoUrl = formData.photoUrl.trim() || detectedPhotoUrl || '';
 
     setFormData((prev) => ({
       ...prev,
+      stageName: updatedStageName,
+      photoUrl: updatedPhotoUrl,
       spotify: updatedSpotify,
       discography: updatedDiscography,
       agenda: updatedAgenda,
@@ -603,14 +609,10 @@ export const ArtistFormClient: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              if (!formData.stageName) {
-                setErrorMessage('Por favor ingresá primero el nombre del artista para rastrear su discografía.');
-                return;
-              }
               setIsEnrichModalOpen(true);
             }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1db954] to-[#e6cca0] hover:opacity-95 text-[#151618] font-bold text-xs shadow-md transition-all cursor-pointer"
-            title="Sincronizar discografía oficial desde Spotify"
+            title="Sincronizar nombre, foto y discografía oficial desde Spotify"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#151618]" />
             <span>Rastrear Discografía (Spotify)</span>

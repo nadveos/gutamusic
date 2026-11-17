@@ -16,7 +16,13 @@ interface EnrichArtistModalProps {
   country?: string;
   spotifyUrl?: string;
   initialMode?: EnrichMode;
-  onApply: (selectedDiscography: DiscographyItem[], selectedAgenda: AgendaEvent[], detectedSpotifyUrl?: string) => void;
+  onApply: (
+    selectedDiscography: DiscographyItem[],
+    selectedAgenda: AgendaEvent[],
+    detectedSpotifyUrl?: string,
+    detectedArtistName?: string,
+    detectedPhotoUrl?: string
+  ) => void;
 }
 
 export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
@@ -36,6 +42,8 @@ export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [discographyResults, setDiscographyResults] = useState<DiscographyItem[]>([]);
   const [selectedDiscIds, setSelectedDiscIds] = useState<string[]>([]);
+  const [detectedName, setDetectedName] = useState('');
+  const [detectedPhoto, setDetectedPhoto] = useState('');
   const [summary, setSummary] = useState('');
   const [sourcesInfo, setSourcesInfo] = useState<{ spotifyAlbumsFound?: number; musicBrainzFound?: number }>({});
 
@@ -82,6 +90,12 @@ export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
       if (data.detectedSpotifyUrl) {
         setCurrentSpotifyUrl(data.detectedSpotifyUrl);
       }
+      if (data.artist) {
+        setDetectedName(data.artist);
+      }
+      if (data.officialPhotoUrl) {
+        setDetectedPhoto(data.officialPhotoUrl);
+      }
       setSummary(data.summary || '');
       setSourcesInfo(data.sources || {});
       setHasSearched(true);
@@ -108,7 +122,13 @@ export const EnrichArtistModal: React.FC<EnrichArtistModalProps> = ({
 
   const handleConfirm = () => {
     const finalDiscography = discographyResults.filter((d) => selectedDiscIds.includes(d.id));
-    onApply(finalDiscography, [], currentSpotifyUrl.trim() || undefined);
+    onApply(
+      finalDiscography,
+      [],
+      currentSpotifyUrl.trim() || undefined,
+      detectedName || undefined,
+      detectedPhoto || undefined
+    );
     onClose();
   };
 

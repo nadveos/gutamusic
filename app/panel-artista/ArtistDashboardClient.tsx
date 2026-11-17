@@ -320,6 +320,7 @@ export function ArtistDashboardClient() {
 
       setFormData((prev) => ({
         ...prev,
+        stageName: prev.stageName.trim() || data.officialArtistName || '',
         socials: {
           ...prev.socials,
           spotify: data.officialSpotifyUrl || prev.socials.spotify,

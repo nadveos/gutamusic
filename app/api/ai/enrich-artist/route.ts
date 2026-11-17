@@ -96,11 +96,14 @@ export async function POST(req: NextRequest) {
       mode = 'all', // 'all' | 'discography' | 'shows'
     } = body;
 
-    if (!stageName || !stageName.trim()) {
-      return NextResponse.json({ success: false, error: 'stageName es obligatorio.' }, { status: 400 });
+    if ((!stageName || !stageName.trim()) && (!spotifyUrl || !spotifyUrl.trim())) {
+      return NextResponse.json(
+        { success: false, error: 'Ingresá el nombre del artista o su enlace de Spotify.' },
+        { status: 400 }
+      );
     }
 
-    const artistQuery = stageName.trim();
+    const artistQuery = (stageName || '').trim();
     const locStr = [city, province, country].filter(Boolean).join(', ');
     const genresStr = Array.isArray(genres) ? genres.join(', ') : genres || 'Música Popular / Rock / Folklore';
 
@@ -110,6 +113,7 @@ export async function POST(req: NextRequest) {
     let spotifyArtistId = extractSpotifyArtistId(detectedSpotifyUrl);
     const spotifyAlbumId = extractSpotifyAlbumId(detectedSpotifyUrl);
     let officialArtistName = artistQuery;
+    let officialPhotoUrl = '';
 
     if (mode !== 'shows') {
       // Si pegaron un enlace directo a un Álbum / EP / Single de Spotify
@@ -131,13 +135,14 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      if (!spotifyArtistId && !detectedSpotifyUrl) {
+      if (!spotifyArtistId && !detectedSpotifyUrl && artistQuery) {
         try {
           const spSearch = await searchSpotifyArtist(artistQuery);
           if (spSearch?.id) {
             spotifyArtistId = spSearch.id;
             officialArtistName = spSearch.name || artistQuery;
             detectedSpotifyUrl = spSearch.url;
+            officialPhotoUrl = spSearch.photoUrl || '';
           }
         } catch (spSearchErr) {
           console.warn('Spotify search warning:', spSearchErr);
@@ -148,6 +153,7 @@ export async function POST(req: NextRequest) {
           if (artistProfile) {
             officialArtistName = artistProfile.name || artistQuery;
             detectedSpotifyUrl = artistProfile.url || `https://open.spotify.com/artist/${spotifyArtistId}`;
+            officialPhotoUrl = artistProfile.photoUrl || '';
           }
         } catch {}
       }
@@ -211,14 +217,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       artist: officialArtistName,
+      officialPhotoUrl: officialPhotoUrl || null,
       spotifyArtistId: spotifyArtistId || null,
       detectedSpotifyUrl: detectedSpotifyUrl || null,
       discography: consolidatedDiscography,
       agenda: [],
       summary:
         consolidatedDiscography.length > 0
-          ? `Se encontraron ${consolidatedDiscography.length} lanzamientos oficiales para ${officialArtistName} (${consolidatedDiscography.length} de Spotify Web API).`
-          : `No se encontraron lanzamientos públicos en Spotify para ${officialArtistName}.`,
+          ? `Se encontraron ${consolidatedDiscography.length} lanzamientos oficiales para ${officialArtistName} (${consolidatedDiscography.length} de Spotify).`
+          : officialArtistName
+          ? `Se identificó a ${officialArtistName} en Spotify (sin lanzamientos públicos listados o solo sencillos).`
+          : `No se encontraron lanzamientos públicos en Spotify.`,
       sources: {
         spotifyAlbumsFound: consolidatedDiscography.length,
         musicBrainzFound: mbReleases.length,
