@@ -150,10 +150,30 @@ export function ArtistDashboardClient() {
   const ENABLE_WEEKLY_FEATURED_PURCHASE = false;
   const [featuredLoading, setFeaturedLoading] = useState(false);
 
-  const handleUpgradeToFeatured = async () => {
+  const handleUpgradeToFeatured = async (provider: 'mercadopago' | 'paypal' = 'mercadopago') => {
     if (!artist?.id) return;
     setFeaturedLoading(true);
     try {
+      if (provider === 'paypal') {
+        const res = await fetch('/api/paypal/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'weekly_featured',
+            artistId: artist.id,
+            artistName: artist.stageName,
+            userEmail: user?.email,
+          }),
+        });
+        const data = await res.json();
+        if (data.approveUrl) {
+          window.location.href = data.approveUrl;
+        } else {
+          alert(data.error || 'Error al conectar con PayPal');
+        }
+        return;
+      }
+
       const res = await fetch('/api/mercadopago/preference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -668,18 +688,28 @@ export function ArtistDashboardClient() {
               Posicioná a tu banda en el slider principal de la Home de GUTA con alcance nacional garantizado.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleUpgradeToFeatured}
-            disabled={featuredLoading}
-            className="px-4 py-2.5 rounded-xl bg-[#009EE3] hover:bg-[#008ac7] text-[#121316] font-bold text-xs flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto shrink-0 shadow-md shadow-[#009EE3]/20"
-          >
-            {featuredLoading ? (
-              <span>Conectando...</span>
-            ) : (
-              <span>Destacar con Mercado Pago</span>
-            )}
-          </button>
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
+            <button
+              type="button"
+              onClick={() => handleUpgradeToFeatured('mercadopago')}
+              disabled={featuredLoading}
+              className="px-4 py-2.5 rounded-xl bg-[#009EE3] hover:bg-[#008ac7] text-[#121316] font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-[#009EE3]/20"
+            >
+              {featuredLoading ? (
+                <span>Conectando...</span>
+              ) : (
+                <span>Mercado Pago (ARS)</span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleUpgradeToFeatured('paypal')}
+              disabled={featuredLoading}
+              className="px-4 py-2.5 rounded-xl bg-[#FFC439] hover:bg-[#f2b626] text-[#121316] font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-[#FFC439]/20"
+            >
+              <span>PayPal (USD)</span>
+            </button>
+          </div>
         </div>
       )}
 

@@ -7,6 +7,7 @@ import {
 } from '../../../../lib/services/professionalsService';
 import { getProfessionalCategoryInfo } from '../../../../lib/constants/professionalCategories';
 import { sendIncompleteProfileReminderEmail } from '../../../../lib/services/emailService';
+import { ensureTelegramWebhookRegistered } from '../../../../lib/services/telegramService';
 
 interface ReminderLogEntry {
   sentAt: string;
@@ -127,6 +128,7 @@ function formatPocketBaseError(err: any): string {
  */
 export async function GET() {
   try {
+    ensureTelegramWebhookRegistered().catch(() => {});
     const adminPb = await getAuthenticatedAdminPb();
     if (!adminPb) {
       return NextResponse.json(

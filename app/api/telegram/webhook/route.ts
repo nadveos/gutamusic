@@ -3,6 +3,7 @@ import {
   answerTelegramCallbackQuery,
   editTelegramMessageText,
   sendTelegramMessage,
+  escapeHtml,
 } from '@/lib/services/telegramService';
 import { updateApplicationStatus } from '@/lib/services/applicationService';
 
@@ -50,8 +51,12 @@ export async function POST(req: NextRequest) {
       const adminName = query.from?.username ? `@${query.from.username}` : (query.from?.first_name || 'Admin');
 
       // Validar autorización (si está configurado TELEGRAM_CHAT_ID)
-      const authorizedChatId = process.env.TELEGRAM_CHAT_ID;
-      if (authorizedChatId && fromId !== authorizedChatId && chatId?.toString() !== authorizedChatId) {
+      const authorizedChatId = process.env.TELEGRAM_CHAT_ID?.trim();
+      if (
+        authorizedChatId &&
+        fromId !== authorizedChatId &&
+        chatId?.toString() !== authorizedChatId
+      ) {
         await answerTelegramCallbackQuery({
           callbackQueryId,
           text: '⛔ No tenés permisos para moderar postulaciones.',
@@ -98,14 +103,14 @@ export async function POST(req: NextRequest) {
 
           // Actualizar el mensaje original en Telegram para reflejar el cambio y quitar botones de acción
           if (chatId && messageId) {
-            const originalText = message.text || '';
+            const originalText = escapeHtml(message.text || '');
             const statusBanner = isApproved
-              ? `\n\n━━━━━━━━━━━━━━━━━━━━\n✅ <b>ESTADO: APROBADA</b>\n👤 Por: ${adminName}\n📅 ${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}`
-              : `\n\n━━━━━━━━━━━━━━━━━━━━\n❌ <b>ESTADO: RECHAZADA</b>\n👤 Por: ${adminName}\n📅 ${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}`;
+              ? `\n\n━━━━━━━━━━━━━━━━━━━━\n✅ <b>ESTADO: APROBADA</b>\n👤 Por: ${escapeHtml(adminName)}\n📅 ${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}`
+              : `\n\n━━━━━━━━━━━━━━━━━━━━\n❌ <b>ESTADO: RECHAZADA</b>\n👤 Por: ${escapeHtml(adminName)}\n📅 ${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}`;
 
             const updatedText = originalText + statusBanner;
 
-            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
+            const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar').replace(/\/+$/, '');
             await editTelegramMessageText({
               chatId,
               messageId,
@@ -121,6 +126,8 @@ export async function POST(req: NextRequest) {
                   ],
                 ],
               },
+            }).catch((editErr) => {
+              console.warn('No se pudo editar el texto del mensaje en Telegram:', editErr);
             });
           }
         } catch (actionErr: any) {

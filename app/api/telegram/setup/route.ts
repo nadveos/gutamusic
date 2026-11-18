@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const action = searchParams.get('action');
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar').replace(/\/+$/, '');
   const webhookUrl = `${siteUrl}/api/telegram/webhook`;
 
   if (action === 'set_webhook') {

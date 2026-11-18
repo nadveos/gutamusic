@@ -3,15 +3,55 @@
  * Permite notificar nuevas postulaciones y moderarlas interactivamente mediante Inline Keyboards.
  */
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN?.trim();
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID?.trim();
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar').replace(/\/+$/, '');
 
-function escapeHtml(text: string = ''): string {
+const globalForTelegram = globalThis as unknown as {
+  __gutaTelegramWebhookSynced?: boolean;
+};
+
+export function escapeHtml(text: string = ''): string {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+/**
+ * Asegura automáticamente que el webhook de Telegram apunte al dominio oficial (https://guta.musica.ar/api/telegram/webhook)
+ * para que los botones interactivos (Aprobar / Rechazar) funcionen siempre.
+ */
+export async function ensureTelegramWebhookRegistered(): Promise<void> {
+  if (!TELEGRAM_BOT_TOKEN || globalForTelegram.__gutaTelegramWebhookSynced) return;
+  if (SITE_URL.includes('localhost') || SITE_URL.includes('127.0.0.1')) return;
+
+  globalForTelegram.__gutaTelegramWebhookSynced = true;
+  const targetWebhookUrl = `${SITE_URL}/api/telegram/webhook`;
+
+  try {
+    const infoRes = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo`,
+      { cache: 'no-store' }
+    );
+    const infoData = await infoRes.json();
+    const currentUrl = infoData?.result?.url || '';
+
+    if (currentUrl !== targetWebhookUrl) {
+      console.log(`🔄 [GUTA TELEGRAM] Actualizando webhook de "${currentUrl}" a "${targetWebhookUrl}"`);
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: targetWebhookUrl,
+          allowed_updates: ['message', 'callback_query'],
+        }),
+      });
+    }
+  } catch (e) {
+    globalForTelegram.__gutaTelegramWebhookSynced = false;
+    console.warn('⚠️ No se pudo verificar/actualizar automáticamente el webhook de Telegram:', e);
+  }
 }
 
 export interface ApplicationNotificationData {
@@ -51,6 +91,9 @@ export async function sendTelegramMessage(params: {
     console.warn('⚠️ TELEGRAM_CHAT_ID no configurado. Se omite envío de Telegram.');
     return { success: false, error: 'TELEGRAM_CHAT_ID no configurado' };
   }
+
+  // Asegurar en segundo plano que el webhook de Telegram apunte al dominio oficial
+  ensureTelegramWebhookRegistered().catch(() => {});
 
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
