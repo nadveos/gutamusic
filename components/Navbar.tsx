@@ -153,20 +153,28 @@ export const Navbar: React.FC = () => {
               </button>
               <Link
                 href="/login"
-                className="text-xs font-bold px-3.5 py-2 rounded-lg bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] shadow-sm shadow-[#d97d64]/20"
+                className="text-xs font-semibold px-3 py-2 rounded-lg border border-[#3c3f4c] bg-[#222329]/80 hover:bg-[#2a2c35] text-[#f3f1ec] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
               >
-                Acceso Artistas
+                Ingresar
               </Link>
               <Link
                 href="/registro"
-                className="text-xs font-bold px-3.5 py-2 rounded-lg border border-[#d97d64] bg-[#222329]/80 hover:bg-[#d97d64]/10 text-[#d97d64] hover:text-[#f3f1ec] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] shadow-sm"
+                className="inline-flex items-center gap-1.5 text-xs font-extrabold px-4 py-2 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e6cca0] shadow-md shadow-[#d97d64]/30 whitespace-nowrap"
               >
-                + Sumar Mi Banda
+                <Sparkles className="w-3.5 h-3.5 text-[#151618]" aria-hidden="true" />
+                <span>Registrá tu Banda Gratis</span>
               </Link>
             </div>
 
-            {/* Mobile menu and search buttons */}
-            <div className="flex md:hidden items-center gap-1.5">
+            {/* Mobile & Tablet menu, CTA and search buttons */}
+            <div className="flex lg:hidden items-center gap-1.5">
+              <Link
+                href="/registro"
+                className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] text-[#151618] font-extrabold text-[11px] sm:text-xs shadow-md shadow-[#d97d64]/25 active:scale-95 whitespace-nowrap"
+              >
+                <Sparkles className="w-3 h-3 text-[#151618]" aria-hidden="true" />
+                <span>+ Sumar Banda</span>
+              </Link>
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(true)}
@@ -183,7 +191,7 @@ export const Navbar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-2 rounded-lg bg-[#222329] text-[#aba79e] hover:text-[#f3f1ec] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
+                className="md:hidden p-2 rounded-lg bg-[#222329] text-[#aba79e] hover:text-[#f3f1ec] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
                 aria-label={isOpen ? 'Cerrar menú principal' : 'Abrir menú principal'}
                 aria-expanded={isOpen}
                 aria-controls="mobile-navigation"

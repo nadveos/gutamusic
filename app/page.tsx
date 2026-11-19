@@ -40,6 +40,43 @@ export default async function HomePage() {
         <HeroFeatured artists={consagradosArtists} titleBadge="Artista Consagrado" />
       )}
 
+      {/* 1.05 Franja de Convocatoria Alta Visibilidad para Artistas */}
+      <section className="rounded-2xl bg-gradient-to-r from-[#241b1a] via-[#1c1d24] to-[#191d1b] border border-[#d97d64]/45 px-5 py-4 sm:px-7 sm:py-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl shadow-[#d97d64]/10">
+        <div className="flex items-center gap-3.5 text-center md:text-left">
+          <div className="hidden sm:flex w-11 h-11 rounded-xl bg-[#d97d64]/20 border border-[#d97d64]/40 items-center justify-center text-xl shrink-0">
+            🎸
+          </div>
+          <div className="space-y-0.5">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+              <span className="px-2 py-0.5 rounded-full bg-[#d97d64]/20 text-[#d97d64] text-[10px] font-black uppercase tracking-wider">
+                100% Gratis • Autogestión en 2 min
+              </span>
+              <h2 className="text-sm sm:text-base font-black text-[#f3f1ec]">
+                ¿Tenés una banda o proyecto solista?
+              </h2>
+            </div>
+            <p className="text-xs text-[#aba79e]">
+              Creá tu perfil oficial en GUTA MÚSICA, vinculá tu Spotify y publicá tus videos y fechas sin costo.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-2.5 shrink-0">
+          <Link
+            href="/registro"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] font-extrabold text-xs shadow-lg shadow-[#d97d64]/25 transition-all active:scale-95 whitespace-nowrap"
+          >
+            + Registrar Mi Banda Gratis →
+          </Link>
+          <Link
+            href="/login"
+            className="px-3.5 py-2.5 rounded-xl bg-[#222329] hover:bg-[#2a2c35] text-[#f3f1ec] border border-[#353844] font-semibold text-xs transition-colors whitespace-nowrap"
+          >
+            Ya tengo cuenta
+          </Link>
+        </div>
+      </section>
+
       {/* 1.1 Bloque Combinado en Home: Box Auspiciante Premium + Row de 4 Profesionales */}
       <SponsorBillboardHero
         initialSponsors={billboardSponsors}
@@ -88,14 +125,14 @@ export default async function HomePage() {
         </p>
         <div className="pt-2 flex flex-wrap justify-center gap-3">
           <Link
-            href="/artistas"
-            className="px-5 py-2.5 rounded-xl font-bold text-xs bg-[#d97d64] hover:bg-[#cb7159] text-[#151618] transition-colors"
+            href="/registro"
+            className="px-6 py-3 rounded-xl font-extrabold text-xs bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] transition-all shadow-lg shadow-[#d97d64]/25"
           >
-            Sumar Mi Proyecto Musical
+            + Registrar Mi Banda Gratis →
           </Link>
           <Link
             href="/entrevistas"
-            className="px-5 py-2.5 rounded-xl font-medium text-xs bg-[#25272f] hover:bg-[#2e303b] text-[#f3f1ec] border border-[#393c49] transition-colors"
+            className="px-5 py-3 rounded-xl font-medium text-xs bg-[#25272f] hover:bg-[#2e303b] text-[#f3f1ec] border border-[#393c49] transition-colors"
           >
             Ver Entrevistas & Sesiones
           </Link>

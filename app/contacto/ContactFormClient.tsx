@@ -145,6 +145,28 @@ export const ContactFormClient: React.FC = () => {
         </p>
       </div>
 
+      {/* Banner Destacado: Interceptar artistas que buscan sumar su banda antes de mandar mail */}
+      <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#281d1b] via-[#1d1e25] to-[#19201c] border border-[#d97d64]/50 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl shadow-[#d97d64]/10">
+        <div className="space-y-1 text-center md:text-left">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#d97d64]/20 text-[#d97d64] text-[10px] font-black uppercase tracking-wider">
+            <Sparkles className="w-3 h-3" />
+            <span>Registro Gratuito e Inmediato</span>
+          </div>
+          <h2 className="text-base sm:text-lg font-black text-[#f3f1ec]">
+            🎸 ¿Querés sumar tu banda o proyecto musical a GUTA MÚSICA?
+          </h2>
+          <p className="text-xs text-[#aba79e] max-w-2xl">
+            No hace falta enviarnos un correo: registrá tu proyecto en 2 minutos, sincronizá tu Spotify automáticamente y administrá tu propia ficha <strong className="text-[#f3f1ec]">100% gratis</strong>.
+          </p>
+        </div>
+        <Link
+          href="/registro"
+          className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] font-extrabold text-xs shadow-lg shadow-[#d97d64]/25 transition-all active:scale-95 whitespace-nowrap shrink-0"
+        >
+          + Registrar Mi Banda Gratis →
+        </Link>
+      </div>
+
       {/* Dos Tarjetas Destacadas: Vía Directa (Soporte) y Formulario / Vía Comercial (Contacto) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Canal 1: soporte@guta.musica.ar (Vía Directa para Artistas) */}
