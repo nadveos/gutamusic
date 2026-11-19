@@ -195,11 +195,14 @@ async function callGeminiEphemerides(prompt: string, apiKey: string) {
 }
 
 // =========================================================================
-// callGeminiWithLog: For NON-date-critical tasks (artist reviews, etc).
-// Uses all models including lite.
+// callGeminiWithLog: For NON-date-critical tasks (artist reviews, editorial refinement, etc).
 // =========================================================================
 async function callGeminiWithLog(prompt: string, apiKey: string) {
-  const allModels = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+  const allModels = [
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+  ];
   let lastError: Error | null = null;
 
   for (const model of allModels) {
@@ -208,12 +211,12 @@ async function callGeminiWithLog(prompt: string, apiKey: string) {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(35000),
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.3,
-            maxOutputTokens: 3072,
+            maxOutputTokens: 4096,
             responseMimeType: 'application/json',
           },
         }),
@@ -225,7 +228,8 @@ async function callGeminiWithLog(prompt: string, apiKey: string) {
       let resultJson: any = {};
       try { resultJson = JSON.parse(rawText); } catch (e) {}
 
-      const generatedContent = resultJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const parts = resultJson?.candidates?.[0]?.content?.parts || [];
+      const generatedContent = parts.map((p: any) => p.text || '').join('');
       const parsedData = extractJson(generatedContent);
       if (!parsedData) continue;
 
@@ -240,6 +244,97 @@ async function callGeminiWithLog(prompt: string, apiKey: string) {
   }
 
   throw lastError || new Error('Todos los modelos de Gemini fallaron.');
+}
+
+/**
+ * Intenta extraer el contenido de texto de una URL pública o Google Doc compartido
+ */
+async function fetchExternalSourceText(rawUrl: string): Promise<{
+  text: string;
+  requiresManualPaste?: boolean;
+  notice?: string;
+}> {
+  const url = (rawUrl || '').trim();
+  if (!url) return { text: '' };
+
+  // 1. Si es un enlace de NotebookLM (notebooklm.google.com), Google exige sesión OAuth personal del navegador
+  if (url.includes('notebooklm.google.com')) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(8000),
+      });
+      const finalUrl = res.url || '';
+      const html = await res.text();
+      if (
+        finalUrl.includes('accounts.google.com') ||
+        html.includes('accounts.google.com/ServiceLogin') ||
+        html.length < 500
+      ) {
+        return {
+          text: '',
+          requiresManualPaste: true,
+          notice:
+            'Los cuadernos de NotebookLM están protegidos por tu sesión privada de Google. Copiá el texto o editorial desde NotebookLM y pegalo en el campo de Cuerpo Editorial con el botón "Pegar de NotebookLM".',
+        };
+      }
+    } catch {
+      return {
+        text: '',
+        requiresManualPaste: true,
+        notice:
+          'NotebookLM requiere sesión privada de Google. Pegá directamente el texto de tu cuaderno en el editor.',
+      };
+    }
+  }
+
+  // 2. Si es un Google Doc compartido ("Cualquier persona con el enlace"), usar export?format=txt
+  const gdocMatch = url.match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/);
+  if (gdocMatch && gdocMatch[1]) {
+    try {
+      const exportUrl = `https://docs.google.com/document/d/${gdocMatch[1]}/export?format=txt`;
+      const res = await fetch(exportUrl, { signal: AbortSignal.timeout(10000) });
+      if (res.ok) {
+        const txt = await res.text();
+        if (txt && txt.trim().length > 20) {
+          return { text: txt.trim().slice(0, 18000) };
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Cualquier otra URL pública (nota de prensa, blog, web)
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (compatible; GutaMusicaEditorialBot/1.0; +https://guta.musica.ar)',
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (res.ok) {
+      const html = await res.text();
+      const cleaned = html
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (cleaned.length > 50) {
+        return { text: cleaned.slice(0, 15000) };
+      }
+    }
+  } catch {}
+
+  return {
+    text: '',
+    requiresManualPaste: true,
+    notice: 'No se pudo leer la URL de forma pública. Pegá el texto directamente en el editor.',
+  };
 }
 
 // =========================================================================
@@ -278,6 +373,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (action === 'fetch_source_url') {
+      const { sourceUrl } = payload || {};
+      const extracted = await fetchExternalSourceText(sourceUrl || '');
+      return NextResponse.json({
+        success: true,
+        text: extracted.text,
+        requiresManualPaste: extracted.requiresManualPaste || false,
+        notice: extracted.notice || null,
+      });
+    }
+
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
 
     if (!geminiKey || geminiKey.length < 5) {
@@ -287,21 +393,68 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    if (action === 'article_generation' || action === 'journalistic_note') {
-      const { stageName, genres, city, province, topic, host = 'Guta Flores', category = 'Acústico GUTA' } = payload;
+    if (
+      action === 'article_generation' ||
+      action === 'journalistic_note' ||
+      action === 'refine_editorial'
+    ) {
+      const {
+        stageName,
+        genres,
+        city,
+        province,
+        topic,
+        host = 'Guta Flores',
+        category = 'Acústico GUTA',
+        sourceUrl = '',
+        notebookSourceText = '',
+        draftTitle = '',
+        draftSubtitle = '',
+        draftSummary = '',
+        draftEditorialText = '',
+        draftQuotes = '',
+      } = payload;
       const genresStr = Array.isArray(genres) ? genres.join(', ') : genres || 'Música Independiente';
       const locStr = city ? `${city}, ${province || 'Argentina'}` : (province || 'Argentina');
 
-      const prompt = `Sos un periodista musical y crítico cultural de primer nivel para el medio GUTA MÚSICA (conducción editorial: ${host}).
-Redactá una NOTA PERIODÍSTICA / ARTÍCULO EDITORIAL COMPLETO para publicar en la revista/sitio de GUTA sobre el artista "${stageName}" (${locStr}), género "${genresStr}".
-Enfoque temático: "${topic || 'Perfil sonoro, trayectoria independiente y propuesta musical'}".
+      let externalSourceContent = (notebookSourceText || '').trim();
+      if (!externalSourceContent && sourceUrl) {
+        const fetched = await fetchExternalSourceText(sourceUrl);
+        if (fetched.text) {
+          externalSourceContent = fetched.text;
+        }
+      }
 
+      const combinedDraftOrSource = [
+        externalSourceContent ? `--- FUENTE / CUADERNO NOTEBOOKLM ---\n${externalSourceContent}` : '',
+        draftTitle ? `Título borrador: ${draftTitle}` : '',
+        draftSubtitle ? `Subtítulo borrador: ${draftSubtitle}` : '',
+        draftSummary ? `Resumen borrador: ${draftSummary}` : '',
+        draftQuotes ? `Cita borrador: ${draftQuotes}` : '',
+        draftEditorialText ? `--- TEXTO EDITORIAL / BORRADOR ---\n${draftEditorialText}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
+      const sourceInstructions = combinedDraftOrSource
+        ? `\nIMPORTANTE — MATERIAL BASE DE NOTEBOOKLM / BORRADOR EDITORIAL PROVISTO POR EL EDITOR:
+Basate ESTRICTAMENTE en el siguiente texto/apuntes reales para redactar, estructurar y refinar la nota. Respetá fielmente los nombres de canciones, discos, integrantes, fechas, citas e historias reales del texto base (NO inventes datos ficticios que contradigan la fuente). Pulí la prosa con estilo periodístico profesional de revista musical argentina, organizá el cuerpo con subtítulos Markdown (##) y completá todos los campos editoriales:\n\n${combinedDraftOrSource}\n`
+        : '';
+
+      const prompt = `Sos un periodista musical y crítico cultural de primer nivel para el medio GUTA MÚSICA (conducción editorial: ${host}).
+${
+  action === 'refine_editorial'
+    ? `Refiná, estructurá y potenciá periodísticamente la siguiente EDITORIAL / NOTA sobre el artista "${stageName}" (${locStr}), género "${genresStr}".`
+    : `Redactá una NOTA PERIODÍSTICA / ARTÍCULO EDITORIAL COMPLETO para publicar en la revista/sitio de GUTA sobre el artista "${stageName}" (${locStr}), género "${genresStr}".`
+}
+Enfoque temático: "${topic || 'Perfil sonoro, trayectoria independiente y propuesta musical'}".
+${sourceInstructions}
 Devolvé la respuesta exclusivamente en formato JSON válido con la siguiente estructura:
 {
-  "title": "Titular periodístico contundente, atractivo y profesional (evitar títulos cliché o genéricos)",
+  "title": "Titular periodístico contundente, atractivo y profesional (si el borrador ya tiene un buen título, pulilo conservando su esencia)",
   "subtitle": "Bajada o copete periodístico de 2 oraciones que sintetiza el núcleo de la nota",
   "summary": "Resumen conciso de 1 párrafo para las tarjetas de portada del sitio",
-  "editorialText": "Cuerpo completo del artículo en formato Markdown con subtítulos estructurados (##), análisis musical detallado, citas y contexto territorial (al menos 4 párrafos enriquecedores)",
+  "editorialText": "Cuerpo completo del artículo en formato Markdown con subtítulos estructurados (##), análisis musical detallado, citas y contexto territorial (al menos 4 párrafos enriquecedores basados en el material provisto)",
   "keyHighlights": [
     "Dato o reflexión clave 1",
     "Dato o reflexión clave 2",
@@ -333,12 +486,25 @@ Devolvé la respuesta exclusivamente en formato JSON válido con la siguiente es
     }
 
     if (action === 'artist_review') {
-      const { stageName, genres, city, province } = payload;
+      const {
+        stageName,
+        genres,
+        city,
+        province,
+        notebookSourceText = '',
+        draftEditorialText = '',
+      } = payload;
       const genresStr = Array.isArray(genres) ? genres.join(', ') : genres || 'Música Independiente';
       const locStr = city ? `${city}, ${province || 'Argentina'}` : 'Argentina';
+      const baseSource = [notebookSourceText, draftEditorialText].filter(Boolean).join('\n\n');
 
       const prompt = `Sos un periodista musical argentino para el medio GUTA MÚSICA (conducción: Guta Flores).
 Redactá una biografía y reseña periodística para el artista emergente "${stageName}" (${locStr}), género "${genresStr}".
+${
+  baseSource
+    ? `\nBasate estrictamente en los siguientes apuntes o editorial de NotebookLM del artista (respetando sus datos reales, canciones e historia):\n${baseSource}\n`
+    : ''
+}
 Devolvé la respuesta en formato JSON con la siguiente estructura:
 {
   "shortBio": "Párrafo conciso de 2 oraciones para tarjetas de portada.",
@@ -368,10 +534,22 @@ Devolvé la respuesta en formato JSON con la siguiente estructura:
     }
 
     if (action === 'interview_chronicle') {
-      const { artistName, host = 'Guta Flores', topic = 'Sesión acústica y charla sobre autogestión' } = payload;
+      const {
+        artistName,
+        host = 'Guta Flores',
+        topic = 'Sesión acústica y charla sobre autogestión',
+        notebookSourceText = '',
+        draftEditorialText = '',
+      } = payload;
+      const baseSource = [notebookSourceText, draftEditorialText].filter(Boolean).join('\n\n');
 
       const prompt = `Sos un redactor periodístico de música para GUTA MÚSICA. Redactá la crónica de una entrevista realizada por el conductor ${host} al artista "${artistName}".
 Enfoque: "${topic}".
+${
+  baseSource
+    ? `\nBasate estrictamente en los siguientes apuntes o editorial de NotebookLM sobre el encuentro:\n${baseSource}\n`
+    : ''
+}
 Devolvé la respuesta en formato JSON:
 {
   "title": "Titular de la entrevista o crónica",

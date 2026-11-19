@@ -14,37 +14,59 @@ import {
   RefreshCw,
   Radio,
   Newspaper,
-  ArrowRight,
   UserCheck,
-  ExternalLink,
-  Tag,
   Quote,
   ListCheck,
-  Flame,
+  BookOpen,
+  ClipboardPaste,
+  Link2,
+  AlertCircle,
+  Trash2,
 } from 'lucide-react';
 
 export const AIAssistantStudio: React.FC = () => {
   const router = useRouter();
-  const [activeTool, setActiveTool] = useState<'article' | 'artist' | 'interview' | 'seo'>('article');
+  const [activeTool, setActiveTool] = useState<'article' | 'artist' | 'interview' | 'seo'>(
+    'article'
+  );
   const [loading, setLoading] = useState(false);
+  const [refining, setRefining] = useState(false);
+  const [fetchingUrl, setFetchingUrl] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   // Existing PocketBase artists
   const [pbArtists, setPbArtists] = useState<Artist[]>([]);
   const [selectedArtistId, setSelectedArtistId] = useState<string>('custom');
 
-  // Input fields
-  const [stageName, setStageName] = useState('Los Caminantes del Monte');
-  const [genres, setGenres] = useState('Folklore, Fusión');
-  const [city, setCity] = useState('Tilcara');
-  const [province, setProvince] = useState('Jujuy');
-  const [topic, setTopic] = useState('Lanzamiento de nuevo disco y raíces culturales');
-  const [category, setCategory] = useState<'Acústico GUTA' | 'Estudio' | 'En Vivo' | 'Especial'>('Acústico GUTA');
+  // Input fields (Left column)
+  const [stageName, setStageName] = useState('Sylvia Pop');
+  const [genres, setGenres] = useState('Under');
+  const [city, setCity] = useState('Quilmes');
+  const [province, setProvince] = useState('Buenos Aires');
+  const [topic, setTopic] = useState('Lanzamiento de nuevo EP');
+  const [category, setCategory] = useState<
+    'Acústico GUTA' | 'Estudio' | 'En Vivo' | 'Especial'
+  >('Estudio');
   const [host, setHost] = useState('Guta Flores');
   const [artistPhoto, setArtistPhoto] = useState('');
 
-  // Results
-  const [generatedData, setGeneratedData] = useState<any>(null);
+  // NotebookLM / External Source Connection
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [notebookSourceText, setNotebookSourceText] = useState('');
+  const [sourceNotice, setSourceNotice] = useState<string | null>(null);
+  const [errorBanner, setErrorBanner] = useState<string | null>(null);
+
+  // Editable Editorial Fields (Right column — always visible & editable)
+  const [editorialTitle, setEditorialTitle] = useState('');
+  const [editorialSubtitle, setEditorialSubtitle] = useState('');
+  const [editorialSummary, setEditorialSummary] = useState('');
+  const [editorialQuotes, setEditorialQuotes] = useState('');
+  const [editorialBody, setEditorialBody] = useState('');
+  const [keyHighlights, setKeyHighlights] = useState<string[]>([]);
+  const [seoTitle, setSeoTitle] = useState('');
+  const [seoDesc, setSeoDesc] = useState('');
+  const [usedModel, setUsedModel] = useState<string | null>(null);
+
   const [redirectToast, setRedirectToast] = useState('');
 
   // Load artists from PocketBase on mount
@@ -107,40 +129,102 @@ export const AIAssistantStudio: React.FC = () => {
     }
   };
 
+  // Importar desde URL pública o Google Doc compartido
+  const handleFetchSourceUrl = async () => {
+    if (!sourceUrl.trim()) return;
+    setFetchingUrl(true);
+    setSourceNotice(null);
+    setErrorBanner(null);
+
+    try {
+      const res = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'fetch_source_url',
+          payload: { sourceUrl: sourceUrl.trim() },
+        }),
+      });
+      const data = await res.json();
+      if (data.text) {
+        setNotebookSourceText(data.text);
+        if (!editorialBody.trim()) {
+          setEditorialBody(data.text);
+        }
+        setSourceNotice('¡Contenido extraído del enlace y cargado como fuente base!');
+      } else if (data.notice) {
+        setSourceNotice(data.notice);
+      }
+    } catch {
+      setSourceNotice(
+        'No se pudo leer el enlace directamente. Copiá el texto de NotebookLM y usá el botón "Pegar de NotebookLM".'
+      );
+    } finally {
+      setFetchingUrl(false);
+    }
+  };
+
+  // Pegar desde el portapapeles (NotebookLM)
+  const handlePasteFromClipboard = async (target: 'source' | 'body') => {
+    try {
+      const clipText = await navigator.clipboard.readText();
+      if (!clipText || !clipText.trim()) {
+        setSourceNotice('El portapapeles está vacío. Copiá primero la nota en NotebookLM.');
+        return;
+      }
+      if (target === 'source') {
+        setNotebookSourceText(clipText.trim());
+        if (!editorialBody.trim()) {
+          setEditorialBody(clipText.trim());
+        }
+      } else {
+        setEditorialBody(clipText.trim());
+      }
+      setSourceNotice('¡Editorial de NotebookLM pegada! Ya podés pulsar "Refinar Editorial con IA" o editarla.');
+    } catch {
+      setSourceNotice('Hacé clic dentro del recuadro y presioná Ctrl+V para pegar tu texto de NotebookLM.');
+    }
+  };
+
+  const applyAiResultToFields = (d: any, modelName?: string) => {
+    if (!d) return;
+    if (d.title) setEditorialTitle(d.title);
+    if (d.subtitle) setEditorialSubtitle(d.subtitle);
+    if (d.summary || d.shortBio) setEditorialSummary(d.summary || d.shortBio);
+    if (d.editorialText || d.fullBio) setEditorialBody(d.editorialText || d.fullBio);
+    if (d.quotes) setEditorialQuotes(d.quotes);
+    if (Array.isArray(d.keyHighlights)) setKeyHighlights(d.keyHighlights);
+    if (d.seoTitle) setSeoTitle(d.seoTitle);
+    if (d.seoDesc) setSeoDesc(d.seoDesc);
+    if (modelName) setUsedModel(modelName);
+  };
+
+  // Generar Nota desde Parámetros + Fuente NotebookLM
   const handleGenerate = async () => {
     setLoading(true);
-    setGeneratedData(null);
+    setErrorBanner(null);
 
     let action = 'article_generation';
-    let payload: any = {};
+    if (activeTool === 'artist' || activeTool === 'seo') action = 'artist_review';
+    else if (activeTool === 'interview') action = 'interview_chronicle';
 
-    if (activeTool === 'article') {
-      action = 'article_generation';
-      payload = {
-        stageName,
-        genres: genres.split(',').map((g) => g.trim()),
-        city,
-        province,
-        topic,
-        host,
-        category,
-      };
-    } else if (activeTool === 'artist' || activeTool === 'seo') {
-      action = 'artist_review';
-      payload = {
-        stageName,
-        genres: genres.split(',').map((g) => g.trim()),
-        city,
-        province,
-      };
-    } else if (activeTool === 'interview') {
-      action = 'interview_chronicle';
-      payload = {
-        artistName: stageName,
-        host,
-        topic,
-      };
-    }
+    const payload = {
+      stageName,
+      artistName: stageName,
+      genres: genres.split(',').map((g) => g.trim()),
+      city,
+      province,
+      topic,
+      host,
+      category,
+      sourceUrl: sourceUrl.trim(),
+      notebookSourceText: notebookSourceText.trim(),
+      draftTitle: editorialTitle.trim(),
+      draftSubtitle: editorialSubtitle.trim(),
+      draftSummary: editorialSummary.trim(),
+      draftEditorialText: editorialBody.trim(),
+      draftQuotes: editorialQuotes.trim(),
+    };
 
     try {
       const res = await fetch('/api/ai/generate', {
@@ -149,13 +233,64 @@ export const AIAssistantStudio: React.FC = () => {
         body: JSON.stringify({ action, payload }),
       });
       const data = await res.json();
-      if (data.success) {
-        setGeneratedData(data.data);
+      if (data.success && data.data) {
+        applyAiResultToFields(data.data, data.model);
+      } else {
+        setErrorBanner(data.error || 'Error al generar con Gemini AI.');
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      setErrorBanner(e?.message || 'Error de conexión con el motor de IA.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Refinar lo que el usuario pegó o escribió en los campos editoriales de la derecha
+  const handleRefineEditorial = async () => {
+    if (!editorialBody.trim() && !notebookSourceText.trim()) {
+      setErrorBanner(
+        'Pegá primero la editorial de NotebookLM o un borrador en el Cuerpo de la Nota para que la IA lo refine y complete los titulares.'
+      );
+      return;
+    }
+
+    setRefining(true);
+    setErrorBanner(null);
+
+    try {
+      const res = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'refine_editorial',
+          payload: {
+            stageName,
+            genres: genres.split(',').map((g) => g.trim()),
+            city,
+            province,
+            topic,
+            host,
+            category,
+            sourceUrl: sourceUrl.trim(),
+            notebookSourceText: notebookSourceText.trim(),
+            draftTitle: editorialTitle.trim(),
+            draftSubtitle: editorialSubtitle.trim(),
+            draftSummary: editorialSummary.trim(),
+            draftEditorialText: editorialBody.trim(),
+            draftQuotes: editorialQuotes.trim(),
+          },
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        applyAiResultToFields(data.data, data.model);
+      } else {
+        setErrorBanner(data.error || 'No se pudo refinar la editorial.');
+      }
+    } catch (e: any) {
+      setErrorBanner(e?.message || 'Error de conexión al refinar.');
+    } finally {
+      setRefining(false);
     }
   };
 
@@ -165,37 +300,47 @@ export const AIAssistantStudio: React.FC = () => {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
+  const hasEditorialContent = Boolean(
+    editorialTitle.trim() || editorialBody.trim() || editorialSummary.trim()
+  );
+
   // Redirigir a la creación de Nota / Entrevista en el sitio
   const handleTransferToInterview = () => {
-    if (!generatedData) return;
+    if (!hasEditorialContent) return;
 
     const currentArtist = pbArtists.find((a) => a.id === selectedArtistId);
 
     const draft = {
-      title: generatedData.title || `Crónica: ${stageName} en GUTA`,
-      subtitle: generatedData.subtitle || generatedData.shortBio || '',
-      summary: generatedData.summary || generatedData.shortBio || '',
-      editorialText: generatedData.editorialText || generatedData.fullBio || '',
-      keyHighlights: Array.isArray(generatedData.keyHighlights) ? generatedData.keyHighlights : [],
+      title: editorialTitle.trim() || `${stageName}: ${topic || 'Especial Editorial en GUTA'}`,
+      subtitle: editorialSubtitle.trim() || editorialSummary.trim() || '',
+      summary: editorialSummary.trim() || editorialSubtitle.trim() || '',
+      editorialText: editorialBody.trim(),
+      keyHighlights: Array.isArray(keyHighlights) ? keyHighlights : [],
       artistId: currentArtist ? currentArtist.id : 'custom',
       artistName: stageName,
-      artistSlug: currentArtist ? currentArtist.slug : stageName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      artistSlug: currentArtist
+        ? currentArtist.slug
+        : stageName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       artistPhoto: currentArtist?.photoUrl || artistPhoto || '',
       host: host || 'Guta Flores',
       category: category || 'Acústico GUTA',
-      date: new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }),
+      date: new Date().toLocaleDateString('es-AR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
     };
 
     sessionStorage.setItem('guta_ai_interview_draft', JSON.stringify(draft));
-    setRedirectToast('Abriendo editor de notas con el borrador generado...');
+    setRedirectToast('Abriendo editor de notas con tu editorial...');
     setTimeout(() => {
       router.push('/admin/entrevistas/nuevo');
-    }, 600);
+    }, 500);
   };
 
   // Redirigir a la creación o actualización del artista
   const handleTransferToArtist = () => {
-    if (!generatedData) return;
+    if (!hasEditorialContent) return;
 
     const currentArtist = pbArtists.find((a) => a.id === selectedArtistId);
 
@@ -204,9 +349,9 @@ export const AIAssistantStudio: React.FC = () => {
       genres: genres.split(',').map((g) => g.trim()),
       city,
       province,
-      shortBio: generatedData.shortBio || generatedData.summary || '',
-      bio: generatedData.fullBio || generatedData.editorialText || '',
-      quotes: generatedData.quotes || '',
+      shortBio: editorialSummary.trim() || editorialSubtitle.trim() || '',
+      bio: editorialBody.trim(),
+      quotes: editorialQuotes.trim(),
       photoUrl: currentArtist?.photoUrl || artistPhoto || '',
     };
 
@@ -218,7 +363,18 @@ export const AIAssistantStudio: React.FC = () => {
       } else {
         router.push('/admin/artistas/nuevo');
       }
-    }, 600);
+    }, 500);
+  };
+
+  const handleClearFields = () => {
+    setEditorialTitle('');
+    setEditorialSubtitle('');
+    setEditorialSummary('');
+    setEditorialQuotes('');
+    setEditorialBody('');
+    setKeyHighlights([]);
+    setSeoTitle('');
+    setSeoDesc('');
   };
 
   return (
@@ -230,10 +386,22 @@ export const AIAssistantStudio: React.FC = () => {
         </div>
       )}
 
+      {errorBanner && (
+        <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{errorBanner}</span>
+        </div>
+      )}
+
       {/* Tool Selector Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-[#2a2c35] pb-3">
         {[
-          { id: 'article', label: 'Nota Periodística / Artículo para el Sitio', icon: Newspaper, badge: 'Recomendado' },
+          {
+            id: 'article',
+            label: 'Nota Periodística / Artículo para el Sitio',
+            icon: Newspaper,
+            badge: 'Recomendado',
+          },
           { id: 'artist', label: 'Biografía & Perfil de Artista', icon: FileText },
           { id: 'interview', label: 'Crónica de Entrevista & Acústico', icon: Radio },
           { id: 'seo', label: 'Estrategia SEO & Meta Tags', icon: Globe },
@@ -243,10 +411,7 @@ export const AIAssistantStudio: React.FC = () => {
           return (
             <button
               key={t.id}
-              onClick={() => {
-                setActiveTool(t.id as any);
-                setGeneratedData(null);
-              }}
+              onClick={() => setActiveTool(t.id as any)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                 isActive
                   ? 'bg-[#d97d64] text-[#151618] font-bold'
@@ -266,13 +431,15 @@ export const AIAssistantStudio: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Input Parameters Form */}
-        <div className="lg:col-span-5 natural-card p-5 rounded-2xl space-y-4">
+        {/* COLUMNA IZQUIERDA: Parámetros + Conexión NotebookLM */}
+        <div className="lg:col-span-5 natural-card p-5 rounded-2xl space-y-4 h-fit">
           <div className="flex items-center justify-between pb-2 border-b border-[#2d2f38]">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-[#e6cca0] flex items-center gap-1.5">
               <Wand2 className="w-3.5 h-3.5" /> Parámetros de Redacción
             </h3>
-            <span className="text-[10px] text-[#8c887f]">Gemini AI</span>
+            <span className="text-[10px] text-[#8c887f]">
+              {usedModel ? `Gemini (${usedModel})` : 'Gemini AI + NotebookLM'}
+            </span>
           </div>
 
           {/* Selector de artista de la base de datos */}
@@ -296,7 +463,9 @@ export const AIAssistantStudio: React.FC = () => {
 
           <div className="space-y-3">
             <div>
-              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Nombre del Artista / Banda *</label>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
+                Nombre del Artista / Banda *
+              </label>
               <input
                 type="text"
                 required
@@ -307,10 +476,12 @@ export const AIAssistantStudio: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Géneros Musicales</label>
+              <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
+                Géneros Musicales
+              </label>
               <input
                 type="text"
-                placeholder="Ej: Folklore, Tango, Rock, Fusión"
+                placeholder="Ej: Folklore, Tango, Rock, Fusión, Under"
                 value={genres}
                 onChange={(e) => setGenres(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
@@ -319,20 +490,24 @@ export const AIAssistantStudio: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Ciudad</label>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
+                  Ciudad
+                </label>
                 <input
                   type="text"
-                  placeholder="Ej: Tilcara"
+                  placeholder="Ej: Quilmes"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
                 />
               </div>
               <div>
-                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Provincia</label>
+                <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
+                  Provincia
+                </label>
                 <input
                   type="text"
-                  placeholder="Ej: Jujuy"
+                  placeholder="Ej: Buenos Aires"
                   value={province}
                   onChange={(e) => setProvince(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
@@ -343,10 +518,12 @@ export const AIAssistantStudio: React.FC = () => {
             {(activeTool === 'article' || activeTool === 'interview') && (
               <>
                 <div>
-                  <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Enfoque / Eje de la Nota</label>
+                  <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
+                    Enfoque / Eje de la Nota
+                  </label>
                   <input
                     type="text"
-                    placeholder="Ej: Lanzamiento de disco, gira nacional, raíces e identidad sonora"
+                    placeholder="Ej: Lanzamiento de nuevo EP, gira nacional, raíces e identidad sonora"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-[#18191e] border border-[#2e3039] text-[#f3f1ec] text-xs focus:outline-none focus:border-[#d97d64]"
@@ -355,7 +532,9 @@ export const AIAssistantStudio: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Sección / Categoría</label>
+                    <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
+                      Sección / Categoría
+                    </label>
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value as any)}
@@ -368,7 +547,9 @@ export const AIAssistantStudio: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">Firma / Conducción</label>
+                    <label className="text-[11px] text-[#aba79e] font-semibold block mb-1">
+                      Firma / Conducción
+                    </label>
                     <input
                       type="text"
                       value={host}
@@ -379,6 +560,60 @@ export const AIAssistantStudio: React.FC = () => {
                 </div>
               </>
             )}
+
+            {/* CONECTOR NOTEBOOKLM / FUENTE EXTERNA */}
+            <div className="p-3.5 rounded-xl bg-[#16181f] border border-[#2d3140] space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold text-[#e6cca0] flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-[#d97d64]" />
+                  <span>Fuente NotebookLM / Link de Referencia</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handlePasteFromClipboard('source')}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#232632] hover:bg-[#2d3140] text-[10px] font-bold text-[#93a887] border border-[#353a4c] transition-colors cursor-pointer"
+                  title="Pegar texto copiado desde NotebookLM"
+                >
+                  <ClipboardPaste className="w-3 h-3" />
+                  <span>Pegar de NotebookLM</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <div className="relative flex-1">
+                  <Link2 className="w-3.5 h-3.5 text-[#78746c] absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Link de Google Doc público, web o referencia de cuaderno..."
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                    className="w-full pl-8 pr-2.5 py-1.5 rounded-lg bg-[#111216] border border-[#292b36] text-[#f3f1ec] text-[11px] focus:outline-none focus:border-[#d97d64]"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleFetchSourceUrl}
+                  disabled={fetchingUrl || !sourceUrl.trim()}
+                  className="px-2.5 py-1.5 rounded-lg bg-[#232632] hover:bg-[#2e3242] text-[#e6cca0] border border-[#353a4c] text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-40 whitespace-nowrap"
+                >
+                  {fetchingUrl ? 'Leyendo...' : 'Leer Link'}
+                </button>
+              </div>
+
+              <textarea
+                rows={4}
+                placeholder="O pegá acá los apuntes, resumen o la editorial generada en tu cuaderno de NotebookLM para que nuestra IA redacte basándose 100% en esos datos reales..."
+                value={notebookSourceText}
+                onChange={(e) => setNotebookSourceText(e.target.value)}
+                className="w-full p-2.5 rounded-lg bg-[#111216] border border-[#292b36] text-[#f3f1ec] text-[11px] leading-relaxed focus:outline-none focus:border-[#d97d64]"
+              />
+
+              {sourceNotice && (
+                <p className="text-[10px] text-[#e6cca0] bg-[#e6cca0]/10 border border-[#e6cca0]/25 px-2.5 py-1.5 rounded-lg leading-snug">
+                  💡 {sourceNotice}
+                </p>
+              )}
+            </div>
           </div>
 
           <button
@@ -394,6 +629,8 @@ export const AIAssistantStudio: React.FC = () => {
             <span>
               {loading
                 ? 'Redactando con Inteligencia Editorial...'
+                : notebookSourceText.trim()
+                ? 'Redactar Nota Basada en NotebookLM'
                 : activeTool === 'article'
                 ? 'Redactar Nota Periodística Completa'
                 : 'Generar Redacción Editorial'}
@@ -401,123 +638,230 @@ export const AIAssistantStudio: React.FC = () => {
           </button>
         </div>
 
-        {/* Results Output Box */}
+        {/* COLUMNA DERECHA: Campos Editoriales Siempre Visibles + Botón Refinar con IA */}
         <div className="lg:col-span-7 natural-card p-5 rounded-2xl space-y-4 flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[#2d2f38]">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#93a887] flex items-center gap-1.5">
-                <Newspaper className="w-3.5 h-3.5" /> Resultado de la Redacción
-              </h3>
-              {generatedData && (
-                <span className="text-[10px] px-2 py-0.5 rounded bg-[#93a887]/20 text-[#93a887] font-semibold">
-                  Listo para publicar
-                </span>
-              )}
+            {/* Cabecera de la mesa de edición */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[#2d2f38]">
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#93a887] flex items-center gap-1.5">
+                  <Newspaper className="w-3.5 h-3.5" /> Resultado de la Redacción & Editor Editorial
+                </h3>
+                <p className="text-[11px] text-[#8c887f] mt-0.5">
+                  Podés pegar tu editorial de NotebookLM directo en los campos y tocar{' '}
+                  <strong className="text-[#e6cca0]">Refinar Editorial con IA</strong>.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {hasEditorialContent && (
+                  <button
+                    type="button"
+                    onClick={handleClearFields}
+                    className="p-1.5 rounded-lg bg-[#202228] hover:bg-[#2c2023] text-[#8c887f] hover:text-rose-300 border border-[#2d2f38] transition-colors cursor-pointer"
+                    title="Limpiar campos editoriales"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleRefineEditorial}
+                  disabled={refining || (!editorialBody.trim() && !notebookSourceText.trim())}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#e6cca0] to-[#d97d64] hover:opacity-95 text-[#151618] font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-40"
+                  title="Toma el texto editorial que pegaste y la IA lo pule, estructura subtítulos y genera Titular, Bajada y Resumen"
+                >
+                  {refining ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Wand2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>{refining ? 'Refinando Editorial...' : 'Refinar Editorial con IA'}</span>
+                </button>
+              </div>
             </div>
 
-            {generatedData ? (
-              <div className="space-y-4 text-xs">
-                {/* Header Titular & Copete */}
-                {generatedData.title && (
-                  <div className="p-4 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] uppercase font-bold text-[#e6cca0] tracking-wide">
-                        Titular & Bajada Periodística
-                      </span>
-                      <button
-                        onClick={() => copyToClipboard(`${generatedData.title}\n\n${generatedData.subtitle || ''}`, 'title')}
-                        className="text-[#aba79e] hover:text-[#f3f1ec] flex items-center gap-1"
-                      >
-                        {copiedKey === 'title' ? <Check className="w-3 h-3 text-[#93a887]" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedKey === 'title' ? 'Copiado' : 'Copiar'}</span>
-                      </button>
-                    </div>
-                    <h2 className="text-base font-black text-[#f3f1ec] leading-snug">{generatedData.title}</h2>
-                    {generatedData.subtitle && (
-                      <p className="text-xs text-[#aba79e] leading-relaxed border-l-2 border-[#d97d64] pl-2.5 italic">
-                        {generatedData.subtitle}
-                      </p>
+            {/* CAMPO 1: Titular Periodístico */}
+            <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] uppercase font-bold text-[#e6cca0] tracking-wide">
+                  1. Titular Principal de la Nota
+                </label>
+                {editorialTitle && (
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(editorialTitle, 'title')}
+                    className="text-[11px] text-[#aba79e] hover:text-[#f3f1ec] flex items-center gap-1"
+                  >
+                    {copiedKey === 'title' ? (
+                      <Check className="w-3 h-3 text-[#93a887]" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
                     )}
-                  </div>
-                )}
-
-                {/* Highlights */}
-                {Array.isArray(generatedData.keyHighlights) && generatedData.keyHighlights.length > 0 && (
-                  <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-2">
-                    <span className="text-[10px] uppercase font-bold text-[#93a887] flex items-center gap-1">
-                      <ListCheck className="w-3 h-3" /> Puntos Clave de la Nota
-                    </span>
-                    <ul className="space-y-1 text-[#aba79e]">
-                      {generatedData.keyHighlights.map((hl: string, i: number) => (
-                        <li key={i} className="flex items-start gap-1.5">
-                          <span className="text-[#d97d64] font-bold">•</span>
-                          <span>{hl}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Cuerpo del Artículo Editorial */}
-                {(generatedData.editorialText || generatedData.fullBio) && (
-                  <div className="p-4 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] uppercase font-bold text-[#e6cca0]">
-                        Cuerpo de la Nota / Biografía
-                      </span>
-                      <button
-                        onClick={() => copyToClipboard(generatedData.editorialText || generatedData.fullBio, 'body')}
-                        className="text-[#aba79e] hover:text-[#f3f1ec] flex items-center gap-1"
-                      >
-                        {copiedKey === 'body' ? <Check className="w-3 h-3 text-[#93a887]" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedKey === 'body' ? 'Copiado' : 'Copiar'}</span>
-                      </button>
-                    </div>
-                    <div className="text-[#aba79e] leading-relaxed whitespace-pre-line max-h-72 overflow-y-auto pr-1 text-xs">
-                      {generatedData.editorialText || generatedData.fullBio}
-                    </div>
-                  </div>
-                )}
-
-                {/* Quotes */}
-                {generatedData.quotes && (
-                  <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-1.5">
-                    <span className="text-[10px] uppercase font-bold text-[#e6cca0] flex items-center gap-1">
-                      <Quote className="w-3 h-3" /> Declaración Destacada
-                    </span>
-                    <p className="text-[#e6cca0] italic font-serif text-xs">{generatedData.quotes}</p>
-                  </div>
-                )}
-
-                {/* SEO */}
-                {generatedData.seoTitle && (
-                  <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-1.5">
-                    <span className="text-[10px] uppercase font-bold text-[#93a887]">SEO & Meta Tags</span>
-                    <p className="text-[#f3f1ec] font-semibold text-xs">{generatedData.seoTitle}</p>
-                    <p className="text-[#8c887f] text-[11px]">{generatedData.seoDesc}</p>
-                  </div>
+                    <span>{copiedKey === 'title' ? 'Copiado' : 'Copiar'}</span>
+                  </button>
                 )}
               </div>
-            ) : (
-              <div className="text-center py-16 text-[#78746c] space-y-2">
-                <Sparkles className="w-8 h-8 mx-auto opacity-40 text-[#e6cca0]" />
-                <p className="text-xs">
-                  Elegí un artista o completá los datos y hacé clic en "Redactar Nota Periodística Completa".
-                </p>
-                <p className="text-[11px] text-[#555]">
-                  Podrás enviar el resultado directamente a la sección de Entrevistas y Notas con 1 clic.
-                </p>
+              <input
+                type="text"
+                placeholder="Escribí o pegá el titular (o dejalo vacío y tocá 'Refinar Editorial con IA' para que lo arme solo)..."
+                value={editorialTitle}
+                onChange={(e) => setEditorialTitle(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-[#121317] border border-[#292b34] text-sm font-black text-[#f3f1ec] focus:outline-none focus:border-[#d97d64]"
+              />
+            </div>
+
+            {/* CAMPO 2: Subtítulo / Bajada Periodística */}
+            <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] uppercase font-bold text-[#e6cca0] tracking-wide">
+                  2. Subtítulo / Bajada Periodística
+                </label>
+                {editorialSubtitle && (
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(editorialSubtitle, 'subtitle')}
+                    className="text-[11px] text-[#aba79e] hover:text-[#f3f1ec] flex items-center gap-1"
+                  >
+                    {copiedKey === 'subtitle' ? (
+                      <Check className="w-3 h-3 text-[#93a887]" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                    <span>{copiedKey === 'subtitle' ? 'Copiado' : 'Copiar'}</span>
+                  </button>
+                )}
+              </div>
+              <textarea
+                rows={2}
+                placeholder="Bajada o copete de 2 oraciones que sintetiza el enfoque de la nota..."
+                value={editorialSubtitle}
+                onChange={(e) => setEditorialSubtitle(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-[#121317] border border-[#292b34] text-xs text-[#f3f1ec] leading-relaxed focus:outline-none focus:border-[#d97d64]"
+              />
+            </div>
+
+            {/* CAMPO 3: Resumen de Portada & Frase Destacada */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-1.5">
+                <label className="text-[10px] uppercase font-bold text-[#93a887] tracking-wide block">
+                  3A. Resumen Corto (Cards de Portada)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Resumen breve para la tarjeta en la sección Entrevistas..."
+                  value={editorialSummary}
+                  onChange={(e) => setEditorialSummary(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#121317] border border-[#292b34] text-xs text-[#f3f1ec] leading-relaxed focus:outline-none focus:border-[#d97d64]"
+                />
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-1.5">
+                <label className="text-[10px] uppercase font-bold text-[#e6cca0] tracking-wide flex items-center gap-1">
+                  <Quote className="w-3 h-3" /> 3B. Cita / Frase Destacada
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder='"Frase o declaración destacada del artista..."'
+                  value={editorialQuotes}
+                  onChange={(e) => setEditorialQuotes(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#121317] border border-[#292b34] text-xs text-[#e6cca0] italic leading-relaxed focus:outline-none focus:border-[#d97d64]"
+                />
+              </div>
+            </div>
+
+            {/* CAMPO 4: Cuerpo Completo de la Editorial / Nota */}
+            <div className="p-4 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="text-[10px] uppercase font-bold text-[#e6cca0] tracking-wide">
+                  4. Cuerpo Completo de la Editorial / Nota (Markdown)
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handlePasteFromClipboard('body')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#232632] hover:bg-[#2d3140] text-[11px] font-bold text-[#93a887] border border-[#353a4c] transition-colors cursor-pointer"
+                  >
+                    <ClipboardPaste className="w-3 h-3" />
+                    <span>Pegar Editorial de NotebookLM</span>
+                  </button>
+                  {editorialBody && (
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(editorialBody, 'body')}
+                      className="text-[11px] text-[#aba79e] hover:text-[#f3f1ec] flex items-center gap-1"
+                    >
+                      {copiedKey === 'body' ? (
+                        <Check className="w-3 h-3 text-[#93a887]" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                      <span>{copiedKey === 'body' ? 'Copiado' : 'Copiar'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <textarea
+                rows={11}
+                placeholder="Pegá aquí la editorial completa de NotebookLM o redactá el cuerpo de la nota. Podés usar subtítulos con ##. Luego podés tocar 'Refinar Editorial con IA' arriba para que Gemini pula la redacción y te arme el titular y la bajada automáticamente, o enviarla directo a publicar..."
+                value={editorialBody}
+                onChange={(e) => setEditorialBody(e.target.value)}
+                className="w-full p-3 rounded-lg bg-[#121317] border border-[#292b34] text-xs text-[#f3f1ec] leading-relaxed focus:outline-none focus:border-[#d97d64]"
+              />
+            </div>
+
+            {/* Puntos clave & SEO (si se generaron) */}
+            {keyHighlights.length > 0 && (
+              <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-2">
+                <span className="text-[10px] uppercase font-bold text-[#93a887] flex items-center gap-1">
+                  <ListCheck className="w-3 h-3" /> Puntos Clave Extraídos
+                </span>
+                <ul className="space-y-1 text-xs text-[#aba79e]">
+                  {keyHighlights.map((hl, i) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span className="text-[#d97d64] font-bold">•</span>
+                      <span>{hl}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {(seoTitle || seoDesc) && (
+              <div className="p-3.5 rounded-xl bg-[#18191e] border border-[#2e3039] space-y-1">
+                <span className="text-[10px] uppercase font-bold text-[#93a887]">
+                  SEO & Meta Tags Sugeridos
+                </span>
+                {seoTitle && <p className="text-[#f3f1ec] font-semibold text-xs">{seoTitle}</p>}
+                {seoDesc && <p className="text-[#8c887f] text-[11px]">{seoDesc}</p>}
               </div>
             )}
           </div>
 
-          {/* Action Buttons to connect with site directly */}
-          {generatedData && (
-            <div className="pt-4 border-t border-[#2d2f38] flex flex-wrap gap-2.5 justify-end">
+          {/* Botones de Acción Final hacia el sitio */}
+          <div className="pt-4 border-t border-[#2d2f38] flex flex-wrap gap-2.5 justify-between items-center">
+            <button
+              type="button"
+              onClick={handleRefineEditorial}
+              disabled={refining || (!editorialBody.trim() && !notebookSourceText.trim())}
+              className="px-3.5 py-2.5 rounded-xl bg-[#24252c] hover:bg-[#2e303b] text-[#e6cca0] font-bold text-xs border border-[#353846] transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+            >
+              {refining ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Wand2 className="w-3.5 h-3.5 text-[#d97d64]" />
+              )}
+              <span>🪄 Refinar y Completar Campos con IA</span>
+            </button>
+
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={handleTransferToInterview}
-                className="px-4 py-2.5 rounded-xl bg-[#93a887] hover:bg-[#829676] text-[#151618] font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                disabled={!hasEditorialContent}
+                className="px-4 py-2.5 rounded-xl bg-[#93a887] hover:bg-[#829676] text-[#151618] font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-40"
               >
                 <Newspaper className="w-3.5 h-3.5" />
                 <span>📰 Crear Nota / Entrevista con este Borrador</span>
@@ -526,16 +870,16 @@ export const AIAssistantStudio: React.FC = () => {
               <button
                 type="button"
                 onClick={handleTransferToArtist}
-                className="px-4 py-2.5 rounded-xl bg-[#24252c] hover:bg-[#2e303b] text-[#e6cca0] font-semibold text-xs border border-[#31333d] transition-colors flex items-center gap-1.5 cursor-pointer"
+                disabled={!hasEditorialContent}
+                className="px-4 py-2.5 rounded-xl bg-[#24252c] hover:bg-[#2e303b] text-[#e6cca0] font-semibold text-xs border border-[#31333d] transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
               >
                 <UserCheck className="w-3.5 h-3.5" />
                 <span>👤 Cargar en Perfil de Artista</span>
               </button>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
   );
 };
-
