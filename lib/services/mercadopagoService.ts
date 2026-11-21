@@ -10,7 +10,7 @@ import {
 import { PROFESSIONAL_FEATURED_PRICE_ARS } from '../constants/professionalCategories';
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
 
 // Idempotencia en memoria (persiste entre invocaciones en el mismo proceso Node.js)
 const globalForMp = globalThis as unknown as {
@@ -1433,4 +1433,121 @@ export async function checkAndActivateProfessionalPayment(professionalId: string
   }
 
   return { paid: false, professional: prof };
+}
+
+/**
+ * Crea una orden QR Interoperable 3.0 (EMVCo) para Colaboración Voluntaria / Donación
+ */
+export async function createDonationQrOrder(params: CreateDonationParams) {
+  const amount = Math.max(300, Math.round(Number(params.amount) || 3000));
+  const preference = await createDonationPreference({ ...params, amount });
+  const externalReference = `donation_qr|${Date.now()}_${Math.random().toString(36).slice(2, 6)}|${amount}`;
+
+  try {
+    const collectorId = await getMercadoPagoCollectorId();
+    const { externalPosId, staticPosQrImage } = await ensureMercadoPagoQrPos(collectorId);
+
+    const qrBody = {
+      external_reference: externalReference,
+      title: `Colaboración Voluntaria GUTA MÚSICA`.slice(0, 60),
+      description: `Aporte voluntario para sostener la difusión federal de música independiente`.slice(0, 100),
+      notification_url: `${SITE_URL}/api/mercadopago/webhook`,
+      total_amount: amount,
+      items: [
+        {
+          sku_number: `donation_${amount}`,
+          category: 'donations',
+          title: `Aporte Voluntario GUTA MÚSICA`,
+          description: 'Colaboración voluntaria para difusión musical gratuita',
+          unit_price: amount,
+          quantity: 1,
+          unit_measure: 'unit',
+          total_amount: amount,
+        },
+      ],
+    };
+
+    fetch(
+      `https://api.mercadopago.com/instore/qr/seller/collectors/${collectorId}/pos/${externalPosId}/orders`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(qrBody),
+      }
+    ).catch(() => {});
+
+    const qrRes = await fetch(
+      `https://api.mercadopago.com/instore/orders/qr/seller/collectors/${collectorId}/pos/${externalPosId}/qrs`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(qrBody),
+      }
+    );
+
+    if (qrRes.ok) {
+      const qrJson = await qrRes.json();
+      if (qrJson?.qr_data) {
+        return {
+          qrData: qrJson.qr_data as string,
+          staticPosQrImage: staticPosQrImage || null,
+          isInteroperableEmvco: true,
+          initPoint: preference.initPoint,
+          preferenceId: preference.preferenceId,
+          externalReference,
+          amountArs: amount,
+        };
+      }
+    }
+  } catch (err: any) {
+    console.warn('⚠️ Fallback a QR de Checkout Pro para donación:', err?.message);
+  }
+
+  return {
+    qrData: preference.initPoint as string,
+    staticPosQrImage: null,
+    isInteroperableEmvco: false,
+    initPoint: preference.initPoint,
+    preferenceId: preference.preferenceId,
+    externalReference,
+    amountArs: amount,
+  };
+}
+
+/**
+ * Verifica si una donación por QR ya se acreditó en Mercado Pago
+ */
+export async function checkDonationQrPayment(externalReference: string): Promise<{
+  paid: boolean;
+}> {
+  if (!externalReference || !MP_ACCESS_TOKEN) return { paid: false };
+
+  try {
+    const searchRes = await fetch(
+      `https://api.mercadopago.com/v1/payments/search?external_reference=${encodeURIComponent(
+        externalReference
+      )}&status=approved&limit=5`,
+      {
+        headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+        cache: 'no-store',
+      }
+    );
+
+    if (searchRes.ok) {
+      const searchData = await searchRes.json();
+      const results = Array.isArray(searchData.results) ? searchData.results : [];
+      if (results.length > 0) {
+        await processMercadoPagoPayment(results[0].id);
+        return { paid: true };
+      }
+    }
+  } catch {}
+
+  return { paid: false };
 }

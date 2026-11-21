@@ -25,6 +25,10 @@ interface SponsorQrPaymentModalProps {
   amountArs: number;
   isInteroperableEmvco?: boolean;
   checkPaymentUrl?: string;
+  subtitleText?: string;
+  successTitle?: string;
+  successSubtitle?: string;
+  footerNote?: string;
   onPaymentConfirmed: (allianceId: string) => void;
 }
 
@@ -49,6 +53,10 @@ export const SponsorQrPaymentModal: React.FC<SponsorQrPaymentModalProps> = ({
   planName,
   amountArs,
   checkPaymentUrl,
+  subtitleText,
+  successTitle,
+  successSubtitle,
+  footerNote,
   onPaymentConfirmed,
 }) => {
   const [isPaid, setIsPaid] = useState(false);
@@ -145,7 +153,13 @@ export const SponsorQrPaymentModal: React.FC<SponsorQrPaymentModalProps> = ({
             Escaneá con tu Billetera Favorita
           </h3>
           <p className="text-xs text-[#aba79e]">
-            <b className="text-[#e6cca0]">{brandName}</b> • {planName} (30 días)
+            {subtitleText ? (
+              subtitleText
+            ) : (
+              <>
+                <b className="text-[#e6cca0]">{brandName}</b> • {planName} (30 días)
+              </>
+            )}
           </p>
         </div>
 
@@ -153,10 +167,11 @@ export const SponsorQrPaymentModal: React.FC<SponsorQrPaymentModalProps> = ({
           <div className="py-10 px-4 text-center space-y-3 bg-[#5ce487]/10 border border-[#5ce487]/40 rounded-2xl">
             <CheckCircle2 className="w-14 h-14 text-[#5ce487] mx-auto animate-bounce" />
             <h4 className="text-lg font-black text-[#f3f1ec]">
-              ¡Pago Aprobado y Auspicio Activado!
+              {successTitle || '¡Pago Aprobado y Auspicio Activado!'}
             </h4>
             <p className="text-xs text-[#a0d29f]">
-              Tus 30 días de auspicio ya están activos. Redirigiendo a tu panel de gestión...
+              {successSubtitle ||
+                'Tus 30 días de auspicio ya están activos. Redirigiendo a tu panel de gestión...'}
             </p>
           </div>
         ) : (
@@ -268,7 +283,7 @@ export const SponsorQrPaymentModal: React.FC<SponsorQrPaymentModalProps> = ({
 
             <p className="text-[10px] text-center text-[#78746c] flex items-center justify-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-[#5ce487]" />
-              <span>Activación automática de los 30 días al instante de acreditarse.</span>
+              <span>{footerNote || 'Activación automática de los 30 días al instante de acreditarse.'}</span>
             </p>
           </>
         )}

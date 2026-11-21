@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
-import { Heart, CheckCircle2, Loader2, ArrowRight, Globe } from 'lucide-react';
+import { Heart, CheckCircle2, Loader2, ArrowRight, Globe, QrCode } from 'lucide-react';
+import { SponsorQrPaymentModal } from './SponsorQrPaymentModal';
 
 const PRESET_ARS_AMOUNTS = [
   { value: 1500, label: '$1.500' },
@@ -35,7 +36,17 @@ export const VoluntaryContributionBanner: React.FC = () => {
   const [isCustom, setIsCustom] = useState(false);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [qrLoading, setQrLoading] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [qrModalState, setQrModalState] = useState<{
+    isOpen: boolean;
+    qrData: string;
+    staticPosQrImage?: string | null;
+    initPoint?: string;
+    externalReference: string;
+    amountArs: number;
+    isInteroperableEmvco?: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (paymentStatus === 'success') {
@@ -114,6 +125,46 @@ export const VoluntaryContributionBanner: React.FC = () => {
       console.error('Error al iniciar colaboración:', err);
       alert(err.message || 'Error al conectar con la pasarela de pago.');
       setLoading(false);
+    }
+  };
+
+  const handleDonateQr = async () => {
+    if (effectiveAmount < 300) {
+      alert('El aporte mínimo por QR Interoperable es de $300 ARS.');
+      return;
+    }
+
+    setQrLoading(true);
+    try {
+      const res = await fetch('/api/mercadopago/preference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'donation',
+          amount: effectiveAmount,
+          paymentProvider: 'mercadopago_qr',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.qrData) {
+        throw new Error(data.error || 'No se pudo generar el código QR.');
+      }
+
+      setQrModalState({
+        isOpen: true,
+        qrData: data.qrData,
+        staticPosQrImage: data.staticPosQrImage,
+        initPoint: data.initPoint,
+        externalReference: data.externalReference || `don_${Date.now()}`,
+        amountArs: data.amountArs || effectiveAmount,
+        isInteroperableEmvco: data.isInteroperableEmvco,
+      });
+    } catch (err: any) {
+      console.error('Error al generar QR de donación:', err);
+      alert(err.message || 'Error al generar el QR de pago.');
+    } finally {
+      setQrLoading(false);
     }
   };
 
@@ -285,33 +336,81 @@ export const VoluntaryContributionBanner: React.FC = () => {
               </div>
             )}
 
-            {/* Botón directo a Mercado Pago o PayPal */}
-            <button
-              type="button"
-              onClick={() => handleDonate()}
-              disabled={loading || effectiveAmount < minAmount}
-              className={`w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-sm disabled:opacity-50 cursor-pointer shrink-0 ${
-                isPayPal
-                  ? 'bg-[#FFC439] hover:bg-[#f2b324] text-[#121316] shadow-[#FFC439]/20'
-                  : 'bg-[#009EE3] hover:bg-[#008ac7] text-[#121316] shadow-[#009EE3]/20'
-              }`}
-            >
-              {loading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#121316]" />
-              ) : (
-                <>
-                  <span>
-                    {isPayPal
-                      ? `PayPal US$ ${effectiveAmount}`
-                      : `Aportar $${effectiveAmount.toLocaleString('es-AR')}`}
-                  </span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </>
+            {/* Botones directos: QR Interoperable (ARS) + Mercado Pago / PayPal */}
+            <div className="flex items-center gap-1.5 w-full sm:w-auto">
+              {!isPayPal && (
+                <button
+                  type="button"
+                  onClick={handleDonateQr}
+                  disabled={qrLoading || loading || effectiveAmount < minAmount}
+                  title="Pagar escaneando QR Interoperable con Mercado Pago, MODO, Ualá, Naranja X, Cuenta DNI o cualquier billetera"
+                  className="px-3 py-2 sm:py-1.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 bg-[#15242d] hover:bg-[#1b313e] text-[#38bdf8] border border-[#009EE3]/45 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer shrink-0"
+                >
+                  {qrLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#38bdf8]" />
+                  ) : (
+                    <>
+                      <QrCode className="w-3.5 h-3.5" />
+                      <span>QR</span>
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+
+              <button
+                type="button"
+                onClick={() => handleDonate()}
+                disabled={loading || qrLoading || effectiveAmount < minAmount}
+                className={`flex-1 sm:flex-initial px-4 py-2 sm:py-1.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-sm disabled:opacity-50 cursor-pointer shrink-0 ${
+                  isPayPal
+                    ? 'bg-[#FFC439] hover:bg-[#f2b324] text-[#121316] shadow-[#FFC439]/20'
+                    : 'bg-[#009EE3] hover:bg-[#008ac7] text-[#121316] shadow-[#009EE3]/20'
+                }`}
+              >
+                {loading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#121316]" />
+                ) : (
+                  <>
+                    <span>
+                      {isPayPal
+                        ? `PayPal US$ ${effectiveAmount}`
+                        : `Aportar $${effectiveAmount.toLocaleString('es-AR')}`}
+                    </span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </section>
+
+      {qrModalState && (
+        <SponsorQrPaymentModal
+          isOpen={qrModalState.isOpen}
+          onClose={() => setQrModalState(null)}
+          qrData={qrModalState.qrData}
+          staticPosQrImage={qrModalState.staticPosQrImage}
+          initPoint={qrModalState.initPoint}
+          allianceId={qrModalState.externalReference}
+          brandName="GUTA MÚSICA"
+          planName="Colaboración Voluntaria"
+          subtitleText="Colaboración Voluntaria • Música Independiente Federal"
+          successTitle="¡Gracias por tu aporte a GUTA! 💙"
+          successSubtitle="Tu colaboración voluntaria ya se acreditó y ayuda a sostener la difusión gratuita para artistas de todo el país."
+          footerNote="Escaneá con cualquier billetera argentina (MP, MODO, Ualá, Cuenta DNI, Naranja X)."
+          amountArs={qrModalState.amountArs}
+          isInteroperableEmvco={qrModalState.isInteroperableEmvco}
+          checkPaymentUrl={`/api/mercadopago/check-donation?ref=${encodeURIComponent(
+            qrModalState.externalReference
+          )}`}
+          onPaymentConfirmed={() => {
+            setQrModalState(null);
+            setShowSuccessToast(true);
+            setTimeout(() => setShowSuccessToast(false), 9000);
+          }}
+        />
+      )}
     </>
   );
 };

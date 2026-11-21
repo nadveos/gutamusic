@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   createDonationPreference,
+  createDonationQrOrder,
   createWeeklyFeaturedPreference,
   createSponsorAlliancePreference,
 } from '@/lib/services/mercadopagoService';
@@ -58,6 +59,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Por defecto: donación / colaboración voluntaria
+    if (body.paymentProvider === 'mercadopago_qr') {
+      const qrOrder = await createDonationQrOrder({
+        amount: body.amount,
+        donorName: body.donorName,
+        donorEmail: body.donorEmail,
+        message: body.message,
+      });
+
+      return NextResponse.json({
+        success: true,
+        ...qrOrder,
+      });
+    }
+
     const pref = await createDonationPreference({
       amount: body.amount,
       donorName: body.donorName,
