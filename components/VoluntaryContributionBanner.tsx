@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
 import { Heart, CheckCircle2, Loader2, ArrowRight, Globe, QrCode } from 'lucide-react';
 import { SponsorQrPaymentModal } from './SponsorQrPaymentModal';
+import { useL10n } from './I18nProvider';
 
 const PRESET_ARS_AMOUNTS = [
   { value: 1500, label: '$1.500' },
@@ -21,6 +22,7 @@ export const VoluntaryContributionBanner: React.FC = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const paymentStatus = searchParams.get('payment');
+  const { t } = useL10n();
 
   // No renderizar en páginas administrativas o paneles de gestión
   const isExcludedRoute =
@@ -201,14 +203,14 @@ export const VoluntaryContributionBanner: React.FC = () => {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-xs sm:text-sm text-[#f3f1ec] tracking-tight truncate">
-                    Colaboración Voluntaria
+                    {t.donationTitle}
                   </span>
                   <span className="text-[10px] text-[#e6cca0] font-semibold bg-[#e6cca0]/10 px-2 py-0.5 rounded-full border border-[#e6cca0]/20 inline-block">
-                    Música Federal
+                    {t.donationBadge}
                   </span>
                 </div>
                 <p className="text-[11px] text-[#8c887f] truncate hidden xl:block mt-0.5">
-                  Difusión comunitaria y gratuita para artistas. Tu aporte nos ayuda a sostener la plataforma.
+                  {t.donationSubtitle}
                 </p>
               </div>
             </div>
@@ -314,7 +316,7 @@ export const VoluntaryContributionBanner: React.FC = () => {
                 }`}
                 title="Ingresar otro monto libre"
               >
-                Otro
+                {t.donationOther}
               </button>
             </div>
 
@@ -374,7 +376,7 @@ export const VoluntaryContributionBanner: React.FC = () => {
                     <span>
                       {isPayPal
                         ? `PayPal US$ ${effectiveAmount}`
-                        : `Aportar $${effectiveAmount.toLocaleString('es-AR')}`}
+                        : `${t.donationContributeBtn} $${effectiveAmount.toLocaleString('es-AR')}`}
                     </span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </>

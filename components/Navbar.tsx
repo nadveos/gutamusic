@@ -7,6 +7,7 @@ import { Radio, Music2, Calendar, Mic2, BookOpen, Menu, X, Search, Sparkles, Hea
 import { ShareButton } from './ShareButton';
 import { OfficialSocialsBar } from './OfficialSocialsBar';
 import { SearchModal } from './SearchModal';
+import { useL10n, LanguageSwitcher } from './I18nProvider';
 import { MusicDataService } from '../lib/api';
 import { DEFAULT_OFFICIAL_SOCIALS } from '../lib/socialUtils';
 import { OfficialSocialsSettings } from '../lib/types';
@@ -16,6 +17,7 @@ export const Navbar: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [socials, setSocials] = useState<OfficialSocialsSettings>(DEFAULT_OFFICIAL_SOCIALS);
   const pathname = usePathname();
+  const { t } = useL10n();
 
   // Atajo global Ctrl+K / Cmd+K para abrir el buscador modal
   useEffect(() => {
@@ -48,12 +50,12 @@ export const Navbar: React.FC = () => {
   }
 
   const navLinks = [
-    { href: '/', label: 'Inicio', icon: Music2 },
-    { href: '/artistas', label: 'Artistas', icon: Mic2 },
-    { href: '/profesionales', label: 'Profesionales & Servicios', icon: Headphones },
-    { href: '/entrevistas', label: 'Entrevistas & Lives', icon: Radio },
-    { href: '/efemerides', label: 'Efemérides', icon: BookOpen },
-    { href: '/contacto', label: 'Contacto', icon: Mail },
+    { href: '/', label: t.navHome, icon: Music2 },
+    { href: '/artistas', label: t.navArtists, icon: Mic2 },
+    { href: '/profesionales', label: t.navProfessionals, icon: Headphones },
+    { href: '/entrevistas', label: t.navInterviews, icon: Radio },
+    { href: '/efemerides', label: t.navEphemerides, icon: BookOpen },
+    { href: '/contacto', label: t.navContact, icon: Mail },
   ];
 
   const monthNames = [
@@ -77,15 +79,15 @@ export const Navbar: React.FC = () => {
         {/* Top Banner Ticker with Official Socials */}
         <div className="bg-[#18191e] text-xs py-1 px-4 border-b border-[#2a2c34] flex items-center justify-between text-[#aba79e]">
           <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap text-[11px]">
-            <span className="font-bold text-[#e6cca0]">
+            <span className="notranslate font-bold text-[#e6cca0]">
               GUTA MÚSICA —
             </span>
             <span className="hidden sm:inline text-[#a09c93]">
-              Plataforma Federal de Difusión para Artistas Independientes
+              {t.topBannerSubtitle}
             </span>
             <Link href="/efemerides" className="hidden lg:flex items-center gap-1.5 text-[#93a887] hover:text-[#e6cca0] transition-colors ml-2 pl-2 border-l border-[#2e3039]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#93a887]" aria-hidden="true"></span>
-              <span>Efeméride: {todayFormatted}</span>
+              <span>{t.topBannerEphemeris}: {todayFormatted}</span>
             </Link>
           </div>
 
@@ -133,7 +135,8 @@ export const Navbar: React.FC = () => {
             </nav>
 
             {/* CTA & Search Action */}
-            <div className="hidden lg:flex items-center gap-2.5">
+            <div className="hidden lg:flex items-center gap-2">
+              <LanguageSwitcher variant="desktop" />
               <ShareButton
                 title="GUTA MÚSICA — Plataforma Federal de Difusión"
                 text="Descubrí la plataforma federal para artistas independientes y emergentes en GUTA MÚSICA."
@@ -146,7 +149,7 @@ export const Navbar: React.FC = () => {
                 aria-label="Abrir buscador rápido (Ctrl+K)"
               >
                 <Search className="w-3.5 h-3.5 text-[#e6cca0]" aria-hidden="true" />
-                <span>Explorar</span>
+                <span>{t.exploreSearch}</span>
                 <kbd className="hidden xl:inline-block text-[10px] text-[#7d7970] font-mono bg-[#18191e] px-1.5 py-0.5 rounded border border-[#2d2f38]">
                   ⌘K
                 </kbd>
@@ -155,14 +158,14 @@ export const Navbar: React.FC = () => {
                 href="/login"
                 className="text-xs font-semibold px-3 py-2 rounded-lg border border-[#3c3f4c] bg-[#222329]/80 hover:bg-[#2a2c35] text-[#f3f1ec] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
               >
-                Ingresar
+                {t.loginBtn}
               </Link>
               <Link
                 href="/registro"
                 className="inline-flex items-center gap-1.5 text-xs font-extrabold px-4 py-2 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e6cca0] shadow-md shadow-[#d97d64]/30 whitespace-nowrap"
               >
                 <Sparkles className="w-3.5 h-3.5 text-[#151618]" aria-hidden="true" />
-                <span>Registrá tu Banda Gratis</span>
+                <span>{t.registerBandBtn}</span>
               </Link>
             </div>
 
@@ -173,8 +176,9 @@ export const Navbar: React.FC = () => {
                 className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] text-[#151618] font-extrabold text-[11px] sm:text-xs shadow-md shadow-[#d97d64]/25 active:scale-95 whitespace-nowrap"
               >
                 <Sparkles className="w-3 h-3 text-[#151618]" aria-hidden="true" />
-                <span>+ Sumar Banda</span>
+                <span>{t.registerBandMobileBtn}</span>
               </Link>
+              <LanguageSwitcher variant="desktop" />
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(true)}
@@ -227,22 +231,23 @@ export const Navbar: React.FC = () => {
               );
             })}
             <div className="pt-3 border-t border-[#2d2f38] space-y-2.5">
+              <LanguageSwitcher variant="mobile" />
               <OfficialSocialsBar settings={socials} variant="drawer" />
 
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="w-full flex items-center justify-center text-center font-bold text-xs py-2 rounded-lg bg-[#d97d64] text-[#151618]"
+                  className="w-full flex items-center justify-center text-center font-bold text-xs py-2 rounded-lg bg-[#222329] border border-[#3c3f4c] text-[#f3f1ec]"
                 >
-                  Acceso Artistas
+                  {t.loginBtn}
                 </Link>
                 <Link
                   href="/registro"
                   onClick={() => setIsOpen(false)}
-                  className="w-full flex items-center justify-center text-center font-bold text-xs py-2 rounded-lg border border-[#d97d64] text-[#d97d64] bg-[#222329]"
+                  className="w-full flex items-center justify-center text-center font-extrabold text-xs py-2 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] text-[#151618]"
                 >
-                  + Registrar Banda
+                  {t.registerBandMobileBtn}
                 </Link>
               </div>
             </div>

@@ -7,6 +7,8 @@ import { BrandAllianceShowcase } from '../components/BrandAllianceShowcase';
 import { VoluntaryContributionBanner } from '../components/VoluntaryContributionBanner';
 import { PersistentSpotifyPlayer } from '../components/PersistentSpotifyPlayer';
 import { ChunkErrorListener } from '../components/ChunkErrorListener';
+import { I18nProvider } from '../components/I18nProvider';
+import { CommunityNoticeDialog } from '../components/CommunityNoticeDialog';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
 
@@ -101,17 +103,20 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-[#151618] text-[#f3f1ec] antialiased selection:bg-[#d97d64] selection:text-[#151618]">
-        <ChunkErrorListener />
-        <Navbar />
-        <main id="main-content" tabIndex={-1} className="min-h-[calc(100vh-140px)] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 outline-none space-y-6">
-          <Suspense fallback={null}>
-            <VoluntaryContributionBanner />
-          </Suspense>
-          {children}
-          <BrandAllianceShowcase sector="global_footer" />
-        </main>
-        <Footer />
-        <PersistentSpotifyPlayer />
+        <I18nProvider>
+          <ChunkErrorListener />
+          <Navbar />
+          <main id="main-content" tabIndex={-1} className="min-h-[calc(100vh-140px)] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 outline-none space-y-6">
+            <Suspense fallback={null}>
+              <VoluntaryContributionBanner />
+            </Suspense>
+            {children}
+            <BrandAllianceShowcase sector="global_footer" />
+          </main>
+          <Footer />
+          <PersistentSpotifyPlayer />
+          <CommunityNoticeDialog />
+        </I18nProvider>
       </body>
     </html>
   );
