@@ -211,6 +211,15 @@ export async function updateApplicationStatus({
     console.warn('⚠️ No se pudo revalidar rutas tras actualizar postulación:', revalErr);
   }
 
+  // Si se aprobó el artista, disparar rotación automática de la Playlist Oficial de Spotify en segundo plano
+  if (status === 'approved') {
+    import('./spotifyPlaylistRotationService')
+      .then(({ rotateOfficialSpotifyPlaylist }) => rotateOfficialSpotifyPlaylist())
+      .catch((rotErr) =>
+        console.warn('⚠️ Rotación automática de playlist Spotify en background omitida:', rotErr?.message || rotErr)
+      );
+  }
+
   return { success: true, appRecord, artistRecord };
 }
 

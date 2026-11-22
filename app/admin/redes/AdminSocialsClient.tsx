@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OfficialSocialsSettings, OfficialPlatformKey } from '../../../lib/types';
 import { PLATFORMS_META, PLATFORM_KEYS, SocialIcon, buildSocialUrl } from '../../../lib/socialUtils';
 import { MusicDataService } from '../../../lib/api';
@@ -20,6 +20,11 @@ import {
   Zap,
   RotateCcw,
   Layers,
+  Music,
+  RefreshCw,
+  Crown,
+  ShieldCheck,
+  Link2,
 } from 'lucide-react';
 
 interface AdminSocialsClientProps {
@@ -32,6 +37,80 @@ export const AdminSocialsClient: React.FC<AdminSocialsClientProps> = ({ initialS
   const [isSaving, setIsSaving] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [previewLocation, setPreviewLocation] = useState<'header' | 'drawer' | 'footer'>('header');
+
+  // Estado de Rotación Automática de Playlist Oficial de Spotify
+  const [spotifyStatus, setSpotifyStatus] = useState<{
+    connected: boolean;
+    playlistId: string;
+    redirectUri: string;
+    lastRotationAt?: string;
+    lastRotationSummary?: string;
+    lastArtistsOrder?: string[];
+    rotationStep?: number;
+  } | null>(null);
+  const [isRotatingSpotify, setIsRotatingSpotify] = useState(false);
+
+  const fetchSpotifyRotationStatus = async () => {
+    try {
+      const res = await fetch('/api/spotify/rotate-playlist', { cache: 'no-store' });
+      const data = await res.json();
+      if (data.success) {
+        setSpotifyStatus(data);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    fetchSpotifyRotationStatus();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('spotify_connected') === '1') {
+        const tracks = params.get('tracks');
+        setNotification({
+          type: 'success',
+          text: `¡Cuenta de Spotify vinculada con éxito! Rotación inicial ejecutada (${tracks || 'OK'} tracks ordenados con Raúl Domingo #1 y Carlos Yoel Moreno protegido).`,
+        });
+      } else if (params.get('spotify_error')) {
+        setNotification({
+          type: 'error',
+          text: `Error vinculando Spotify: ${params.get('spotify_error')}`,
+        });
+      }
+    }
+  }, []);
+
+  const handleTriggerSpotifyRotation = async () => {
+    setIsRotatingSpotify(true);
+    setNotification(null);
+    try {
+      const res = await fetch('/api/spotify/rotate-playlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotification({
+          type: 'success',
+          text: `¡Playlist Oficial rotada en Spotify! (${data.totalTracks} canciones: ${data.raulTracksCount} de Raúl Domingo fijas arriba + ${data.rotatedSiteArtistsCount} de artistas GUTA + ${data.carlosTracksCount} de Carlos Yoel Moreno).`,
+        });
+        await fetchSpotifyRotationStatus();
+      } else {
+        setNotification({
+          type: 'error',
+          text: data.error || 'No se pudo rotar la playlist de Spotify.',
+        });
+      }
+    } catch (err: any) {
+      setNotification({
+        type: 'error',
+        text: err?.message || 'Error de red al rotar playlist de Spotify.',
+      });
+    } finally {
+      setIsRotatingSpotify(false);
+    }
+  };
 
   const handleToggle = (platform: OfficialPlatformKey) => {
     setSettings((prev) => ({
@@ -182,6 +261,125 @@ export const AdminSocialsClient: React.FC<AdminSocialsClientProps> = ({ initialS
           <div className="w-10 h-10 rounded-lg bg-sand-soft text-[#e6cca0] flex items-center justify-center">
             <Radio className="w-5 h-5" />
           </div>
+        </div>
+      </div>
+
+      {/* Spotify Official Playlist Auto-Rotation Manager */}
+      <div className="natural-card p-5 rounded-2xl border border-[#1DB954]/30 bg-gradient-to-br from-[#141f18] via-[#16181d] to-[#141519] space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#253329] pb-4">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-[#1DB954]/15 border border-[#1DB954]/35 text-[#1DB954] flex items-center justify-center flex-shrink-0">
+              <Music className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-black text-[#f3f1ec]">
+                  Rotación Automática — Playlist Oficial GUTA MÚSICA (Spotify)
+                </h3>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${
+                    spotifyStatus?.connected
+                      ? 'bg-[#1DB954]/15 text-[#4ade80] border-[#1DB954]/40'
+                      : 'bg-[#e6cca0]/15 text-[#e6cca0] border-[#e6cca0]/30'
+                  }`}
+                >
+                  {spotifyStatus?.connected ? '● OAuth Conectado' : '○ Pendiente Vincular (1 única vez)'}
+                </span>
+              </div>
+              <p className="text-xs text-[#9ca3af] mt-0.5">
+                Actualiza automáticamente el orden de la playlist oficial cada vez que se aprueba una banda, con el cron semanal o al pulsar &ldquo;Rotar Ahora&rdquo;.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <a
+              href="/api/spotify/auth"
+              className="px-3.5 py-2 rounded-xl bg-[#1c2420] hover:bg-[#243029] text-[#86efac] border border-[#2f4739] text-xs font-bold transition-all flex items-center gap-1.5"
+              title="Conectar la cuenta de Spotify dueña de la Playlist Oficial (solo se hace 1 vez)"
+            >
+              <Link2 className="w-3.5 h-3.5" />
+              <span>{spotifyStatus?.connected ? 'Revincular Cuenta Spotify' : 'Vincular Spotify (1 sola vez)'}</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={handleTriggerSpotifyRotation}
+              disabled={isRotatingSpotify || !spotifyStatus?.connected}
+              className="px-4 py-2 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-[#0c120e] font-black text-xs transition-all flex items-center gap-1.5 shadow-lg shadow-[#1DB954]/20 disabled:opacity-40"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRotatingSpotify ? 'animate-spin' : ''}`} />
+              <span>{isRotatingSpotify ? 'Rotando Playlist...' : 'Rotar Playlist Oficial Ahora'}</span>
+            </button>
+
+            <a
+              href={`https://open.spotify.com/playlist/${spotifyStatus?.playlistId || '5eprX7q6HoedI2nnnHEE2H'}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 rounded-xl bg-[#1e2028] hover:bg-[#282b36] text-[#aba79e] hover:text-[#f3f1ec] border border-[#2f3240] text-xs font-semibold flex items-center gap-1"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-[#1DB954]" />
+              <span>Abrir Playlist</span>
+            </a>
+          </div>
+        </div>
+
+        {/* Reglas de Prioridad y Excepción Configuradas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <div className="p-3 rounded-xl bg-[#121514]/90 border border-[#253329] flex items-start gap-2.5">
+            <Crown className="w-4 h-4 text-[#e6cca0] flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-[#e6cca0] block">#1 Prioridad Fija Superior</span>
+              <span className="text-[11px] text-[#aba79e]">
+                <strong>Raúl Domingo</strong> (<em>Amor en el viento</em>) permanece siempre al tope (#1) de la playlist en cada rotación.
+              </span>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-[#121514]/90 border border-[#253329] flex items-start gap-2.5">
+            <RefreshCw className="w-4 h-4 text-[#1DB954] flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-[#86efac] block">Rotación Circular Debajo</span>
+              <span className="text-[11px] text-[#aba79e]">
+                Todos los artistas aprobados en el catálogo de <strong>GUTA MÚSICA</strong> con Spotify rotan su posición automáticamente debajo de Raúl Domingo.
+              </span>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-[#121514]/90 border border-[#253329] flex items-start gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-[#d97d64] flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-[#f3f1ec] block">Excepción Protegida (Amigo)</span>
+              <span className="text-[11px] text-[#aba79e]">
+                <strong>Carlos Yoel Moreno</strong> (sin ficha en el sitio) está blindado: sus tracks nunca se borran y participan en la rotación debajo de Raúl Domingo.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Estado de última rotación o guía de Redirect URI */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-[11px] text-[#8c887f]">
+          <div>
+            {spotifyStatus?.lastRotationSummary ? (
+              <span>
+                <strong className="text-[#86efac]">Última rotación:</strong> {spotifyStatus.lastRotationSummary}
+              </span>
+            ) : (
+              <span>
+                Para habilitar la escritura en Spotify, agregá en tu Spotify Developer Dashboard el Redirect URI:{' '}
+                <code className="px-1.5 py-0.5 rounded bg-black/40 text-[#e6cca0] font-mono">
+                  {spotifyStatus?.redirectUri || 'https://guta.musica.ar/api/spotify/callback'}
+                </code>{' '}
+                y hacé clic en <strong>Vincular Spotify</strong>.
+              </span>
+            )}
+          </div>
+          {spotifyStatus?.lastArtistsOrder && spotifyStatus.lastArtistsOrder.length > 0 && (
+            <div className="text-[10px] text-[#aba79e] truncate max-w-xl" title={spotifyStatus.lastArtistsOrder.join(' → ')}>
+              <strong>Orden actual:</strong> {spotifyStatus.lastArtistsOrder.slice(0, 6).join(' → ')}
+              {spotifyStatus.lastArtistsOrder.length > 6 ? ` (+${spotifyStatus.lastArtistsOrder.length - 6} más)` : ''}
+            </div>
+          )}
         </div>
       </div>
 
