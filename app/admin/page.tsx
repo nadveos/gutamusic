@@ -7,6 +7,7 @@ import { getWeeklyFeaturedStatus } from '../../lib/services/featuredRotationServ
 import { getDaysRemaining } from '../../lib/constants/sponsorPricing';
 import { getProfessionalsFromDb } from '../../lib/services/professionalsService';
 import { AdminHeader } from '../../components/admin/AdminHeader';
+import { AdminCommunityBroadcastCard } from '../../components/admin/AdminCommunityBroadcastCard';
 import {
   AdminPendingAlerts,
   CollapsibleDashboardArtists,
@@ -148,6 +149,9 @@ export default async function AdminDashboardPage() {
         initialPendingArtists={pendingArtistApps}
         initialProfessionals={professionals}
       />
+
+      {/* 1b. Comunicado Masivo 1-Clic a Todos los Registrados en Todas las Categorías */}
+      <AdminCommunityBroadcastCard totalEstimatedRecipients={userCount} />
 
       {/* 2. Acciones Rápidas (Subido a la parte superior del Dashboard) */}
       <section className="space-y-4">

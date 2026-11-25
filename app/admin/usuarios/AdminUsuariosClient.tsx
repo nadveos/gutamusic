@@ -26,6 +26,7 @@ import {
   Check,
 } from 'lucide-react';
 import { AdminHeader } from '../../../components/admin/AdminHeader';
+import { AdminCommunityBroadcastCard } from '../../../components/admin/AdminCommunityBroadcastCard';
 
 interface LinkedArtist {
   id: string;
@@ -539,6 +540,9 @@ export function AdminUsuariosClient() {
           setShowCreateModal(true);
         }}
       />
+
+      {/* Botón 1-Clic: Envío Masivo de Comunicado Oficial a todos los registrados */}
+      <AdminCommunityBroadcastCard totalEstimatedRecipients={stats.total} />
 
       {/* Ribbon de Métricas */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

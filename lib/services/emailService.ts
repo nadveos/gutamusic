@@ -446,3 +446,207 @@ export async function sendIncompleteProfileReminderEmail({
     return { success: false, error: err?.message || 'Error al enviar recordatorio' };
   }
 }
+
+/**
+ * Construye el HTML del Comunicado Oficial de Transparencia y Sostenibilidad de GUTA MÚSICA
+ * mantendo la estética dark mode, terracota (#d97d64), arena (#e6cca0) y salvia (#93a887).
+ */
+export function buildCommunityTransparencyEmailHtml(recipientName = 'Comunidad'): string {
+  const cleanName = recipientName?.trim() || 'Artista / Profesional';
+  const playlistUrl = 'https://open.spotify.com/playlist/5eprX7q6HoedI2nnnHEE2H';
+
+  return wrapEmailTemplate(`
+    <div style="margin-bottom: 14px;">
+      <span style="display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #93a887; background-color: rgba(147, 168, 135, 0.14); border: 1px solid rgba(147, 168, 135, 0.35); padding: 4px 12px; border-radius: 9999px;">
+        Comunicado Oficial a la Comunidad
+      </span>
+    </div>
+
+    <h1 style="margin: 0 0 14px 0; font-size: 21px; font-weight: 900; line-height: 1.3; color: #f3f1ec;">
+      Hola ${cleanName}, recordatorio importante de GUTA MÚSICA 🎶
+    </h1>
+
+    <p style="margin: 0 0 22px 0; font-size: 14px; line-height: 1.65; color: #aba79e;">
+      Te escribimos a vos y a todos los artistas, profesionales, sellos y miembros registrados en <strong style="color: #f3f1ec;">GUTA MÚSICA</strong> para compartirte tres puntos clave sobre cómo funciona y se sostiene nuestra plataforma:
+    </p>
+
+    <!-- 1° Gratuidad, Transparencia y Playlist Oficial -->
+    <div style="background-color: #202229; border: 1px solid #323542; border-left: 4px solid #d97d64; border-radius: 12px; padding: 18px 20px; margin-bottom: 16px;">
+      <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #d97d64;">
+        1° • Registro 100% Gratuito y Rotación en Playlist Oficial
+      </p>
+      <p style="margin: 0; font-size: 13.5px; line-height: 1.65; color: #f3f1ec;">
+        <strong>GUTA MÚSICA nunca solicitará por ningún medio dinero a cambio de rotación en nuestra Playlist Oficial de Spotify o por la inclusión en la web.</strong> El registro de artistas y profesionales es <strong>100% gratuito</strong>. Asimismo, ofrecemos opciones de destaques semanales o mensuales únicamente como un medio opcional para sostener el servicio online, pero <strong>no es obligatorio</strong> bajo ningún concepto.
+      </p>
+    </div>
+
+    <!-- 2° Cómo se sostiene la plataforma -->
+    <div style="background-color: #202229; border: 1px solid #323542; border-left: 4px solid #e6cca0; border-radius: 12px; padding: 18px 20px; margin-bottom: 16px;">
+      <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #e6cca0;">
+        2° • Cómo se Mantiene GUTA MÚSICA Online
+      </p>
+      <p style="margin: 0; font-size: 13.5px; line-height: 1.65; color: #aba79e;">
+        La plataforma se mantiene activa, sin publicidad invasiva y con servidores propios gracias a tres pilares transparentes: <strong style="color: #f3f1ec;">spots para anunciantes</strong>, <strong style="color: #f3f1ec;">destaques semanales/mensuales</strong> opcionales y los <strong style="color: #f3f1ec;">aportes voluntarios</strong> de la comunidad y de los visitantes de la web.
+      </p>
+    </div>
+
+    <!-- 3° Maneras de Colaborar (A, B, C) -->
+    <div style="background-color: #18211b; border: 1px solid #2d4534; border-radius: 14px; padding: 20px; margin-bottom: 24px;">
+      <p style="margin: 0 0 12px 0; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #93a887;">
+        3° • Tres Maneras de Colaborar con el Movimiento
+      </p>
+
+      <!-- A -->
+      <div style="background-color: #141916; border: 1px solid #243629; border-radius: 10px; padding: 14px; margin-bottom: 10px;">
+        <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 800; color: #f3f1ec;">
+          <span style="display: inline-block; background-color: #1DB954; color: #0b110d; font-weight: 900; font-size: 11px; padding: 2px 7px; border-radius: 6px; margin-right: 6px;">A</span>
+          Seguir y compartir la Playlist Oficial en Spotify
+        </p>
+        <p style="margin: 0 0 10px 0; font-size: 12.5px; line-height: 1.55; color: #aba79e;">
+          Guardá la playlist oficial con el corazón/seguir en Spotify, escuchala y compartila en tus historias para impulsar la rotación de todos los artistas registrados:
+        </p>
+        <a href="${playlistUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #1DB954; color: #0c130e; font-weight: 800; font-size: 12px; padding: 8px 16px; border-radius: 8px; text-decoration: none;">
+          🎧 Abrir Playlist Oficial en Spotify →
+        </a>
+      </div>
+
+      <!-- B -->
+      <div style="background-color: #141916; border: 1px solid #243629; border-radius: 10px; padding: 14px; margin-bottom: 10px;">
+        <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 800; color: #f3f1ec;">
+          <span style="display: inline-block; background-color: #e6cca0; color: #121316; font-weight: 900; font-size: 11px; padding: 2px 7px; border-radius: 6px; margin-right: 6px;">B</span>
+          Compartir el sitio con colegas y amigos
+        </p>
+        <p style="margin: 0; font-size: 12.5px; line-height: 1.55; color: #aba79e;">
+          Recomendá <a href="${SITE_URL}" style="color: #e6cca0; font-weight: 700; text-decoration: none;">guta.musica.ar</a> a conocidos, amigos, bandas, solistas, productores, DJs y profesionales para que sumen su proyecto gratis.
+        </p>
+      </div>
+
+      <!-- C -->
+      <div style="background-color: #141916; border: 1px solid #243629; border-radius: 10px; padding: 14px;">
+        <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 800; color: #f3f1ec;">
+          <span style="display: inline-block; background-color: #d97d64; color: #121316; font-weight: 900; font-size: 11px; padding: 2px 7px; border-radius: 6px; margin-right: 6px;">C</span>
+          Aportes voluntarios desde la web (Argentina e Internacional)
+        </p>
+        <p style="margin: 0 0 10px 0; font-size: 12.5px; line-height: 1.55; color: #aba79e;">
+          Podés realizar un aporte voluntario desde la misma web de manera anónima y con pago 100% seguro mediante <strong style="color: #f3f1ec;">Mercado Pago / QR Interoperable</strong> (para Argentina) y <strong style="color: #f3f1ec;">PayPal</strong> (para aportes internacionales).
+        </p>
+        <a href="${SITE_URL}/#colaborar" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #d97d64; color: #121316; font-weight: 800; font-size: 12px; padding: 8px 16px; border-radius: 8px; text-decoration: none;">
+          💛 Colaborar o Visitar GUTA MÚSICA →
+        </a>
+      </div>
+    </div>
+
+    <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #aba79e;">
+      Ante cualquier duda o consulta, nuestro equipo humano te atiende siempre en <a href="mailto:soporte@guta.musica.ar" style="color: #d97d64; text-decoration: none; font-weight: 700;">soporte@guta.musica.ar</a> y <a href="mailto:contacto@guta.musica.ar" style="color: #e6cca0; text-decoration: none; font-weight: 700;">contacto@guta.musica.ar</a>.<br/><br/>
+      ¡Gracias por ser parte de la escena musical independiente!<br/>
+      <strong style="color: #f3f1ec;">Equipo Editorial — GUTA MÚSICA</strong>
+    </p>
+  `);
+}
+
+/**
+ * Envía el Comunicado Oficial de Transparencia y Sostenibilidad a un destinatario
+ * o a una lista masiva de destinatarios registrados (usando resend.batch.send en lotes de 100).
+ */
+export async function sendCommunityTransparencyBroadcast(
+  recipients: Array<{ email: string; name?: string }>
+): Promise<{
+  success: boolean;
+  sentCount: number;
+  failedCount: number;
+  error?: string;
+}> {
+  if (!resend) {
+    console.warn('⚠️ RESEND_API_KEY no configurada. Envío masivo cancelado.');
+    return {
+      success: false,
+      sentCount: 0,
+      failedCount: recipients.length,
+      error: 'RESEND_API_KEY no está configurada en el servidor.',
+    };
+  }
+
+  // Deduplicar por email válido
+  const uniqueMap = new Map<string, string>();
+  for (const r of recipients) {
+    const cleanEmail = (r.email || '').trim().toLowerCase();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) continue;
+    if (!uniqueMap.has(cleanEmail)) {
+      uniqueMap.set(cleanEmail, (r.name || '').trim() || cleanEmail.split('@')[0]);
+    }
+  }
+
+  const deduped = Array.from(uniqueMap.entries()).map(([email, name]) => ({
+    email,
+    name,
+  }));
+
+  if (deduped.length === 0) {
+    return {
+      success: false,
+      sentCount: 0,
+      failedCount: 0,
+      error: 'No se encontraron correos electrónicos válidos para enviar.',
+    };
+  }
+
+  const subject =
+    'Comunicado Oficial: Transparencia, Playlist de Spotify y cómo colaborar | GUTA MÚSICA';
+
+  let sentCount = 0;
+  let failedCount = 0;
+  const BATCH_SIZE = 90;
+
+  for (let i = 0; i < deduped.length; i += BATCH_SIZE) {
+    const chunk = deduped.slice(i, i + BATCH_SIZE);
+    const messages = chunk.map((recipient) => ({
+      from: CONTACTO_EMAIL,
+      to: [recipient.email],
+      replyTo: 'contacto@guta.musica.ar',
+      subject,
+      html: buildCommunityTransparencyEmailHtml(recipient.name),
+    }));
+
+    try {
+      const { error } = await resend.batch.send(messages);
+      if (error) {
+        console.warn('⚠️ Falló resend.batch.send, reintentando envío individual:', error);
+        for (const msg of messages) {
+          try {
+            const single = await resend.emails.send(msg);
+            if (single.error) {
+              failedCount++;
+            } else {
+              sentCount++;
+            }
+          } catch {
+            failedCount++;
+          }
+        }
+      } else {
+        sentCount += chunk.length;
+      }
+    } catch (batchErr) {
+      console.warn('⚠️ Excepción en batch.send, reintentando individual:', batchErr);
+      for (const msg of messages) {
+        try {
+          const single = await resend.emails.send(msg);
+          if (single.error) {
+            failedCount++;
+          } else {
+            sentCount++;
+          }
+        } catch {
+          failedCount++;
+        }
+      }
+    }
+  }
+
+  return {
+    success: sentCount > 0,
+    sentCount,
+    failedCount,
+    error: sentCount === 0 ? 'No se pudo entregar ningún correo a través de Resend.' : undefined,
+  };
+}

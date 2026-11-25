@@ -6,7 +6,10 @@ import {
   updateProfessionalInDb,
 } from '../../../../lib/services/professionalsService';
 import { getProfessionalCategoryInfo } from '../../../../lib/constants/professionalCategories';
-import { sendIncompleteProfileReminderEmail } from '../../../../lib/services/emailService';
+import {
+  sendIncompleteProfileReminderEmail,
+  sendCommunityTransparencyBroadcast,
+} from '../../../../lib/services/emailService';
 import { ensureTelegramWebhookRegistered } from '../../../../lib/services/telegramService';
 
 interface ReminderLogEntry {
@@ -583,6 +586,133 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Usuario eliminado correctamente.',
+      });
+    }
+
+    // 7. Envío masivo (1 clic) del Comunicado Oficial de Transparencia y Sostenibilidad a TODOS los registrados en todas las categorías
+    if (action === 'send_bulk_community_reminder') {
+      const { testEmail } = body;
+
+      // Si envía un testEmail opcional para previsualizar en su propia casilla
+      if (testEmail && typeof testEmail === 'string' && testEmail.trim()) {
+        const cleanTest = testEmail.trim().toLowerCase();
+        const res = await sendCommunityTransparencyBroadcast([
+          { email: cleanTest, name: 'Admin GUTA (Vista Previa)' },
+        ]);
+        return NextResponse.json({
+          success: res.success,
+          sentCount: res.sentCount,
+          failedCount: res.failedCount,
+          error: res.error,
+          message: res.success
+            ? `Correo de prueba enviado a ${cleanTest}.`
+            : res.error || 'No se pudo enviar el correo de prueba.',
+        });
+      }
+
+      // Recolectar TODOS los emails únicos de todas las categorías del sitio:
+      // 1) users (cuentas de artistas, profesionales y sponsors)
+      // 2) artists (contactEmail de artistas en catálogo)
+      // 3) music_professionals (email de profesionales/servicios)
+      // 4) applications (email de postulaciones de bandas)
+      // 5) alliances (contactEmail de auspiciantes/aliados)
+      const recipientMap = new Map<
+        string,
+        { email: string; name: string; category: string }
+      >();
+
+      const addRecipient = (rawEmail: any, rawName: any, category: string) => {
+        if (!rawEmail || typeof rawEmail !== 'string') return;
+        const email = rawEmail.trim().toLowerCase();
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+        if (!recipientMap.has(email)) {
+          recipientMap.set(email, {
+            email,
+            name:
+              (typeof rawName === 'string' && rawName.trim()) ||
+              email.split('@')[0],
+            category,
+          });
+        }
+      };
+
+      const [usersList, artistsList, profsList, appsList, alliancesList] =
+        await Promise.all([
+          adminPb
+            .collection('users')
+            .getFullList({ requestKey: null })
+            .catch(() => []),
+          adminPb
+            .collection('artists')
+            .getFullList({ requestKey: null })
+            .catch(() => []),
+          getProfessionalsFromDb({ onlyActive: false }).catch(() => []),
+          adminPb
+            .collection('applications')
+            .getFullList({ requestKey: null })
+            .catch(() => []),
+          adminPb
+            .collection('alliances')
+            .getFullList({ requestKey: null })
+            .catch(() => []),
+        ]);
+
+      for (const u of usersList as any[]) {
+        addRecipient(u.email, u.name, 'usuario');
+      }
+      for (const a of artistsList as any[]) {
+        addRecipient(a.contactEmail || a.email, a.stageName, 'artista');
+      }
+      for (const p of profsList as any[]) {
+        addRecipient(p.email, p.name, 'profesional');
+      }
+      for (const app of appsList as any[]) {
+        addRecipient(app.email, app.stageName || app.contactName, 'postulacion');
+      }
+      for (const al of alliancesList as any[]) {
+        addRecipient(al.contactEmail || al.email, al.name, 'auspiciante');
+      }
+
+      const allRecipients = Array.from(recipientMap.values());
+      const broadcastRes = await sendCommunityTransparencyBroadcast(allRecipients);
+
+      // Guardar registro del último envío masivo en site_settings
+      try {
+        const logPayload = {
+          key: 'community_broadcast_last_log',
+          data: JSON.stringify({
+            sentAt: new Date().toISOString(),
+            sentCount: broadcastRes.sentCount,
+            failedCount: broadcastRes.failedCount,
+            totalUnique: allRecipients.length,
+          }),
+        };
+        const existingLog = await adminPb
+          .collection('site_settings')
+          .getFirstListItem('key="community_broadcast_last_log"', {
+            requestKey: null,
+          })
+          .catch(() => null);
+        if (existingLog) {
+          await adminPb
+            .collection('site_settings')
+            .update(existingLog.id, logPayload, { requestKey: null });
+        } else {
+          await adminPb
+            .collection('site_settings')
+            .create(logPayload, { requestKey: null });
+        }
+      } catch {}
+
+      return NextResponse.json({
+        success: broadcastRes.success,
+        sentCount: broadcastRes.sentCount,
+        failedCount: broadcastRes.failedCount,
+        totalUnique: allRecipients.length,
+        error: broadcastRes.error,
+        message: broadcastRes.success
+          ? `¡Comunicado Oficial enviado exitosamente a ${broadcastRes.sentCount} registrados únicos en todas las categorías!`
+          : broadcastRes.error || 'Error al enviar el comunicado masivo.',
       });
     }
 
