@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { ChevronUp, ChevronDown, Minimize2, Music2, RotateCcw } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Music2, RotateCcw } from 'lucide-react';
 
 interface PersistentSpotifyPlayerProps {
   playlistId?: string;
@@ -47,7 +47,8 @@ export const PersistentSpotifyPlayer: React.FC<PersistentSpotifyPlayerProps> = (
   ]);
 
   const [isExpandedInMini, setIsExpandedInMini] = useState(false);
-  const [isMinimizedToPill, setIsMinimizedToPill] = useState(false);
+  // Inicia colapsado en la solapita vertical derecha para no tapar el contenido al entrar
+  const [isMinimizedToPill, setIsMinimizedToPill] = useState(true);
 
   const iframeRefs = useRef<Record<string, HTMLIFrameElement | null>>({});
   const nextCreatedAtRef = useRef(2);
@@ -216,18 +217,24 @@ export const PersistentSpotifyPlayer: React.FC<PersistentSpotifyPlayerProps> = (
 
   return (
     <>
-      {/* Botón píldora flotante si el usuario minimizó el mini-reproductor mientras navega */}
+      {/* Solapita vertical sticky en el margen derecho cuando el reproductor está colapsado */}
       {!isHiddenRoute && !isActiveDockedInPage && isMinimizedToPill && (
         <button
           type="button"
           onClick={() => setIsMinimizedToPill(false)}
-          className="fixed bottom-4 right-4 z-40 flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#16181f]/95 hover:bg-[#1e212b] border border-[#1DB954]/50 shadow-2xl text-xs font-bold text-[#f3f1ec] backdrop-blur-md transition-all cursor-pointer group"
-          title="Mostrar mini reproductor en reproducción"
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-2 py-3 px-2 rounded-l-2xl bg-[#14151b]/95 hover:bg-[#1c1e27] border border-r-0 border-[#1DB954]/45 hover:border-[#1DB954]/80 shadow-2xl text-[#f3f1ec] backdrop-blur-md transition-all cursor-pointer group"
+          title="Abrir reproductor de Spotify"
+          aria-label="Abrir reproductor de Spotify"
         >
-          <span className="w-2 h-2 rounded-full bg-[#1DB954] animate-pulse" />
-          <Music2 className="w-3.5 h-3.5 text-[#1DB954]" />
-          <span className="max-w-[180px] truncate">{activeSource.title}</span>
-          <ChevronUp className="w-3.5 h-3.5 text-[#aba79e] group-hover:text-[#f3f1ec]" />
+          <span className="w-2 h-2 rounded-full bg-[#1DB954] animate-pulse shrink-0" />
+          <Music2 className="w-4 h-4 text-[#1DB954] shrink-0" />
+          <span
+            className="text-[11px] font-bold tracking-wider uppercase text-[#e6cca0] group-hover:text-[#f3f1ec] select-none max-h-[140px] truncate"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          >
+            {isPlayingCustomArtist ? activeSource.title : 'Playlist GUTA'}
+          </span>
+          <ChevronLeft className="w-3.5 h-3.5 text-[#aba79e] group-hover:text-[#f3f1ec] group-hover:-translate-x-0.5 transition-transform shrink-0" />
         </button>
       )}
 
@@ -254,9 +261,9 @@ export const PersistentSpotifyPlayer: React.FC<PersistentSpotifyPlayerProps> = (
         } else if (isFloatingMini) {
           containerStyle = {};
           containerClass =
-            'fixed bottom-3 right-3 left-3 sm:left-auto sm:w-[370px] z-40 rounded-2xl bg-[#14151b]/95 backdrop-blur-md border border-[#2e313d] shadow-2xl p-2 transition-all duration-200';
+            'fixed right-2 sm:right-3 top-1/2 -translate-y-1/2 w-[calc(100vw-16px)] max-w-[360px] z-40 rounded-2xl bg-[#14151b]/95 backdrop-blur-md border border-[#2e313d] shadow-2xl p-2 transition-all duration-200';
         } else {
-          // Oculto fuera de pantalla (ej. ruta /admin, píldora minimizada, o slot fuera de vista sin ser la fuente activa)
+          // Oculto fuera de pantalla (ej. ruta /admin, solapa colapsada, o slot fuera de vista sin ser la fuente activa)
           containerStyle = {
             position: 'fixed',
             bottom: '-9999px',
@@ -274,7 +281,7 @@ export const PersistentSpotifyPlayer: React.FC<PersistentSpotifyPlayerProps> = (
 
         return (
           <div key={inst.createdAt} style={containerStyle} className={containerClass}>
-            {/* Barra superior de control solo visible en modo Mini Reproductor flotante */}
+            {/* Barra superior de control solo visible en modo Mini Reproductor desplegado */}
             {isFloatingMini && (
               <div className="flex items-center justify-between gap-2 px-2 pb-1.5 mb-1 border-b border-[#252834] text-[11px]">
                 <div className="flex items-center gap-1.5 min-w-0">
@@ -324,10 +331,11 @@ export const PersistentSpotifyPlayer: React.FC<PersistentSpotifyPlayerProps> = (
                   <button
                     type="button"
                     onClick={() => setIsMinimizedToPill(true)}
-                    className="p-1 rounded bg-[#20222b] hover:bg-[#2a2d3a] text-[#aba79e] hover:text-[#f3f1ec] transition-colors cursor-pointer"
-                    title="Minimizar a botón discreto (la música sigue sonando)"
+                    className="px-1.5 py-0.5 rounded bg-[#20222b] hover:bg-[#2a2d3a] text-[#aba79e] hover:text-[#f3f1ec] text-[10px] font-semibold flex items-center gap-0.5 transition-colors cursor-pointer"
+                    title="Ocultar en solapa lateral (la música sigue sonando)"
+                    aria-label="Ocultar en solapa lateral"
                   >
-                    <Minimize2 className="w-3 h-3" />
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>

@@ -49,6 +49,13 @@ export const Footer: React.FC = () => {
             <p className="text-xs text-[#8c887f] leading-relaxed">
               {t.footerMission}
             </p>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#18191e] border border-[#2c2f3a] text-[11px] text-[#aba79e]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#e6cca0] shrink-0" />
+              <span>
+                <strong className="notranslate text-[#f3f1ec] font-semibold">Guta Música</strong> es un producto de{' '}
+                <strong className="notranslate text-[#e6cca0] font-semibold">G-Music Producciones®</strong>
+              </span>
+            </div>
             <div className="pt-1">
               <OfficialSocialsBar settings={socials} variant="footer" showLabel={true} />
             </div>
@@ -146,9 +153,15 @@ export const Footer: React.FC = () => {
 
         {/* Bottom credits */}
         <div className="pt-6 flex flex-col md:flex-row items-center justify-between text-[11px] text-[#78746c] gap-3">
-          <p>© {new Date().getFullYear()} <span className="notranslate">GUTA MÚSICA</span>. {t.footerRights}</p>
-          <div className="flex items-center gap-1 text-[#78746c]">
+          <p>
+            © {new Date().getFullYear()} <span className="notranslate">GUTA MÚSICA</span>. {t.footerRights}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[#78746c]">
             <span>{t.footerMadeWith}</span>
+            <span className="text-[#363842]">•</span>
+            <span>
+              Desarrollado por <strong className="notranslate text-[#aba79e] font-semibold">Milonguita</strong>
+            </span>
           </div>
         </div>
       </div>

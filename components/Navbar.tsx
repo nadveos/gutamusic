@@ -85,6 +85,9 @@ export const Navbar: React.FC = () => {
             <span className="hidden sm:inline text-[#a09c93]">
               {t.topBannerSubtitle}
             </span>
+            <span className="hidden xl:inline text-[#8c887f] pl-2 border-l border-[#2e3039]">
+              Un producto de <strong className="notranslate text-[#e6cca0] font-semibold">G-Music Producciones®</strong>
+            </span>
             <Link href="/efemerides" prefetch={false} className="hidden lg:flex items-center gap-1.5 text-[#93a887] hover:text-[#e6cca0] transition-colors ml-2 pl-2 border-l border-[#2e3039]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#93a887]" aria-hidden="true"></span>
               <span>{t.topBannerEphemeris}: {todayFormatted}</span>
