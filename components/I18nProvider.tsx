@@ -37,10 +37,18 @@ function syncGoogTransCookie(targetLocale: SupportedLocale) {
   const host = window.location.hostname;
 
   if (targetLocale === 'es') {
-    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    document.cookie = 'googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    document.cookie = `googtrans=; path=/; domain=${host}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-    document.cookie = `googtrans=; path=/; domain=.${host}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    const paths = ['/', window.location.pathname];
+    const segments = window.location.pathname.split('/').filter(Boolean);
+    if (segments.length > 0) {
+      paths.push(`/${segments[0]}`);
+    }
+    const domains = ['', host, `.${host}`];
+    for (const p of paths) {
+      for (const d of domains) {
+        const domainPart = d ? ` domain=${d};` : '';
+        document.cookie = `googtrans=; path=${p};${domainPart} expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      }
+    }
   } else {
     const val = `/es/${targetLocale}`;
     document.cookie = `googtrans=${val}; path=/; SameSite=Lax`;
@@ -176,12 +184,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch {}
       syncGoogTransCookie(newLocale);
       if (newLocale === 'es') {
-        // Restaurar textos dinámicos originales en español
-        const selectEl = document.querySelector('.goog-te-combo') as HTMLSelectElement | null;
-        if (selectEl) {
-          selectEl.value = 'es';
-          selectEl.dispatchEvent(new Event('change'));
-        }
+        // Recargar limpiamente sin disparar change en Google Translate (que re-escribe la cookie)
         window.location.reload();
       } else {
         triggerDomTranslation(newLocale);

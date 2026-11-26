@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { cache } from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -24,13 +24,17 @@ import { InstagramIcon, SpotifyIcon, YouTubeIcon } from '@/lib/socialUtils';
 
 export const revalidate = 120;
 
+const getCachedProfessionalBySlug = cache(async (slug: string) => {
+  return getProfessionalBySlugOrId(slug);
+});
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const prof = await getProfessionalBySlugOrId(slug);
+  const prof = await getCachedProfessionalBySlug(slug);
   if (!prof) {
     return { title: 'Profesional no encontrado | GUTA MÚSICA' };
   }
@@ -68,7 +72,7 @@ export default async function ProfessionalDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const prof = await getProfessionalBySlugOrId(slug);
+  const prof = await getCachedProfessionalBySlug(slug);
 
   if (!prof) {
     notFound();

@@ -11,7 +11,7 @@ export async function GET(
     const { code } = await params;
     const targetPath = await resolveShortLink(code);
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
     const redirectUrl = targetPath.startsWith('http')
       ? targetPath
       : `${siteUrl}${targetPath.startsWith('/') ? '' : '/'}${targetPath}`;
@@ -19,7 +19,7 @@ export async function GET(
     return NextResponse.redirect(redirectUrl, { status: 307 });
   } catch (error) {
     console.error('Error en redirección de short link /guta:', error);
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
     return NextResponse.redirect(siteUrl, { status: 307 });
   }
 }

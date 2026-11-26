@@ -356,8 +356,19 @@ export async function getProfessionalsFromDb(options?: {
 export async function getProfessionalBySlugOrId(
   slugOrId: string
 ): Promise<MusicProfessional | null> {
+  let decoded = slugOrId;
+  try {
+    decoded = decodeURIComponent(slugOrId);
+  } catch {}
+  const targetLower = decoded.trim().toLowerCase();
   const all = await getProfessionalsFromDb();
-  return all.find((p) => p.slug === slugOrId || p.id === slugOrId) || null;
+  return (
+    all.find(
+      (p) =>
+        (typeof p.slug === 'string' && p.slug.trim().toLowerCase() === targetLower) ||
+        p.id === decoded
+    ) || null
+  );
 }
 
 export async function getProfessionalByUserOrEmail(

@@ -156,6 +156,20 @@ export class MusicDataService {
         } catch {}
       }
 
+      // Fallback tolerante a mayúsculas/minúsculas o token vencido
+      if (!record) {
+        try {
+          const allRecords = await pb.collection('artists').getFullList<any>({ requestKey: null });
+          const targetLower = decodedSlug.trim().toLowerCase();
+          record =
+            allRecords.find(
+              (r) =>
+                (typeof r.slug === 'string' && r.slug.trim().toLowerCase() === targetLower) ||
+                r.id === decodedSlug
+            ) || null;
+        } catch {}
+      }
+
       if (record) {
         const artistAgenda: AgendaEvent[] = Array.isArray(record.agenda) ? record.agenda : [];
         try {
@@ -539,9 +553,36 @@ export class MusicDataService {
   static async getInterviewBySlug(slug: string): Promise<Interview | null> {
     try {
       await syncServerAuth();
-      const record = await pb.collection('interviews').getFirstListItem(`slug="${slug}"`, {
-        requestKey: null,
-      });
+      let decodedSlug = slug;
+      try {
+        decodedSlug = decodeURIComponent(slug);
+      } catch {}
+      const safeSlug = decodedSlug.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+      let record: any = null;
+      try {
+        record = await pb.collection('interviews').getFirstListItem(`slug="${safeSlug}"`, {
+          requestKey: null,
+        });
+      } catch {
+        try {
+          record = await pb.collection('interviews').getOne(decodedSlug, { requestKey: null });
+        } catch {}
+      }
+
+      if (!record) {
+        try {
+          const allRecords = await pb.collection('interviews').getFullList<any>({ requestKey: null });
+          const targetLower = decodedSlug.trim().toLowerCase();
+          record =
+            allRecords.find(
+              (r) =>
+                (typeof r.slug === 'string' && r.slug.trim().toLowerCase() === targetLower) ||
+                r.id === decodedSlug
+            ) || null;
+        } catch {}
+      }
+
       if (record) {
         return {
           id: record.id,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { cache } from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -10,13 +10,17 @@ import { EditorialRenderer } from '../../../components/EditorialRenderer';
 
 export const revalidate = 120;
 
+const getCachedInterviewBySlug = cache(async (slug: string) => {
+  return MusicDataService.getInterviewBySlug(slug);
+});
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const interview = await MusicDataService.getInterviewBySlug(slug);
+  const interview = await getCachedInterviewBySlug(slug);
 
   if (!interview) {
     return { title: 'Entrevista No Encontrada | GUTA MÚSICA' };
@@ -50,7 +54,7 @@ export default async function InterviewDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const interview = await MusicDataService.getInterviewBySlug(slug);
+  const interview = await getCachedInterviewBySlug(slug);
 
   if (!interview) {
     notFound();
