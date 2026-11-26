@@ -3,20 +3,14 @@ import { Metadata } from 'next';
 import { MusicDataService } from '../../lib/api';
 import { ArtistsDirectoryClient } from './ArtistsDirectoryClient';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Directorio de Artistas & Bandas Emergentes | GUTA MÚSICA',
   description: 'Explorá el catálogo de artistas independientes de folklore, rock, tango, hip hop y música urbana de Argentina y Latinoamérica.',
 };
 
-export default async function ArtistasPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ genre?: string }>;
-}) {
-  const params = await searchParams;
+export default async function ArtistasPage() {
   const artists = await MusicDataService.getArtists();
   const genres = MusicDataService.getGenresList();
 
@@ -34,7 +28,6 @@ export default async function ArtistasPage({
     <ArtistsDirectoryClient
       initialArtists={sortedArtists}
       genres={genres}
-      initialGenre={params?.genre}
     />
   );
 }

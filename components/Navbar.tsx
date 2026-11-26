@@ -85,7 +85,7 @@ export const Navbar: React.FC = () => {
             <span className="hidden sm:inline text-[#a09c93]">
               {t.topBannerSubtitle}
             </span>
-            <Link href="/efemerides" className="hidden lg:flex items-center gap-1.5 text-[#93a887] hover:text-[#e6cca0] transition-colors ml-2 pl-2 border-l border-[#2e3039]">
+            <Link href="/efemerides" prefetch={false} className="hidden lg:flex items-center gap-1.5 text-[#93a887] hover:text-[#e6cca0] transition-colors ml-2 pl-2 border-l border-[#2e3039]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#93a887]" aria-hidden="true"></span>
               <span>{t.topBannerEphemeris}: {todayFormatted}</span>
             </Link>
@@ -121,6 +121,7 @@ export const Navbar: React.FC = () => {
                   <Link
                     key={link.href}
                     href={link.href}
+                    prefetch={link.href === '/contacto' ? false : undefined}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] ${
                       isActive
                         ? 'bg-[#2a2c35] text-[#f3f1ec] font-semibold border border-[#3c3f4c]'
@@ -156,12 +157,14 @@ export const Navbar: React.FC = () => {
               </button>
               <Link
                 href="/login"
+                prefetch={false}
                 className="text-xs font-semibold px-3 py-2 rounded-lg border border-[#3c3f4c] bg-[#222329]/80 hover:bg-[#2a2c35] text-[#f3f1ec] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64]"
               >
                 {t.loginBtn}
               </Link>
               <Link
                 href="/registro"
+                prefetch={false}
                 className="inline-flex items-center gap-1.5 text-xs font-extrabold px-4 py-2 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] hover:opacity-95 text-[#151618] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e6cca0] shadow-md shadow-[#d97d64]/30 whitespace-nowrap"
               >
                 <Sparkles className="w-3.5 h-3.5 text-[#151618]" aria-hidden="true" />
@@ -173,6 +176,7 @@ export const Navbar: React.FC = () => {
             <div className="flex lg:hidden items-center gap-1.5">
               <Link
                 href="/registro"
+                prefetch={false}
                 className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#d97d64] to-[#e6cca0] text-[#151618] font-extrabold text-[11px] sm:text-xs shadow-md shadow-[#d97d64]/25 active:scale-95 whitespace-nowrap"
               >
                 <Sparkles className="w-3 h-3 text-[#151618]" aria-hidden="true" />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Artist, GenreType } from '../../lib/types';
 import { ArtistCard } from '../../components/ArtistCard';
 import { BrandAllianceShowcase } from '../../components/BrandAllianceShowcase';
@@ -20,6 +20,15 @@ export const ArtistsDirectoryClient: React.FC<ArtistsDirectoryClientProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<string>(initialGenre || 'Todos');
   const [selectedProvince, setSelectedProvince] = useState<string>('Todas');
+
+  // Leer ?genre= en cliente para permitir cacheo ISR en /artistas
+  useEffect(() => {
+    if (initialGenre) return;
+    const genreParam = new URLSearchParams(window.location.search).get('genre');
+    if (genreParam) {
+      setSelectedGenre(genreParam);
+    }
+  }, [initialGenre]);
 
   const sortedArtists = useMemo(() => {
     return [...initialArtists].sort((a, b) => {

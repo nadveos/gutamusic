@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { InstagramIcon, SpotifyIcon, YouTubeIcon } from '@/lib/socialUtils';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 120;
 
 export async function generateMetadata({
   params,

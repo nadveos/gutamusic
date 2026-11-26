@@ -5,8 +5,7 @@ import Image from 'next/image';
 import { MusicDataService } from '../../lib/api';
 import { Radio, Play, Calendar, User, ArrowRight, Newspaper } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 120;
 
 export const metadata: Metadata = {
   title: 'Entrevistas & Notas Periodísticas | GUTA MÚSICA',

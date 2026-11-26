@@ -3,8 +3,7 @@ import { Metadata } from 'next';
 import { MusicDataService, getArgentinaDayMonth } from '../../lib/api';
 import { EfemeridesClient } from './EfemeridesClient';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Efemérides Musicales Históricas | GUTA MÚSICA',

@@ -1,6 +1,13 @@
 import { getServerAdminPb } from '../pocketbase';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.meapp.com.ar';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://guta.musica.ar';
+
+// Caché en memoria en el servidor para evitar consultas repetidas a PocketBase
+const serverShortLinkCache = new Map<string, { code: string; shortUrl: string; targetUrl: string }>();
+
+function escapePbFilterValue(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
 
 // Caracteres limpios para códigos cortos (sin caracteres confusos como 0/O, 1/l/I)
 const ALPHABET = '23456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -35,19 +42,27 @@ export async function getOrCreateShortLink(params: {
   title?: string;
 }): Promise<{ code: string; shortUrl: string; targetUrl: string }> {
   const targetPath = normalizeTargetPath(params.targetUrl);
+  const cached = serverShortLinkCache.get(targetPath);
+  if (cached) {
+    return cached;
+  }
+
   const pb = await getServerAdminPb();
+  const safeTargetPath = escapePbFilterValue(targetPath);
 
   // 1. Verificar si ya existe un link acortado para esta misma ruta
   try {
-    const existing = await pb.collection('short_links').getFirstListItem(`targetUrl="${targetPath}"`, {
+    const existing = await pb.collection('short_links').getFirstListItem(`targetUrl="${safeTargetPath}"`, {
       requestKey: null,
     });
     if (existing && existing.code) {
-      return {
+      const result = {
         code: existing.code,
         shortUrl: `${SITE_URL}/g/${existing.code}`,
         targetUrl: targetPath,
       };
+      serverShortLinkCache.set(targetPath, result);
+      return result;
     }
   } catch {}
 
@@ -80,11 +95,13 @@ export async function getOrCreateShortLink(params: {
     // Fallback: si falla por base de datos, devolvemos el código igualmente para resolver
   }
 
-  return {
+  const result = {
     code,
     shortUrl: `${SITE_URL}/g/${code}`,
     targetUrl: targetPath,
   };
+  serverShortLinkCache.set(targetPath, result);
+  return result;
 }
 
 /**
@@ -94,11 +111,13 @@ export async function resolveShortLink(code: string): Promise<string> {
   if (!code) return '/';
 
   const cleanCode = code.trim();
+  if (!/^[a-zA-Z0-9_-]{1,120}$/.test(cleanCode)) return '/';
+  const safeCode = escapePbFilterValue(cleanCode);
   const pb = await getServerAdminPb();
 
   // 1. Buscar en la colección short_links
   try {
-    const record = await pb.collection('short_links').getFirstListItem(`code="${cleanCode}"`, {
+    const record = await pb.collection('short_links').getFirstListItem(`code="${safeCode}"`, {
       requestKey: null,
     });
 
@@ -116,7 +135,7 @@ export async function resolveShortLink(code: string): Promise<string> {
 
   // 2. Fallbacks inteligentes: si el código es un ID directo o slug de artista
   try {
-    const artist = await pb.collection('artists').getFirstListItem(`id="${cleanCode}" || slug="${cleanCode}"`, {
+    const artist = await pb.collection('artists').getFirstListItem(`id="${safeCode}" || slug="${safeCode}"`, {
       requestKey: null,
     });
     if (artist && artist.slug) {
@@ -126,7 +145,7 @@ export async function resolveShortLink(code: string): Promise<string> {
 
   // 3. Fallbacks inteligentes: si el código es un ID directo o slug de entrevista
   try {
-    const interview = await pb.collection('interviews').getFirstListItem(`id="${cleanCode}" || slug="${cleanCode}"`, {
+    const interview = await pb.collection('interviews').getFirstListItem(`id="${safeCode}" || slug="${safeCode}"`, {
       requestKey: null,
     });
     if (interview && interview.slug) {

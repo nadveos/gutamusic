@@ -9,7 +9,7 @@ import {
   EnrichedProfessional,
 } from './ProfessionalsDirectoryClient';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 120;
 
 export const metadata: Metadata = {
   title: "Profesionales, Sellos, Productores, DJ's, Docentes & Sesionistas | GUTA MÚSICA",

@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { MusicDataService } from '../lib/api';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 import { HeroFeatured } from '../components/HeroFeatured';
 import { WeeklyFeaturedSection } from '../components/WeeklyFeaturedSection';
 import { VideoEmbedGrid } from '../components/VideoEmbedGrid';
@@ -16,22 +16,29 @@ export default async function HomePage() {
   // Asegurar en segundo plano que las efemérides del día de hoy estén sincronizadas en PocketBase
   MusicDataService.getTodayEphemerides().catch(() => {});
 
-  const consagradosArtists = await MusicDataService.getConsagradosArtists();
-  const weeklyFeaturedArtists = await MusicDataService.getWeeklyFeaturedArtists();
-  const latestArtists = await MusicDataService.getArtists();
-  const videos = await MusicDataService.getVideos(4);
-  const featuredInterview = await MusicDataService.getFeaturedInterview();
-
-  // Playlist oficial de Spotify
   const playlistId = process.env.NEXT_PUBLIC_SPOTIFY_PLAYLIST_ID || '5eprX7q6HoedI2nnnHEE2H';
-  const spotifyPlaylist = await getSpotifyPlaylist(playlistId);
 
-  // Auspiciantes para la columna lateral (home_mid & all_sections)
-  const homeSponsors = await MusicDataService.getAlliances('home_mid', true);
+  const [
+    consagradosArtists,
+    weeklyFeaturedArtists,
+    latestArtists,
+    videos,
+    featuredInterview,
+    spotifyPlaylist,
+    homeSponsors,
+    homeProfessionals,
+  ] = await Promise.all([
+    MusicDataService.getConsagradosArtists(),
+    MusicDataService.getWeeklyFeaturedArtists(),
+    MusicDataService.getArtists(),
+    MusicDataService.getVideos(4),
+    MusicDataService.getFeaturedInterview(),
+    getSpotifyPlaylist(playlistId),
+    MusicDataService.getAlliances('home_mid', true),
+    getProfessionalsFromDb({ onlyActive: true }).catch(() => []),
+  ]);
+
   const billboardSponsors = homeSponsors.filter((s) => s.sector === 'all_sections');
-
-  // Profesionales & Servicios Musicales registrados (prioriza destacados vigentes)
-  const homeProfessionals = await getProfessionalsFromDb({ onlyActive: true }).catch(() => []);
 
   return (
     <div className="space-y-10">

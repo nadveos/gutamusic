@@ -8,8 +8,7 @@ import { Radio, User, Calendar, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { ShareButton } from '../../../components/ShareButton';
 import { EditorialRenderer } from '../../../components/EditorialRenderer';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 120;
 
 export async function generateMetadata({
   params,

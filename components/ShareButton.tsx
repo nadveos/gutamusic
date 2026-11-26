@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Share2, Check, Copy, MessageCircle, Send, Globe } from 'lucide-react';
 
+// Caché en memoria por sesión para evitar llamadas repetidas a /api/shorten
+const shortUrlCache = new Map<string, string>();
+
 interface ShareButtonProps {
   title: string;
   text?: string;
@@ -41,29 +44,35 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
     }
   }, []);
 
-  // Generar o consultar URL corta nativa de GUTA (/g/[code])
-  useEffect(() => {
-    let isMounted = true;
+  // Obtener o generar URL corta solo cuando el usuario hace clic en Compartir
+  const ensureShortUrl = async (): Promise<string> => {
     const target = getFullUrl();
-    if (!target) return;
+    if (!target) return '';
 
-    fetch('/api/shorten', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: target, title }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (isMounted && data.shortUrl) {
+    const cached = shortUrlCache.get(target);
+    if (cached) {
+      if (shortUrl !== cached) setShortUrl(cached);
+      return cached;
+    }
+
+    try {
+      const res = await fetch('/api/shorten', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: target, title }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.shortUrl) {
+          shortUrlCache.set(target, data.shortUrl);
           setShortUrl(data.shortUrl);
+          return data.shortUrl;
         }
-      })
-      .catch(() => {});
+      }
+    } catch {}
 
-    return () => {
-      isMounted = false;
-    };
-  }, [url, title]);
+    return target;
+  };
 
   // Handle outside click to close dropdown menu
   useEffect(() => {
@@ -90,23 +99,30 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
   const shareText = text || title;
 
   const handleShareClick = async () => {
-    const shareData = {
-      title,
-      text: shareText,
-      url: activeUrl,
-    };
-
-    if (canNativeShare && navigator.canShare && navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          setIsOpen(true);
+    if (canNativeShare) {
+      const resolvedUrl = await ensureShortUrl();
+      const shareData = {
+        title,
+        text: shareText,
+        url: resolvedUrl,
+      };
+      if (navigator.canShare && navigator.canShare(shareData)) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name !== 'AbortError') {
+            setIsOpen(true);
+          }
+          return;
         }
       }
-    } else {
-      setIsOpen(!isOpen);
+    }
+
+    const nextOpen = !isOpen;
+    setIsOpen(nextOpen);
+    if (nextOpen && !shortUrl) {
+      ensureShortUrl().catch(() => {});
     }
   };
 
