@@ -139,15 +139,20 @@ export class MusicDataService {
   static async getArtistBySlug(slug: string): Promise<Artist | null> {
     try {
       await syncServerAuth();
+      let decodedSlug = slug;
+      try {
+        decodedSlug = decodeURIComponent(slug);
+      } catch {}
+      const safeSlug = decodedSlug.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
       let record: any = null;
       try {
-        record = await pb.collection('artists').getFirstListItem(`slug="${slug}"`, {
+        record = await pb.collection('artists').getFirstListItem(`slug="${safeSlug}"`, {
           requestKey: null,
         });
       } catch {
         // Fallback search by ID if slug is ID
         try {
-          record = await pb.collection('artists').getOne(slug, { requestKey: null });
+          record = await pb.collection('artists').getOne(decodedSlug, { requestKey: null });
         } catch {}
       }
 

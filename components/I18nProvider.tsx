@@ -37,6 +37,7 @@ function syncGoogTransCookie(targetLocale: SupportedLocale) {
   const host = window.location.hostname;
 
   if (targetLocale === 'es') {
+    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     document.cookie = 'googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     document.cookie = `googtrans=; path=/; domain=${host}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     document.cookie = `googtrans=; path=/; domain=.${host}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;

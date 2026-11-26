@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { cache } from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { MusicDataService } from '../../../lib/api';
@@ -6,13 +6,17 @@ import { ArtistProfileClient } from './ArtistProfileClient';
 
 export const revalidate = 120;
 
+const getCachedArtistBySlug = cache(async (slug: string) => {
+  return MusicDataService.getArtistBySlug(slug);
+});
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const artist = await MusicDataService.getArtistBySlug(slug);
+  const artist = await getCachedArtistBySlug(slug);
 
   if (!artist) {
     return {
@@ -37,7 +41,7 @@ export default async function ArtistDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const artist = await MusicDataService.getArtistBySlug(slug);
+  const artist = await getCachedArtistBySlug(slug);
 
   if (!artist) {
     notFound();

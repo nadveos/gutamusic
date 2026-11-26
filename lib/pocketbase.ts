@@ -164,6 +164,8 @@ export async function getServerAdminPb(): Promise<PocketBase> {
   return adminPb;
 }
 
+let pendingServerAuthPromise: Promise<boolean> | null = null;
+
 /**
  * Autentica automáticamente en el servidor (Node.js / Next.js SSR)
  * utilizando las variables de entorno PB_EMAIL y PB_PASSWORD de CapRover/.env.local
@@ -178,27 +180,40 @@ export async function ensureServerSuperUserAuth(): Promise<boolean> {
 
     if (isSuper) return true;
 
-    // Si tiene un token que no es de superusuario, limpiamos la instancia compartida
-    if (pb.authStore.isValid) {
-      pb.authStore.clear();
+    if (pendingServerAuthPromise) {
+      return pendingServerAuthPromise;
     }
 
-    const email = process.env.PB_EMAIL || process.env.POCKETBASE_ADMIN_EMAIL || 'guflo32@gmail.com';
-    const password = process.env.PB_PASSWORD || process.env.POCKETBASE_ADMIN_PASSWORD || '1982Gut@**';
-
-    if (email && password) {
+    pendingServerAuthPromise = (async () => {
       try {
-        await pb.collection('_superusers').authWithPassword(email, password);
-        return true;
-      } catch {
-        try {
-          await (pb as any).admins.authWithPassword(email, password);
-          return true;
-        } catch (e: any) {
-          console.warn('⚠️ Auto-autenticación en servidor con PB_EMAIL falló:', e?.message);
+        // Si tiene un token que no es de superusuario, limpiamos la instancia compartida
+        if (pb.authStore.isValid) {
+          pb.authStore.clear();
         }
+
+        const email = process.env.PB_EMAIL || process.env.POCKETBASE_ADMIN_EMAIL || 'guflo32@gmail.com';
+        const password = process.env.PB_PASSWORD || process.env.POCKETBASE_ADMIN_PASSWORD || '1982Gut@**';
+
+        if (email && password) {
+          try {
+            await pb.collection('_superusers').authWithPassword(email, password);
+            return true;
+          } catch {
+            try {
+              await (pb as any).admins.authWithPassword(email, password);
+              return true;
+            } catch (e: any) {
+              console.warn('⚠️ Auto-autenticación en servidor con PB_EMAIL falló:', e?.message);
+            }
+          }
+        }
+        return false;
+      } finally {
+        pendingServerAuthPromise = null;
       }
-    }
+    })();
+
+    return pendingServerAuthPromise;
   }
   return (
     pb.authStore.isValid &&
