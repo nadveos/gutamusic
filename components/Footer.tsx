@@ -53,7 +53,7 @@ export const Footer: React.FC = () => {
               <span className="w-1.5 h-1.5 rounded-full bg-[#e6cca0] shrink-0" />
               <span>
                 <strong className="notranslate text-[#f3f1ec] font-semibold">Guta Música</strong> es un producto de{' '}
-                <strong className="notranslate text-[#e6cca0] font-semibold">G-Music Producciones®</strong>
+                <strong className="notranslate text-[#e6cca0] font-semibold"> G-Music Producciones®</strong>
               </span>
             </div>
             <div className="pt-1">
@@ -160,7 +160,7 @@ export const Footer: React.FC = () => {
             <span>{t.footerMadeWith}</span>
             <span className="text-[#363842]">•</span>
             <span>
-              Desarrollado por <strong className="notranslate text-[#aba79e] font-semibold">Milonguita</strong>
+              Desarrollado por <strong className="notranslate text-[#aba79e] font-semibold"> Milonguita</strong>
             </span>
           </div>
         </div>

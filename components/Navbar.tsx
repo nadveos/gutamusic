@@ -39,7 +39,7 @@ export const Navbar: React.FC = () => {
           setSocials(data);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       isMounted = false;
     };
@@ -86,7 +86,7 @@ export const Navbar: React.FC = () => {
               {t.topBannerSubtitle}
             </span>
             <span className="hidden xl:inline text-[#8c887f] pl-2 border-l border-[#2e3039]">
-              Un producto de <strong className="notranslate text-[#e6cca0] font-semibold">G-Music Producciones®</strong>
+              Un producto de <strong className="notranslate text-[#e6cca0] font-semibold"> G-Music Producciones®</strong>
             </span>
             <Link href="/efemerides" prefetch={false} className="hidden lg:flex items-center gap-1.5 text-[#93a887] hover:text-[#e6cca0] transition-colors ml-2 pl-2 border-l border-[#2e3039]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#93a887]" aria-hidden="true"></span>
@@ -125,11 +125,10 @@ export const Navbar: React.FC = () => {
                     key={link.href}
                     href={link.href}
                     prefetch={link.href === '/contacto' ? false : undefined}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] ${
-                      isActive
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] ${isActive
                         ? 'bg-[#2a2c35] text-[#f3f1ec] font-semibold border border-[#3c3f4c]'
                         : 'text-[#aba79e] hover:text-[#f3f1ec] hover:bg-[#23252c]'
-                    }`}
+                      }`}
                   >
                     <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#e6cca0]' : 'text-[#a09c93]'}`} aria-hidden="true" />
                     {link.label}
@@ -228,9 +227,8 @@ export const Navbar: React.FC = () => {
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] ${
-                    isActive ? 'bg-[#2a2c35] text-[#e6cca0]' : 'text-[#aba79e] hover:bg-[#222329]'
-                  }`}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97d64] ${isActive ? 'bg-[#2a2c35] text-[#e6cca0]' : 'text-[#aba79e] hover:bg-[#222329]'
+                    }`}
                 >
                   <Icon className="w-4 h-4 text-[#d97d64]" aria-hidden="true" />
                   {link.label}
