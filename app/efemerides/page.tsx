@@ -8,6 +8,9 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: 'Efemérides Musicales Históricas | GUTA MÚSICA',
   description: 'Lanzamientos históricos, ingresos a Billboard, registros en SADAIC, festivales de Cosquín y homenajes de la música popular argentina y latinoamericana.',
+  alternates: {
+    canonical: '/efemerides',
+  },
 };
 
 export default async function EfemeridesPage() {

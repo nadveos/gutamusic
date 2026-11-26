@@ -43,6 +43,9 @@ export async function generateMetadata({
   return {
     title: `${prof.name} — ${cat.label} | GUTA MÚSICA`,
     description: desc,
+    alternates: {
+      canonical: `/profesionales/${encodeURIComponent(prof.slug || prof.id)}`,
+    },
     openGraph: {
       title: `${prof.name} — ${cat.label} | GUTA MÚSICA`,
       description: desc,

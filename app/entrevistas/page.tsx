@@ -10,6 +10,9 @@ export const revalidate = 120;
 export const metadata: Metadata = {
   title: 'Entrevistas & Notas Periodísticas | GUTA MÚSICA',
   description: 'Videoteca y notas periodísticas exclusivas a fondo y acústicos de artistas emergentes con Guta Flores.',
+  alternates: {
+    canonical: '/entrevistas',
+  },
 };
 
 export default async function EntrevistasPage() {

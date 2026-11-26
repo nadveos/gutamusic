@@ -8,6 +8,9 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: 'Directorio de Artistas & Bandas Emergentes | GUTA MÚSICA',
   description: 'Explorá el catálogo de artistas independientes de folklore, rock, tango, hip hop y música urbana de Argentina y Latinoamérica.',
+  alternates: {
+    canonical: '/artistas',
+  },
 };
 
 export default async function ArtistasPage() {

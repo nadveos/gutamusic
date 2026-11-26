@@ -31,6 +31,9 @@ export async function generateMetadata({
   return {
     title: `${interview.title} | GUTA MÚSICA`,
     description: interview.summary,
+    alternates: {
+      canonical: `/entrevistas/${encodeURIComponent(interview.slug)}`,
+    },
     openGraph: {
       title: interview.title,
       description: interview.summary,

@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   title: "Profesionales, Sellos, Productores, DJ's, Docentes & Sesionistas | GUTA MÚSICA",
   description:
     'Directorio federal de sellos independientes, productores artísticos y musicales, DJs, profesores de canto e instrumentos, armonizadores y músicos sesionistas.',
+  alternates: {
+    canonical: '/profesionales',
+  },
 };
 
 export default async function ProfesionalesPage() {

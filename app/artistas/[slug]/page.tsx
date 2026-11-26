@@ -27,6 +27,9 @@ export async function generateMetadata({
   return {
     title: `${artist.stageName} | Perfil, Videos & Discografía | GUTA MÚSICA`,
     description: `${artist.shortBio} Descubrí la música, discografía, videos en vivo y próximas fechas de ${artist.stageName} (${artist.city}, ${artist.province}).`,
+    alternates: {
+      canonical: `/artistas/${encodeURIComponent(artist.slug)}`,
+    },
     openGraph: {
       title: `${artist.stageName} en GUTA MÚSICA`,
       description: artist.shortBio,

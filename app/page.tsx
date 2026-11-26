@@ -1,8 +1,15 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MusicDataService } from '../lib/api';
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+};
 import { HeroFeatured } from '../components/HeroFeatured';
 import { WeeklyFeaturedSection } from '../components/WeeklyFeaturedSection';
 import { VideoEmbedGrid } from '../components/VideoEmbedGrid';

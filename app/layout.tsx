@@ -32,9 +32,6 @@ export const metadata: Metadata = {
     'Entrevistas de música'
   ],
   authors: [{ name: 'Guta Flores' }],
-  alternates: {
-    canonical: '/',
-  },
   icons: {
     icon: [
       { url: '/brand/guta-musica-favicon.svg', type: 'image/svg+xml' },
